@@ -1414,15 +1414,15 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
     const totalSlotHeight = canvas.height * (268 / 512);
     const rowHeight = totalSlotHeight / 12;
 
-    // Pre-calculate fonts
-    const crownFontSize = Math.round(canvas.width * 0.024);
-    const teamFontSize = Math.round(canvas.width * 0.027);
-    const posFontSize = Math.round(canvas.width * 0.029);
-    const totalFontSize = Math.round(canvas.width * 0.032);
+    // Pre-calculate fonts (scaled for retina sharpness, adjusted to fit slot height)
+    const crownFontSize = Math.round(canvas.width * 0.021);
+    const teamFontSize = Math.round(canvas.width * 0.023);
+    const posFontSize = Math.round(canvas.width * 0.024);
+    const totalFontSize = Math.round(canvas.width * 0.027);
 
     cumulativeStats.forEach((t, i) => {
-      // Precise vertical center for this row slot
-      const rowCenterY = topY + (i + 0.5) * rowHeight;
+      // Precise vertical center for this row slot with slight baseline optical adjustment
+      const rowCenterY = topY + (i + 0.48) * rowHeight;
       const rank = i + 1;
 
       // Crown on Rank 1 (#01)
@@ -1431,7 +1431,7 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
         ctx.fillStyle = "#ffeb3b";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.38);
+        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.40);
       }
 
       // 1. Team Name (Inside brushed metal slot: x = 17.5%)
@@ -1463,6 +1463,7 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
       ctx.font = `bold ${posFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#93c5fd";
       ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
       ctx.shadowBlur = 6;
       const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
