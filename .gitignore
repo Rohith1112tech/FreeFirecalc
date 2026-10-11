@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment and sensitive files
+.env
+.env.local
+
+# IDE & Editor files
+.vscode/
+.idea/
+
+# OS metadata
+Thumbs.db
+.DS_Store
+
+# Agent internal caches
+.agent/
+.agents/
+.gemini/
+.gsd/

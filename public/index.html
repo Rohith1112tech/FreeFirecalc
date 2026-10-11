@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free Fire Tournament Points Calculator | Scrims Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient Red Cyber Glow Effects -->
+  <div class="ambient-glow glow-top-left"></div>
+  <div class="ambient-glow glow-top-right"></div>
+  <div class="ambient-glow glow-bottom-center"></div>
+  <div class="cyber-grid-overlay"></div>
+
+  <div class="app-container">
+    <!-- Top Header Banner matching the Reference Aesthetic -->
+    <header class="scrims-header">
+      <div class="header-left">
+        <div class="ff-brand">
+          <span class="ff-logo-text">FREE FIRE</span>
+          <span class="ff-sub-badge">PAID SCRIMS</span>
+        </div>
+      </div>
+
+      <div class="header-center">
+        <div class="crown-icon-wrap">
+          <svg class="crown-svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+          </svg>
+        </div>
+        <h1 class="scrims-title">NZ PAID SCRIMS</h1>
+        <div class="scrims-motto">
+          <span>PLAY</span>
+          <span class="motto-divider">/</span>
+          <span>FIGHT</span>
+          <span class="motto-divider">/</span>
+          <span>WIN</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="slogan-badge">
+          <div class="crown-mini">👑</div>
+          <div class="slogan-text">BIGGER<br>BETTER<br>STRONGER</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN SCREENS CONTAINER -->
+    <main class="main-content">
+      
+      <!-- SCREEN 1: ADMIN SETUP -->
+      <section id="setup-screen" class="screen-view active">
+        <div class="section-badge-bar">
+          <div class="badge-tag">ADMIN CONFIGURATION</div>
+          <div class="badge-line"></div>
+          <div class="badge-code">SYS://TOURNAMENT_INIT</div>
+        </div>
+
+        <div class="setup-grid">
+          <!-- Left Column: Tournament Configuration Details -->
+          <div class="setup-sidebar">
+            <div class="cyber-card config-card">
+              <div class="card-header">
+                <span class="card-icon">⚙️</span>
+                <h2>MATCH SETTINGS</h2>
+              </div>
+              <div class="card-body">
+                <!-- Tournament Title -->
+                <div class="form-group">
+                  <label for="tournament-name">TOURNAMENT / SCRIMS TITLE</label>
+                  <div class="cyber-input-wrap">
+                    <input type="text" id="tournament-name" class="cyber-input" value="NZ PAID SCRIMS - BATTLE 01" placeholder="Enter scrims title...">
+                    <span class="input-glow"></span>
+                  </div>
+                </div>
+
+                <!-- Total Matches Input -->
+                <div class="form-group">
+                  <label for="total-matches">
+                    TOTAL NUMBER OF MATCHES 
+                    <span class="required-star">*</span>
+                  </label>
+                  <div class="cyber-input-wrap match-count-wrap">
+                    <input type="number" id="total-matches" class="cyber-input num-input" min="1" max="20" value="6" required>
+                    <span class="input-glow"></span>
+                  </div>
+                  <div class="quick-match-chips">
+                    <button type="button" class="chip-btn" data-matches="3">3 Matches</button>
+                    <button type="button" class="chip-btn" data-matches="4">4 Matches</button>
+                    <button type="button" class="chip-btn active" data-matches="6">6 Matches</button>
+                    <button type="button" class="chip-btn" data-matches="8">8 Matches</button>
+                  </div>
+                  <p class="field-hint">Specify how many scrim matches will be scored in this tournament.</p>
+                </div>
+
+                <!-- Points System Rule Preview -->
+                <div class="scoring-preset-box">
+                  <div class="preset-title">
+                    <span>⚡ OFFICIAL FREE FIRE SCORING RULES</span>
+                  </div>
+                  <div class="preset-summary">
+                    <div class="rule-chip"><span class="k">#1 (Booyah)</span>: <span class="v">12 pts</span></div>
+                    <div class="rule-chip"><span class="k">#2</span>: <span class="v">9 pts</span></div>
+                    <div class="rule-chip"><span class="k">#3</span>: <span class="v">8 pts</span></div>
+                    <div class="rule-chip"><span class="k">#4</span>: <span class="v">7 pts</span></div>
+                    <div class="rule-chip"><span class="k">#5</span>: <span class="v">6 pts</span></div>
+                    <div class="rule-chip"><span class="k">#6</span>: <span class="v">5 pts</span></div>
+                    <div class="rule-chip"><span class="k">#7</span>: <span class="v">4 pts</span></div>
+                    <div class="rule-chip"><span class="k">#8</span>: <span class="v">3 pts</span></div>
+                    <div class="rule-chip"><span class="k">#9</span>: <span class="v">2 pts</span></div>
+                    <div class="rule-chip"><span class="k">#10</span>: <span class="v">1 pt</span></div>
+                    <div class="rule-chip"><span class="k">#11-#12</span>: <span class="v">0 pts</span></div>
+                    <div class="rule-chip kill-rule"><span class="k">💀 1 Kill</span>: <span class="v">+1 pt</span></div>
+                  </div>
+                </div>
+
+                <!-- Quick Actions for Teams -->
+                <div class="quick-actions-bar">
+                  <button type="button" id="btn-quick-fill" class="action-ghost-btn">
+                    <span>⚡ Autofill Sample Teams</span>
+                  </button>
+                  <button type="button" id="btn-clear-teams" class="action-ghost-btn danger">
+                    <span>🗑️ Clear Names</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: 12 Competing Teams Input Slots -->
+          <div class="setup-main">
+            <div class="cyber-card teams-card">
+              <div class="card-header card-header-split">
+                <div class="header-title-group">
+                  <span class="card-icon">👥</span>
+                  <h2>12 COMPETING TEAMS ROSTER</h2>
+                </div>
+                <div class="roster-counter">
+                  <span id="teams-filled-count">12</span> / 12 REGISTERED
+                </div>
+              </div>
+
+              <div class="card-body">
+                <p class="teams-instructions">
+                  Enter the names of all 12 teams taking part in the lobby. Each slot corresponds to official match placement tracking.
+                </p>
+
+                <!-- 12 Slot Inputs Grid -->
+                <div class="teams-input-grid" id="teams-input-container">
+                  <!-- Generated dynamically by app.js with high-tech badge styling -->
+                </div>
+
+                <!-- Start Tournament Action Bar -->
+                <div class="start-action-wrapper">
+                  <div class="validation-error" id="setup-error-msg"></div>
+                  <button type="button" id="btn-start-tournament" class="cyber-btn primary-start-btn">
+                    <span class="btn-cutout-left"></span>
+                    <span class="btn-content">
+                      <span class="btn-flame-icon">🔥</span>
+                      <span class="btn-text">START TOURNAMENT</span>
+                      <svg class="btn-arrow" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M5 13h11.86l-5.43 5.43 1.42 1.42L21.71 12l-8.86-7.85-1.42 1.42L16.86 11H5v2z"/>
+                      </svg>
+                    </span>
+                    <span class="btn-cutout-right"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 2: ACTIVE TOURNAMENT DASHBOARD (NEXT SCREEN) -->
+      <section id="tournament-screen" class="screen-view">
+        <div class="tournament-top-bar">
+          <div class="active-tourney-meta">
+            <div class="meta-pills-row">
+              <div class="live-pill"><span class="blink-dot"></span> LIVE TOURNAMENT</div>
+              <div class="autosave-pill" id="autosave-status-pill">
+                <span class="save-icon">💾</span> <span id="autosave-text">AUTO-SAVED TO BROWSER</span>
+              </div>
+            </div>
+            <h2 id="active-tournament-title">NZ PAID SCRIMS</h2>
+            <div class="meta-stats">
+              <span class="meta-tag">TOTAL MATCHES: <b id="display-total-matches">6</b></span>
+              <span class="meta-divider">•</span>
+              <span class="meta-tag">TEAMS: <b>12</b></span>
+              <span class="meta-divider">•</span>
+              <span class="meta-tag">STATUS: <b class="status-ready" id="status-ready-text">READY FOR MATCH SCORING</b></span>
+            </div>
+          </div>
+
+          <div class="tourney-controls">
+            <button type="button" id="btn-back-setup" class="cyber-btn secondary-btn">
+              <span>⚙️ EDIT SETUP / TEAMS</span>
+            </button>
+            <button type="button" id="btn-reset-tournament" class="cyber-btn danger-btn">
+              <span>🗑️ RESET TOURNAMENT</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tournament Section Navigation Bar -->
+        <div class="tournament-nav-tabs">
+          <button type="button" class="tourney-nav-btn active" id="tab-btn-matches" data-target="view-match-input">
+            <span>⚔️ MATCH DATA INPUT</span>
+            <span class="match-progress-badge" id="match-progress-badge">0 / 6 SAVED</span>
+          </button>
+          <button type="button" class="tourney-nav-btn" id="tab-btn-leaderboard" data-target="view-leaderboard">
+            <span>🏆 LEADERBOARD POSTER</span>
+          </button>
+          <button type="button" class="tourney-nav-btn" id="tab-btn-matrix" data-target="view-matrix">
+            <span>📊 CUMULATIVE MATRIX</span>
+          </button>
+        </div>
+
+        <!-- SECTION A: MATCH INPUT INTERFACE (Prompt 2) -->
+        <div id="view-match-input" class="tourney-subview active">
+          <div class="cyber-card match-input-card">
+            <!-- Match Selector Bar (Dropdown + Tabs) -->
+            <div class="match-selector-header">
+              <div class="selector-title-wrap">
+                <span class="selector-icon">🎯</span>
+                <div>
+                  <h3 class="selector-title">SELECT MATCH</h3>
+                  <span class="selector-subtitle">Choose match to enter placement & elimination data</span>
+                </div>
+              </div>
+
+              <!-- Quick Dropdown for Direct Selection -->
+              <div class="match-dropdown-wrap">
+                <label for="match-select-dropdown">JUMP TO:</label>
+                <select id="match-select-dropdown" class="cyber-select">
+                  <!-- Dynamically populated based on totalMatches -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Tab strip for matches (e.g. Match 1, Match 2...) -->
+            <div class="match-tabs-strip" id="match-tabs-container">
+              <!-- Dynamically populated buttons -->
+            </div>
+
+            <!-- Prompt 7: Completed Matches Edit & Correction Strip -->
+            <div class="completed-matches-bar" id="completed-matches-bar">
+              <div class="completed-bar-header">
+                <span class="bar-icon">✏️</span>
+                <span class="bar-title">MATCH CORRECTION & EDIT QUICK ACCESS:</span>
+              </div>
+              <div class="completed-matches-pills" id="completed-matches-pills">
+                <!-- Dynamically filled with [ ✏️ Edit Match X ] buttons -->
+              </div>
+            </div>
+
+            <!-- Active Match Header & Tools -->
+            <div class="active-match-banner" id="active-match-banner">
+              <div class="active-match-indicator">
+                <span class="match-flame" id="match-flame-icon">🔥</span>
+                <span id="active-match-title-text">ENTERING DATA: MATCH 1</span>
+                <span class="match-status-pill" id="active-match-status-pill">STATUS: PENDING</span>
+              </div>
+              <div class="match-tools">
+                <button type="button" id="btn-quick-fill-scores" class="action-ghost-btn">
+                  <span>⚡ Auto-Assign Unique Ranks</span>
+                </button>
+                <button type="button" id="btn-reset-match-inputs" class="action-ghost-btn danger">
+                  <span>↺ Clear Match</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Prompt 7: Edit Mode Alert / Instruction Pill -->
+            <div id="match-edit-banner" class="match-alert-box info edit-mode-box" style="display: none;">
+              <span class="alert-icon">✏️</span>
+              <div class="edit-banner-content">
+                <strong>MATCH CORRECTION MODE ACTIVE:</strong>
+                <span>You are editing an already-completed match. Make your corrections to team placements or kills below, then click <b>'UPDATE & RECALCULATE MATCH DATA'</b>. Cumulative scores and leaderboard standings will be recalculated instantly without affecting other matches.</span>
+              </div>
+            </div>
+
+            <!-- Validation Error Alert Banner -->
+            <div id="match-validation-alert" class="match-alert-box error" style="display: none;">
+              <span class="alert-icon">⚠️</span>
+              <span id="match-alert-message">Placements must be unique for all 12 teams.</span>
+            </div>
+
+            <!-- Success Banner -->
+            <div id="match-success-alert" class="match-alert-box success" style="display: none;">
+              <span class="alert-icon">✅</span>
+              <span id="match-success-message">Match 1 data saved successfully! Standings updated.</span>
+            </div>
+
+            <!-- Form for 12 Teams Match Input Grid -->
+            <div class="match-teams-grid" id="match-teams-grid-container">
+              <!-- Dynamically populated 12 team forms -->
+            </div>
+
+            <!-- Save Match Data Action Bar -->
+            <div class="match-save-footer">
+              <div class="save-status-info" id="save-status-info">
+                All 12 teams must have a unique Placement (1-12) and valid Kills.
+              </div>
+              <button type="button" id="btn-save-match-data" class="cyber-btn primary-start-btn save-match-btn">
+                <span class="btn-cutout-left"></span>
+                <span class="btn-content">
+                  <span class="btn-flame-icon" id="save-match-btn-icon">💾</span>
+                  <span class="btn-text" id="save-match-btn-text">SAVE MATCH DATA</span>
+                </span>
+                <span class="btn-cutout-right"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION B: FINAL LEADERBOARD RESULTS (Prompt 4) -->
+        <div id="view-leaderboard" class="tourney-subview">
+          <!-- Leaderboard Action & Status Bar -->
+          <div class="leaderboard-actions-bar">
+            <div class="actions-left-group">
+              <button type="button" id="btn-refresh-leaderboard" class="cyber-btn primary-action-btn">
+                <span class="refresh-icon">🔄</span>
+                <span>PULL LATEST CUMULATIVE DATA</span>
+              </button>
+              <div class="tiebreaker-pill">
+                <span>⚡ TIE-BREAKER:</span>
+                <b>1. KILLS 💀 &nbsp;|&nbsp; 2. BOOYAHS 👑</b>
+              </div>
+            </div>
+
+            <div class="actions-right-group">
+              <div class="position-mode-toggle">
+                <span class="toggle-label">POSITION COLUMN:</span>
+                <button type="button" class="mode-toggle-btn active" id="btn-mode-points">POINTS</button>
+                <button type="button" class="mode-toggle-btn" id="btn-mode-avg">AVG RANK</button>
+              </div>
+              <button type="button" id="btn-download-poster" class="action-ghost-btn poster-dl-btn">
+                <span>📸 DOWNLOAD POSTER (PNG)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- The Complete Final Poster Container (Matching IMG_20261011_112403.jpg) -->
+          <div class="scrims-poster-wrapper" id="scrims-poster-capture">
+            <!-- Dedicated Poster Top Banner -->
+            <div class="poster-hero-header">
+              <div class="hero-brand-left">
+                <div class="ff-stencil-title">FREE FIRE</div>
+                <div class="ff-stencil-sub">PAID SCRIMS</div>
+              </div>
+
+              <div class="hero-center-branding">
+                <div class="hero-crown-wrap">
+                  <svg class="crown-svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+                  </svg>
+                </div>
+                <h2 class="hero-scrims-title">NZ PAID SCRIMS</h2>
+                <div class="hero-laser-line"></div>
+                <div class="hero-motto">
+                  <span>PLAY</span>
+                  <span class="motto-divider">/</span>
+                  <span>FIGHT</span>
+                  <span class="motto-divider">/</span>
+                  <span>WIN</span>
+                </div>
+              </div>
+
+              <div class="hero-ninja-right">
+                <div class="ninja-avatar-badge">
+                  <div class="ninja-silhouette-art">🥷</div>
+                  <div class="ninja-slogan-wrap">
+                    <span class="ninja-crown">👑</span>
+                    <span class="ninja-slogan">BIGGER<br>BETTER<br>STRONGER</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- The Table Frame with Chamfered Edges -->
+            <div class="scrims-table-container">
+              <div class="scrims-frame">
+                <!-- Table Header with chamfered polygon -->
+                <div class="scrims-table-header">
+                  <div class="col-rank">
+                    <span class="hash-tag">#</span>
+                    <span>RANK</span>
+                  </div>
+                  <div class="col-team">
+                    <span class="icon-header">👥</span>
+                    <span>TEAM NAME</span>
+                  </div>
+                  <div class="col-position">
+                    <span class="icon-header">🎯</span>
+                    <span id="header-position-label">POSITION</span>
+                  </div>
+                  <div class="col-elimination">
+                    <span class="icon-header">💀</span>
+                    <span>ELIMINATION</span>
+                  </div>
+                  <div class="col-total">
+                    <span class="star-icon">★</span>
+                    <span>TOTAL</span>
+                  </div>
+                </div>
+
+                <!-- Table Rows for 12 Teams (Ranked 01 to 12) -->
+                <div class="scrims-table-body" id="scrims-leaderboard-rows">
+                  <!-- Dynamically populated 12 ranked rows with crown on #01 -->
+                </div>
+              </div>
+
+              <!-- Bottom Banner matching reference -->
+              <div class="scrims-table-footer">
+                <div class="footer-divider-left"></div>
+                <div class="footer-center-tag">
+                  <span class="red-line"></span>
+                  <span class="footer-main-text">FREE FIRE COMMUNITY</span>
+                  <span class="red-line"></span>
+                </div>
+                <div class="footer-divider-right"></div>
+              </div>
+              <div class="footer-sub-links">
+                <span>GAME ON</span>
+                <span class="sub-sep">|</span>
+                <span>NEW CHALLENGERS</span>
+                <span class="sub-sep">|</span>
+                <span>PAID SCRIMS</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- PROMINENT BOTTOM EXPORT SECTION (Prompt 5) -->
+          <div class="leaderboard-bottom-export-panel">
+            <div class="export-panel-inner">
+              <div class="export-meta-info">
+                <div class="export-badge">📸 SOCIAL MEDIA READY EXPORT</div>
+                <h3>EXPORT TOURNAMENT RESULTS</h3>
+                <p>Generate a high-definition image of the final results poster matching the Free Fire scrims aesthetic, ready to share directly on WhatsApp, Instagram, Discord, and YouTube.</p>
+                <div class="export-format-selector">
+                  <span class="format-label">SELECT FORMAT:</span>
+                  <button type="button" class="format-pill-btn active" id="btn-format-png" data-format="png">PNG (Lossless HD)</button>
+                  <button type="button" class="format-pill-btn" id="btn-format-jpg" data-format="jpg">JPG (Compact)</button>
+                </div>
+              </div>
+
+              <div class="export-action-box">
+                <button type="button" id="btn-download-results-bottom" class="cyber-btn primary-start-btn download-results-prominent-btn">
+                  <span class="btn-cutout-left"></span>
+                  <span class="btn-content">
+                    <span class="btn-flame-icon">📸</span>
+                    <span class="btn-text" id="download-results-btn-text">DOWNLOAD RESULTS</span>
+                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+                    </svg>
+                  </span>
+                  <span class="btn-cutout-right"></span>
+                </button>
+                <div id="export-status-message" class="export-status-note">
+                  ⚡ 2x Ultra HD capture powered by html2canvas
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION C: CUMULATIVE MATRIX & CALCULATION AUDIT (Prompt 3) -->
+        <div id="view-matrix" class="tourney-subview">
+          <div class="cyber-card matrix-card">
+            <div class="card-header card-header-split">
+              <div class="header-title-group">
+                <span class="card-icon">📊</span>
+                <h2>CUMULATIVE TOURNAMENT POINTS MATRIX</h2>
+              </div>
+              <div class="scoring-formula-tag">
+                TOTAL = PLACEMENT PTS + KILL PTS (1 PT/KILL)
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="matrix-rules-banner">
+                <div class="matrix-rules-title">⚡ SCORING RULES APPLIED:</div>
+                <div class="matrix-rules-grid">
+                  <span>#1: <b>12 pts</b></span>
+                  <span>#2: <b>9 pts</b></span>
+                  <span>#3: <b>8 pts</b></span>
+                  <span>#4: <b>7 pts</b></span>
+                  <span>#5: <b>6 pts</b></span>
+                  <span>#6: <b>5 pts</b></span>
+                  <span>#7: <b>4 pts</b></span>
+                  <span>#8: <b>3 pts</b></span>
+                  <span>#9: <b>2 pts</b></span>
+                  <span>#10: <b>1 pt</b></span>
+                  <span>#11-#12: <b>0 pts</b></span>
+                  <span>💀 Kills: <b>1 pt each</b></span>
+                </div>
+              </div>
+
+              <!-- Matrix Table Container -->
+              <div class="table-responsive-matrix">
+                <table class="cyber-matrix-table" id="matrix-table">
+                  <thead>
+                    <tr id="matrix-header-row">
+                      <!-- Dynamically generated columns for each match -->
+                    </tr>
+                  </thead>
+                  <tbody id="matrix-body-rows">
+                    <!-- Dynamically populated team rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Team Match Breakdown Modal -->
+        <div id="team-modal-backdrop" class="modal-backdrop" style="display: none;">
+          <div class="modal-card">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-crown">👑</span>
+                <h3 id="modal-team-name">TEAM BREAKDOWN</h3>
+              </div>
+              <button type="button" class="modal-close-btn" id="btn-close-modal">✕</button>
+            </div>
+            <div class="modal-body" id="modal-team-breakdown-content">
+              <!-- Dynamically populated match list -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Reset Tournament Confirmation Modal (Prompt 6) -->
+        <div id="reset-modal-backdrop" class="modal-backdrop" style="display: none;">
+          <div class="modal-card reset-dialog-card">
+            <div class="modal-header reset-dialog-header">
+              <div class="modal-title-group">
+                <span class="warning-icon">⚠️</span>
+                <h3>RESET ALL TOURNAMENT DATA?</h3>
+              </div>
+              <button type="button" class="modal-close-btn" id="btn-close-reset-modal">✕</button>
+            </div>
+            <div class="modal-body reset-dialog-body">
+              <p class="reset-warning-text">
+                This will permanently delete all <b>saved match scores, team placements, and tournament progress</b> from your browser's local storage to start a new scrim.
+              </p>
+              <div class="reset-info-box">
+                <div><span>Tournament:</span> <b id="reset-dialog-title">NZ PAID SCRIMS</b></div>
+                <div><span>Total Matches:</span> <b id="reset-dialog-matches">6</b></div>
+                <div><span>Saved Matches:</span> <b id="reset-dialog-saved-count">0</b></div>
+              </div>
+              <div class="reset-dialog-actions">
+                <button type="button" id="btn-cancel-reset" class="cyber-btn secondary-btn">
+                  <span>CANCEL</span>
+                </button>
+                <button type="button" id="btn-confirm-reset" class="cyber-btn danger-btn reset-execute-btn">
+                  <span>🗑️ CONFIRM RESET</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- HTML2Canvas Library for High Quality Poster Export (Prompt 5) -->
+  <script src="assets/html2canvas.min.js"></script>
+  <script>
+    if (typeof html2canvas === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
+    }
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
