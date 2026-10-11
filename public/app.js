@@ -64,6 +64,7 @@ const state = {
   tournamentTitle: "NZ PAID SCRIMS - BATTLE 01",
   totalMatches: 6,
   teams: [...DEFAULT_TEAMS],
+  teamRosters: {}, // Keyed by team index (0..11): [p1, p2, p3, p4]
   activeScreen: "setup", // 'setup' | 'tournament'
   activeSubView: "view-match-input", // 'view-match-input' | 'view-leaderboard' | 'view-matrix'
   positionDisplayMode: "points", // 'points' (Cumulative Placement Points) | 'average' (Average Placement Rank)
@@ -220,7 +221,7 @@ function initMatchesState() {
 }
 
 /**
- * Render the 12 Team Input Cards in setup screen
+ * Render the 12 Team Input Cards in setup screen with 4 player roster per team
  */
 function renderTeamInputs() {
   teamsInputContainer.innerHTML = "";
@@ -228,9 +229,14 @@ function renderTeamInputs() {
   for (let i = 0; i < 12; i++) {
     const slotNumber = String(i + 1).padStart(2, "0");
     const currentVal = state.teams[i] || "";
+    const currentRoster = (state.teamRosters && state.teamRosters[i]) || ["", "", "", ""];
 
     const slotCard = document.createElement("div");
     slotCard.className = "team-slot-card";
+
+    // Top row: Slot badge + Team Name input
+    const topRow = document.createElement("div");
+    topRow.className = "team-slot-top-row";
 
     const badge = document.createElement("div");
     badge.className = "slot-badge";
@@ -247,7 +253,7 @@ function renderTeamInputs() {
     input.type = "text";
     input.className = "team-name-input";
     input.dataset.index = i;
-    input.placeholder = `TEAM ${slotNumber}`;
+    input.placeholder = `TEAM ${slotNumber} NAME (OPTIONAL)`;
     input.value = currentVal;
     input.maxLength = 30;
 
@@ -258,8 +264,51 @@ function renderTeamInputs() {
     });
 
     inputWrap.appendChild(input);
-    slotCard.appendChild(badge);
-    slotCard.appendChild(inputWrap);
+    topRow.appendChild(badge);
+    topRow.appendChild(inputWrap);
+    slotCard.appendChild(topRow);
+
+    // 4 Players Roster Section
+    const playersSec = document.createElement("div");
+    playersSec.className = "team-players-section";
+
+    const pLabel = document.createElement("div");
+    pLabel.className = "team-players-label";
+    pLabel.innerHTML = `<span>🎮 4 PLAYERS ROSTER</span>`;
+
+    const pGrid = document.createElement("div");
+    pGrid.className = "team-players-grid";
+
+    for (let pIdx = 0; pIdx < 4; pIdx++) {
+      const pWrap = document.createElement("div");
+      pWrap.className = "player-input-wrap";
+
+      const pPrefix = document.createElement("span");
+      pPrefix.className = "player-p-prefix";
+      pPrefix.textContent = `P${pIdx + 1}:`;
+
+      const pInput = document.createElement("input");
+      pInput.type = "text";
+      pInput.className = "player-name-input";
+      pInput.placeholder = `Player ${pIdx + 1}`;
+      pInput.value = currentRoster[pIdx] || "";
+      pInput.maxLength = 20;
+
+      pInput.addEventListener("input", (e) => {
+        if (!state.teamRosters) state.teamRosters = {};
+        if (!state.teamRosters[i]) state.teamRosters[i] = ["", "", "", ""];
+        state.teamRosters[i][pIdx] = e.target.value.trim();
+      });
+
+      pWrap.appendChild(pPrefix);
+      pWrap.appendChild(pInput);
+      pGrid.appendChild(pWrap);
+    }
+
+    playersSec.appendChild(pLabel);
+    playersSec.appendChild(pGrid);
+    slotCard.appendChild(playersSec);
+
     teamsInputContainer.appendChild(slotCard);
   }
 }
@@ -466,35 +515,45 @@ function handleStartTournament() {
   const title = tournamentNameInput.value.trim();
   state.tournamentTitle = title || "NZ PAID SCRIMS";
 
-  // Validate 12 teams
+  // Collect registered teams (NO LONGER COMPULSORY 12 - at least 1 team is required)
   const inputs = teamsInputContainer.querySelectorAll(".team-name-input");
-  const emptyIndices = [];
-  const teamNames = [];
+  const enteredTeams = [];
 
   inputs.forEach((input, idx) => {
     const val = input.value.trim();
-    if (!val) {
-      emptyIndices.push(idx + 1);
-    } else {
-      teamNames.push(val);
+    if (val) {
+      enteredTeams.push({ name: val, index: idx });
     }
   });
 
-  if (emptyIndices.length > 0) {
-    showError(`Please fill in all 12 team names. Missing slot(s): #${emptyIndices.join(", #")}`);
-    const firstEmpty = inputs[emptyIndices[0] - 1];
-    if (firstEmpty) firstEmpty.focus();
+  if (enteredTeams.length === 0) {
+    showError("Please enter at least 1 team name to start the tournament.");
+    if (inputs[0]) inputs[0].focus();
     return;
   }
 
-  // Check for duplicate team names
+  // Check for duplicate team names among entered teams
+  const teamNames = enteredTeams.map((t) => t.name);
   const uniqueNames = new Set(teamNames.map((n) => n.toUpperCase()));
-  if (uniqueNames.size !== 12) {
-    showError("Each team name must be unique. Please resolve duplicate team names.");
+  if (uniqueNames.size !== teamNames.length) {
+    showError("Each entered team name must be unique. Please resolve duplicate team names.");
     return;
   }
 
+  // Save entered teams into state.teams
   state.teams = teamNames;
+
+  // Remap teamRosters to match the active teams
+  const newRosters = {};
+  enteredTeams.forEach((item, newIdx) => {
+    if (state.teamRosters && state.teamRosters[item.index]) {
+      newRosters[newIdx] = state.teamRosters[item.index];
+    } else {
+      newRosters[newIdx] = ["", "", "", ""];
+    }
+  });
+  state.teamRosters = newRosters;
+
   initMatchesState();
   state.activeScreen = "tournament";
   state.selectedMatchIndex = 0;
@@ -698,12 +757,14 @@ function updateActiveMatchBanner() {
 }
 
 /**
- * Render the 12 Team Forms for the selected match (Prompt 2 & 3)
+ * Render Team Forms for the selected match with Player Roster hints (Prompt 2 & 3)
  */
 function renderMatchTeamForms() {
   matchTeamsGridContainer.innerHTML = "";
   const currentMatch = state.matches[state.selectedMatchIndex];
   if (!currentMatch) return;
+
+  const totalTeamsCount = state.teams.length;
 
   state.teams.forEach((teamName, teamIdx) => {
     const slotNumber = String(teamIdx + 1).padStart(2, "0");
@@ -713,6 +774,7 @@ function renderMatchTeamForms() {
     };
 
     const score = calculateTeamMatchScore(existing.placement, existing.kills);
+    const roster = (state.teamRosters && state.teamRosters[teamIdx]) ? state.teamRosters[teamIdx].filter((p) => p && p.trim()) : [];
 
     const card = document.createElement("div");
     card.className = "match-team-form-card";
@@ -736,8 +798,18 @@ function renderMatchTeamForms() {
 
     cardHeader.appendChild(metaGroup);
     cardHeader.appendChild(ptsPreview);
+    card.appendChild(cardHeader);
 
-    // Card Inputs Row: Placement select (1-12) and Kills number input
+    // Player Roster Bar (helps admin quickly identify which squad/players are playing)
+    if (roster.length > 0) {
+      const playersBar = document.createElement("div");
+      playersBar.className = "card-team-players-bar";
+      playersBar.innerHTML = `<span class="roster-prefix-tag">ROSTER:</span>` +
+        roster.map((p) => `<span class="roster-player-chip">👤 ${escapeHtml(p)}</span>`).join("");
+      card.appendChild(playersBar);
+    }
+
+    // Card Inputs Row: Placement select (1 to totalTeamsCount) and Kills number input
     const inputsRow = document.createElement("div");
     inputsRow.className = "card-inputs-row";
 
@@ -746,15 +818,15 @@ function renderMatchTeamForms() {
     placementBlock.className = "field-block";
 
     const placementLabel = document.createElement("label");
-    placementLabel.textContent = "PLACEMENT (1-12)";
+    placementLabel.textContent = `PLACEMENT (1-${totalTeamsCount})`;
 
     const placementSelect = document.createElement("select");
     placementSelect.className = "placement-select";
     placementSelect.dataset.teamIndex = teamIdx;
     placementSelect.innerHTML = `<option value="">-- Select Placement --</option>`;
 
-    for (let p = 1; p <= 12; p++) {
-      const pts = PLACEMENT_POINTS[p];
+    for (let p = 1; p <= Math.max(totalTeamsCount, 12); p++) {
+      const pts = PLACEMENT_POINTS[p] !== undefined ? PLACEMENT_POINTS[p] : 0;
       const opt = document.createElement("option");
       opt.value = p;
       if (p === 1) {
@@ -815,7 +887,6 @@ function renderMatchTeamForms() {
     inputsRow.appendChild(placementBlock);
     inputsRow.appendChild(killsBlock);
 
-    card.appendChild(cardHeader);
     card.appendChild(inputsRow);
 
     matchTeamsGridContainer.appendChild(card);
@@ -888,7 +959,7 @@ function checkPlacementConflicts() {
 
   if (duplicatePlacements.size > 0) {
     const dupList = Array.from(duplicatePlacements).map((p) => `#${p}`).join(", ");
-    showMatchAlert(`Duplicate placement detected: ${dupList}. Placements must be unique for all 12 teams!`, "error");
+    showMatchAlert(`Duplicate placement detected: ${dupList}. Placements must be unique for all teams!`, "error");
     return { hasConflict: true, duplicates: Array.from(duplicatePlacements) };
   } else {
     if (matchValidationAlert.style.display !== "none" && matchAlertMessage.textContent.includes("Duplicate")) {
@@ -907,6 +978,8 @@ function handleSaveMatchData() {
   const currentMatch = state.matches[state.selectedMatchIndex];
   if (!currentMatch) return;
 
+  const totalTeamsCount = state.teams.length;
+
   // 1. Check for missing placements
   const unplacedTeams = [];
   currentMatch.teamData.forEach((t, idx) => {
@@ -916,14 +989,14 @@ function handleSaveMatchData() {
   });
 
   if (unplacedTeams.length > 0) {
-    showMatchAlert(`Please assign a placement (1-12) to all 12 teams before saving. Missing: ${unplacedTeams.slice(0, 3).join(", ")}${unplacedTeams.length > 3 ? "..." : ""}`, "error");
+    showMatchAlert(`Please assign a placement to all ${totalTeamsCount} teams before saving. Missing: ${unplacedTeams.slice(0, 3).join(", ")}${unplacedTeams.length > 3 ? "..." : ""}`, "error");
     return;
   }
 
   // 2. Check for duplicate placements
   const conflictCheck = checkPlacementConflicts();
   if (conflictCheck.hasConflict) {
-    showMatchAlert(`Cannot save: Placements must be unique for all 12 teams! Found duplicate(s): ${conflictCheck.duplicates.map((p) => `#${p}`).join(", ")}`, "error");
+    showMatchAlert(`Cannot save: Placements must be unique for all teams! Found duplicate(s): ${conflictCheck.duplicates.map((p) => `#${p}`).join(", ")}`, "error");
     return;
   }
 
@@ -1721,6 +1794,7 @@ function saveState() {
       tournamentTitle: state.tournamentTitle,
       totalMatches: state.totalMatches,
       teams: state.teams,
+      teamRosters: state.teamRosters || {},
       activeScreen: state.activeScreen,
       activeSubView: state.activeSubView,
       selectedMatchIndex: state.selectedMatchIndex,
@@ -1748,7 +1822,8 @@ function loadSavedState() {
 
       if (parsed.tournamentTitle) state.tournamentTitle = parsed.tournamentTitle;
       if (parsed.totalMatches) state.totalMatches = parseInt(parsed.totalMatches, 10) || 6;
-      if (Array.isArray(parsed.teams) && parsed.teams.length === 12) state.teams = parsed.teams;
+      if (Array.isArray(parsed.teams) && parsed.teams.length > 0) state.teams = parsed.teams;
+      if (parsed.teamRosters && typeof parsed.teamRosters === "object") state.teamRosters = parsed.teamRosters;
       if (parsed.activeScreen) state.activeScreen = parsed.activeScreen;
       if (parsed.activeSubView) state.activeSubView = parsed.activeSubView;
       if (parsed.selectedMatchIndex !== undefined) state.selectedMatchIndex = parsed.selectedMatchIndex;

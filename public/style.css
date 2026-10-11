@@ -590,10 +590,10 @@ body {
 /* Team Slot Input Item matching image's parallelogram badge vibe */
 .team-slot-card {
   display: flex;
-  align-items: center;
-  background: linear-gradient(90deg, rgba(20, 12, 16, 0.9) 0%, rgba(13, 16, 22, 0.9) 100%);
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(20, 12, 16, 0.95) 0%, rgba(13, 16, 22, 0.95) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   transition: all 0.2s ease;
   position: relative;
@@ -602,9 +602,16 @@ body {
 .team-slot-card:focus-within {
   border-color: var(--crimson-primary);
   box-shadow: 
-    0 0 12px rgba(229, 9, 20, 0.35),
+    0 0 14px rgba(229, 9, 20, 0.35),
     inset 0 0 10px rgba(229, 9, 20, 0.1);
   transform: translateY(-1px);
+}
+
+.team-slot-top-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* Red parallelogram rank badge like the image */
@@ -648,8 +655,8 @@ body {
   border: none;
   color: #ffffff;
   font-family: var(--font-tech);
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   letter-spacing: 0.8px;
   padding: 0.4rem 0.25rem;
   outline: none;
@@ -659,6 +666,104 @@ body {
 .team-name-input::placeholder {
   color: rgba(255, 255, 255, 0.25);
   font-weight: 500;
+}
+
+/* 4 Players Inputs Section under Each Team */
+.team-players-section {
+  padding: 0.5rem 0.75rem 0.65rem 0.75rem;
+  background: rgba(8, 10, 15, 0.6);
+}
+
+.team-players-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-tech);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: #9ca3af;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.team-players-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.35rem 0.5rem;
+}
+
+.player-input-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  padding: 0.15rem 0.4rem;
+  transition: border-color 0.15s ease;
+}
+
+.player-input-wrap:focus-within {
+  border-color: rgba(229, 9, 20, 0.6);
+  background: rgba(20, 10, 14, 0.6);
+}
+
+.player-p-prefix {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #ff4d6d;
+  margin-right: 0.3rem;
+  opacity: 0.85;
+}
+
+.player-name-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  font-family: var(--font-tech);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0;
+  outline: none;
+}
+
+.player-name-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 0.72rem;
+}
+
+/* Match Team Card Players Preview Bar */
+.card-team-players-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 3px;
+  border-left: 2px solid var(--crimson-primary);
+  margin-top: -0.25rem;
+}
+
+.roster-prefix-tag {
+  font-family: var(--font-tech);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fca5a5;
+  letter-spacing: 0.8px;
+  margin-right: 0.2rem;
+}
+
+.roster-player-chip {
+  font-family: var(--font-tech);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #d1d5db;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
 }
 
 /* =====================================================================
