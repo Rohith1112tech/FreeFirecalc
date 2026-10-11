@@ -1345,10 +1345,12 @@ function renderMatrixTable() {
  * Download Results as High-Resolution Image (Prompt 5)
  * Captures the leaderboard HTML element using html2canvas with fallback
  */
+/**
+ * Download Results as High-Resolution Image (Prompt 5)
+ * Renders directly onto the high-resolution Jack Sparrow Scrims template image
+ * ensuring 100% pixel-perfect text placement inside every slot and badge.
+ */
 async function handleExportResults(format = "png") {
-  const posterElem = document.getElementById("scrims-poster-capture");
-  if (!posterElem) return;
-
   const btnTextEl = document.getElementById("download-results-btn-text");
   const originalText = btnTextEl ? btnTextEl.textContent : "DOWNLOAD RESULTS";
 
@@ -1356,45 +1358,19 @@ async function handleExportResults(format = "png") {
   if (btnTextEl) btnTextEl.textContent = `GENERATING (${format.toUpperCase()})...`;
   if (btnDownloadResultsBottom) btnDownloadResultsBottom.classList.add("downloading");
   if (btnDownloadPoster) btnDownloadPoster.innerHTML = `<span>⏳ EXPORTING (${format.toUpperCase()})...</span>`;
-  if (exportStatusMessage) exportStatusMessage.textContent = `⏳ Capturing high-definition results with html2canvas (Scale: 2x HD)...`;
+  if (exportStatusMessage) exportStatusMessage.textContent = `⏳ Rendering pixel-perfect HD results onto template image...`;
 
   const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
   const ext = format === "jpg" ? "jpg" : "png";
   const filename = `FreeFire_${safeTitle}_Leaderboard_${Date.now()}.${ext}`;
 
   try {
-    // Check if html2canvas is available
-    if (typeof html2canvas === "function") {
-      const canvas = await html2canvas(posterElem, {
-        scale: 2, // 2x Retina / High-Definition resolution for social media
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#08090d",
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: posterElem.scrollWidth,
-        windowHeight: posterElem.scrollHeight
-      });
-
-      const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
-      const dataUrl = canvas.toDataURL(mimeType, 0.95);
-
-      triggerFileDownload(dataUrl, filename);
-
-      if (exportStatusMessage) {
-        exportStatusMessage.textContent = `✅ Results poster saved successfully as High-Quality ${format.toUpperCase()}!`;
-        setTimeout(() => {
-          if (exportStatusMessage) exportStatusMessage.textContent = "⚡ 2x Ultra HD capture powered by html2canvas";
-        }, 5000);
-      }
-    } else {
-      // Graceful fallback to built-in canvas generator
-      fallbackCanvasExport(format, filename);
-    }
-  } catch (err) {
-    console.warn("html2canvas export notice, switching to fallback canvas generator:", err);
     fallbackCanvasExport(format, filename);
+  } catch (err) {
+    console.error("Export error:", err);
+    if (exportStatusMessage) {
+      exportStatusMessage.textContent = `⚠️ Error generating image. Please try again.`;
+    }
   } finally {
     // Reset button states
     if (btnTextEl) btnTextEl.textContent = originalText;
@@ -1416,157 +1392,117 @@ function triggerFileDownload(dataUrl, filename) {
 }
 
 /**
- * Built-in Canvas Export Fallback (renders directly onto template image for high-fidelity export)
+ * Built-in Canvas Export: Renders 100% pixel-perfect text onto the exact template graphic
  */
 function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.png") {
   const cumulativeStats = calculateCumulativeStats();
+  const templateImg = document.getElementById("poster-template-bg");
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // Exact HD template resolution matching reference (850 x 1024 or original 425x512 scaled)
-  const templateImg = document.getElementById("poster-template-bg");
-  
-  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
-    canvas.width = templateImg.naturalWidth * 2;
-    canvas.height = templateImg.naturalHeight * 2;
-    ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+  function drawDataAndDownload(img) {
+    // 2x Retina Resolution (850 x 1024)
+    canvas.width = (img.naturalWidth || 425) * 2;
+    canvas.height = (img.naturalHeight || 512) * 2;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // Dynamic Data Overlay directly onto the image
-    const startY = canvas.height * 0.345;
-    const totalSlotHeight = canvas.height * (0.890 - 0.345);
+    // Exact geometric row parameters based on 425 x 512 image scaled 2x:
+    // Row 1 top = 177px (34.57%), Row 12 bottom = 445px (86.91%)
+    // Total slot height = 268px, Row height = 22.33px
+    const topY = canvas.height * (177 / 512);
+    const totalSlotHeight = canvas.height * (268 / 512);
     const rowHeight = totalSlotHeight / 12;
 
+    // Pre-calculate fonts
+    const crownFontSize = Math.round(canvas.width * 0.024);
+    const teamFontSize = Math.round(canvas.width * 0.027);
+    const posFontSize = Math.round(canvas.width * 0.029);
+    const totalFontSize = Math.round(canvas.width * 0.032);
+
     cumulativeStats.forEach((t, i) => {
-      const rowCenterY = startY + (i + 0.5) * rowHeight;
+      // Precise vertical center for this row slot
+      const rowCenterY = topY + (i + 0.5) * rowHeight;
       const rank = i + 1;
 
-      // Crown on Rank 1
+      // Crown on Rank 1 (#01)
       if (rank === 1) {
-        ctx.font = `bold ${Math.round(canvas.width * 0.024)}px sans-serif`;
+        ctx.font = `bold ${crownFontSize}px sans-serif`;
         ctx.fillStyle = "#ffeb3b";
-        ctx.fillText("👑", canvas.width * 0.10, rowCenterY - rowHeight * 0.2);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.38);
       }
 
-      // Team Name
-      ctx.font = `bold ${Math.round(canvas.width * 0.030)}px "Chakra Petch", sans-serif`;
+      // 1. Team Name (Inside brushed metal slot: x = 17.5%)
+      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      ctx.fillText(t.teamName.toUpperCase(), canvas.width * 0.18, rowCenterY);
+      // Shadow for high contrast
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
 
-      // Position Points
-      ctx.font = `bold ${Math.round(canvas.width * 0.033)}px "Orbitron", sans-serif`;
+      // Truncate name if too long for the slot
+      let displayName = t.teamName.toUpperCase();
+      const maxTextWidth = canvas.width * 0.32;
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, canvas.width * 0.178, rowCenterY);
+
+      // Reset shadow for numbers
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // 2. Position Column (Placement points or avg rank)
+      ctx.font = `bold ${posFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#93c5fd";
       ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
+      ctx.shadowBlur = 6;
       const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
-      ctx.fillText(posText, canvas.width * 0.58, rowCenterY);
+      ctx.fillText(posText, canvas.width * 0.575, rowCenterY);
 
-      // Elimination Kills
+      // 3. Elimination Column (Cumulative kills)
       ctx.fillStyle = "#fca5a5";
-      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.73, rowCenterY);
+      ctx.shadowColor = "rgba(252, 165, 165, 0.7)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.722, rowCenterY);
 
-      // Total Points
-      ctx.font = `900 ${Math.round(canvas.width * 0.037)}px "Orbitron", sans-serif`;
+      // 4. Total Column (Right red trapezoid badge)
+      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.fillText(String(t.totalPoints), canvas.width * 0.888, rowCenterY);
+      ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
+      ctx.shadowBlur = 10;
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.880, rowCenterY);
+
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
     });
 
     const mime = format === "jpg" ? "image/jpeg" : "image/png";
     triggerFileDownload(canvas.toDataURL(mime, 0.95), filename);
     if (exportStatusMessage) {
       exportStatusMessage.textContent = `✅ Results poster saved successfully (${format.toUpperCase()})!`;
+      setTimeout(() => {
+        if (exportStatusMessage) exportStatusMessage.textContent = "⚡ High-Definition 2x capture perfectly aligned";
+      }, 5000);
     }
-    return;
   }
 
-  // Fallback if image not ready:
-  canvas.width = 850;
-  canvas.height = 1024;
-  ctx.fillStyle = "#0a0a0f";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // 3. Table Header
-  const startY = 160;
-  ctx.fillStyle = "#90030a";
-  ctx.fillRect(40, startY, 720, 36);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 13px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("# RANK", 80, startY + 23);
-
-  ctx.textAlign = "left";
-  ctx.fillText("TEAM NAME", 150, startY + 23);
-
-  ctx.textAlign = "center";
-  ctx.fillText("POSITION", 480, startY + 23);
-  ctx.fillText("ELIMINATION", 600, startY + 23);
-  ctx.fillText("TOTAL", 710, startY + 23);
-
-  // 4. 12 Rows
-  const rowHeight = 52;
-  let currentY = startY + 45;
-
-  cumulativeStats.forEach((t, i) => {
-    const rank = String(i + 1).padStart(2, "0");
-
-    // Row Background (dark metallic)
-    ctx.fillStyle = i % 2 === 0 ? "#12151f" : "#171c28";
-    ctx.fillRect(40, currentY, 720, rowHeight - 6);
-
-    // Left rank badge (red)
-    ctx.fillStyle = i === 0 ? "#ff1744" : "#b30018";
-    ctx.fillRect(40, currentY, 65, rowHeight - 6);
-
-    // Rank text
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 18px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(rank, 72, currentY + 30);
-
-    // Team Name
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 15px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(t.teamName, 130, currentY + 30);
-
-    // Position Points
-    ctx.fillStyle = "#93c5fd";
-    ctx.font = "bold 16px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(String(t.placementPoints), 480, currentY + 30);
-
-    // Elimination Kills
-    ctx.fillStyle = "#fca5a5";
-    ctx.fillText(String(t.eliminationPoints), 600, currentY + 30);
-
-    // Right Total Badge (red)
-    ctx.fillStyle = i === 0 ? "#ff1744" : "#b30018";
-    ctx.fillRect(665, currentY, 95, rowHeight - 6);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 18px sans-serif";
-    ctx.fillText(String(t.totalPoints), 712, currentY + 30);
-
-    currentY += rowHeight;
-  });
-
-  // 5. Footer Branding
-  ctx.fillStyle = "#ff1744";
-  ctx.font = "bold 13px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("— FREE FIRE COMMUNITY —", 400, 940);
-
-  ctx.fillStyle = "#9ca3af";
-  ctx.font = "bold 11px sans-serif";
-  ctx.fillText("GAME ON   |   NEW CHALLENGERS   |   PAID SCRIMS", 400, 965);
-
-  const mime = format === "jpg" ? "image/jpeg" : "image/png";
-  triggerFileDownload(canvas.toDataURL(mime, 0.95), filename);
-
-  if (exportStatusMessage) {
-    exportStatusMessage.textContent = `✅ Results poster saved successfully (${format.toUpperCase()})!`;
+  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
+    drawDataAndDownload(templateImg);
+  } else {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => drawDataAndDownload(img);
+    img.src = "assets/jack_sparrow_template.png";
   }
 }
 
