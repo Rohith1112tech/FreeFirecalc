@@ -1407,12 +1407,9 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
     canvas.height = (img.naturalHeight || 512) * 2;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // Exact geometric row parameters based on 425 x 512 image scaled 2x:
-    // Row 1 top = 177px (34.57%), Row 12 bottom = 445px (86.91%)
-    // Total slot height = 268px, Row height = 22.33px
-    const topY = canvas.height * (177 / 512);
-    const totalSlotHeight = canvas.height * (268 / 512);
-    const rowHeight = totalSlotHeight / 12;
+    // Exact measured vertical centers of all 12 slots in the 512px template
+    const slotCenters512 = [189, 212, 234, 256.5, 279, 301.5, 324, 346.5, 369.5, 392, 414.5, 437.5];
+    const rowHeight = (canvas.height * (272 / 512)) / 12;
 
     // Pre-calculate fonts (scaled for retina sharpness, adjusted to fit slot height)
     const crownFontSize = Math.round(canvas.width * 0.021);
@@ -1421,8 +1418,8 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
     const totalFontSize = Math.round(canvas.width * 0.027);
 
     cumulativeStats.forEach((t, i) => {
-      // Precise vertical center for this row slot with slight baseline optical adjustment
-      const rowCenterY = topY + (i + 0.48) * rowHeight;
+      // Dead-center vertical coordinate for each slot
+      const rowCenterY = canvas.height * (slotCenters512[i] / 512);
       const rank = i + 1;
 
       // Crown on Rank 1 (#01)

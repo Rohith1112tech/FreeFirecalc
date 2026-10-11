@@ -2357,9 +2357,9 @@ body {
 /* Dynamic Leaderboard Data Overlay (Directly positioned over the image slots) */
 .poster-overlay-slots {
   position: absolute !important;
-  /* Precisely spans the 12 slot rows in the template */
-  top: 34.6% !important;
-  bottom: 13.1% !important;
+  /* Precisely spans the 12 slot rows in the template (y: 177px to 449px out of 512px) */
+  top: 34.57% !important;
+  bottom: 12.30% !important;
   left: 0 !important;
   right: 0 !important;
   display: flex !important;
@@ -2416,7 +2416,7 @@ body {
 .overlay-crown-icon {
   position: absolute !important;
   left: 9.8% !important;
-  top: -4px !important;
+  top: -3px !important;
   font-size: clamp(7px, 1.1vw, 11px) !important;
   color: #ffeb3b !important;
   filter: drop-shadow(0 0 4px #ff1744) !important;
@@ -2440,7 +2440,6 @@ body {
   text-overflow: ellipsis !important;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.8) !important;
   line-height: 1 !important;
-  transform: translateY(-1px) !important;
 }
 
 /* 2. Position Column Text Slot (x=50.5% to 64.5%) */
@@ -2455,7 +2454,6 @@ body {
   color: #93c5fd !important;
   text-shadow: 0 0 6px rgba(147, 197, 253, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
-  transform: translateY(-1px) !important;
 }
 
 /* 3. Elimination Kills Text Slot (x=64.5% to 80%) */
@@ -2470,7 +2468,6 @@ body {
   color: #fca5a5 !important;
   text-shadow: 0 0 6px rgba(252, 165, 165, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
-  transform: translateY(-1px) !important;
 }
 
 /* 4. Total Points Text Slot (Inside right red badge: x=80% to 96%) */
@@ -2486,7 +2483,6 @@ body {
   letter-spacing: 0.5px !important;
   text-shadow: 0 0 8px rgba(255, 23, 68, 0.95), 0 2px 4px rgba(0, 0, 0, 0.95) !important;
   line-height: 1 !important;
-  transform: translateY(-1px) !important;
 }
 
 .overlay-total-val.counting {
