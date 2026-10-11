@@ -2327,158 +2327,167 @@ body {
   padding: 0.65rem 1rem;
 }
 
-/* Dedicated Scrims Poster Wrapper (Matching the exact look of IMG_20261011_112403.jpg) */
-.scrims-poster-wrapper {
-  max-width: 980px;
-  margin: 0 auto;
-  background: radial-gradient(circle at 50% 20%, rgba(140, 0, 15, 0.35) 0%, rgba(10, 8, 12, 0.95) 75%),
-              linear-gradient(180deg, #11080d 0%, #06070a 100%);
-  border: 2px solid rgba(229, 9, 20, 0.6);
-  border-radius: 12px;
-  padding: 1.5rem 1.25rem 2rem;
+/* =====================================================================
+   EXACT PIXEL-PERFECT TEMPLATE POSTER (Jack Sparrow Scrims)
+   Renders the exact template image with live data placed directly inside
+===================================================================== */
+.scrims-exact-poster-container {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 620px !important;
+  margin: 0 auto 1.5rem !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.95),
-    0 0 35px rgba(229, 9, 20, 0.3),
-    inset 0 0 30px rgba(0, 0, 0, 0.8);
-  position: relative;
-  overflow: hidden;
+    0 25px 60px rgba(0, 0, 0, 0.95),
+    0 0 35px rgba(229, 9, 20, 0.5) !important;
+  border: 2px solid var(--crimson-primary) !important;
+  background: #000000 !important;
+  display: block !important;
 }
 
-.scrims-poster-wrapper::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: 
-    radial-gradient(circle at 15% 10%, rgba(255, 23, 68, 0.2) 0%, transparent 40%),
-    radial-gradient(circle at 85% 15%, rgba(229, 9, 20, 0.25) 0%, transparent 45%);
-  pointer-events: none;
+.poster-template-bg {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  user-select: none !important;
+  pointer-events: none !important;
 }
 
-/* Poster Hero Header */
-.poster-hero-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 1.5rem;
-  margin-bottom: 1.25rem;
-  position: relative;
-  border-bottom: 1px solid rgba(229, 9, 20, 0.3);
+/* Dynamic Leaderboard Data Overlay (Directly positioned over the image slots) */
+.poster-overlay-slots {
+  position: absolute !important;
+  /* Precisely spans the 12 slot rows in the template (y: 177px to 449px out of 512px) */
+  top: 34.57% !important;
+  bottom: 12.30% !important;
+  left: 0 !important;
+  right: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  pointer-events: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  z-index: 10 !important;
 }
 
-.hero-brand-left {
-  display: flex;
-  flex-direction: column;
+/* Individual Overlay Row aligned exactly to each of the 12 template slots */
+.overlay-row {
+  flex: 1 1 0% !important;
+  display: flex !important;
+  align-items: center !important;
+  position: relative !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.ff-stencil-title {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 1.85rem;
-  letter-spacing: 3px;
-  color: #ffffff;
-  text-shadow: 
-    0 0 10px rgba(255, 255, 255, 0.6),
-    0 0 20px rgba(229, 9, 20, 0.9);
+.overlay-row:hover {
+  background: rgba(255, 23, 68, 0.15) !important;
 }
 
-.ff-stencil-sub {
-  font-family: var(--font-tech);
-  font-weight: 800;
-  font-size: 0.78rem;
-  letter-spacing: 4px;
-  color: #ff334b;
-  text-transform: uppercase;
+/* Sequential Gaming Slide-in Animation */
+.overlay-row.animate-slide-in {
+  opacity: 0;
+  transform: translateX(-35px);
+  animation: overlayRowSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.hero-center-branding {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.hero-crown-wrap {
-  color: #e50914;
-  margin-bottom: -4px;
-}
-
-.hero-scrims-title {
-  font-family: var(--font-display);
-  font-size: 2.5rem;
-  font-weight: 900;
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  background: linear-gradient(180deg, #ffffff 0%, #fca5a5 45%, #e50914 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 10px rgba(229, 9, 20, 0.7));
-  line-height: 1.1;
-}
-
-.hero-laser-line {
-  width: 260px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #ff1744 50%, transparent);
-  box-shadow: 0 0 10px #ff1744;
-  margin: 0.25rem 0;
-}
-
-.hero-motto {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  font-family: var(--font-tech);
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 6px;
-  color: #f1f5f9;
-}
-
-.hero-ninja-right .ninja-avatar-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: rgba(25, 8, 12, 0.75);
-  border: 1px solid rgba(229, 9, 20, 0.4);
-  padding: 0.65rem 1rem;
-  border-radius: 6px;
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  box-shadow: 0 0 15px rgba(229, 9, 20, 0.2);
-}
-
-.ninja-silhouette-art {
-  font-size: 2.2rem;
-  filter: drop-shadow(0 0 10px rgba(229, 9, 20, 0.8));
-}
-
-.ninja-slogan-wrap {
-  display: flex;
-  flex-direction: column;
-}
-
-.ninja-crown {
-  font-size: 0.85rem;
-  color: #ffbe0b;
-}
-
-.ninja-slogan {
-  font-family: var(--font-tech);
-  font-size: 0.74rem;
-  font-weight: 900;
-  letter-spacing: 1.5px;
-  color: #f87171;
-  line-height: 1.25;
-}
-
-@media (max-width: 820px) {
-  .poster-hero-header {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
+@keyframes overlayRowSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-35px);
+    filter: brightness(1.6) drop-shadow(-8px 0 10px rgba(255, 23, 68, 0.8));
   }
-  .hero-brand-left, .hero-ninja-right {
-    display: none;
+  60% {
+    opacity: 1;
+    transform: translateX(4px);
+    filter: brightness(1.2);
   }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    filter: brightness(1);
+  }
+}
+
+/* Rank 01 Crown Badge placed above #01 */
+.overlay-crown-icon {
+  position: absolute !important;
+  left: 9.8% !important;
+  top: -3px !important;
+  font-size: clamp(7px, 1.1vw, 11px) !important;
+  color: #ffeb3b !important;
+  filter: drop-shadow(0 0 4px #ff1744) !important;
+  pointer-events: none !important;
+  z-index: 15 !important;
+}
+
+/* 1. Team Name Text Slot (Inside the metal slot: x=17.5% to 50%) */
+.overlay-team-name {
+  position: absolute !important;
+  left: 17.5% !important;
+  width: 32.5% !important;
+  font-family: var(--font-tech), sans-serif !important;
+  font-weight: 800 !important;
+  font-size: clamp(7.5px, 1.4vw, 12px) !important;
+  color: #ffffff !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 6px rgba(0, 0, 0, 0.8) !important;
+  line-height: 1 !important;
+}
+
+/* 2. Position Column Text Slot (x=50.5% to 64.5%) */
+.overlay-position-val {
+  position: absolute !important;
+  left: 50.5% !important;
+  width: 14% !important;
+  text-align: center !important;
+  font-family: var(--font-display), monospace !important;
+  font-weight: 800 !important;
+  font-size: clamp(8px, 1.45vw, 12.5px) !important;
+  color: #93c5fd !important;
+  text-shadow: 0 0 6px rgba(147, 197, 253, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+  line-height: 1 !important;
+}
+
+/* 3. Elimination Kills Text Slot (x=64.5% to 80%) */
+.overlay-elimination-val {
+  position: absolute !important;
+  left: 64.5% !important;
+  width: 15.5% !important;
+  text-align: center !important;
+  font-family: var(--font-display), monospace !important;
+  font-weight: 800 !important;
+  font-size: clamp(8px, 1.45vw, 12.5px) !important;
+  color: #fca5a5 !important;
+  text-shadow: 0 0 6px rgba(252, 165, 165, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+  line-height: 1 !important;
+}
+
+/* 4. Total Points Text Slot (Inside right red badge: x=80% to 96%) */
+.overlay-total-val {
+  position: absolute !important;
+  left: 80% !important;
+  width: 16% !important;
+  text-align: center !important;
+  font-family: var(--font-display), monospace !important;
+  font-weight: 900 !important;
+  font-size: clamp(8.5px, 1.6vw, 14px) !important;
+  color: #ffffff !important;
+  letter-spacing: 0.5px !important;
+  text-shadow: 0 0 8px rgba(255, 23, 68, 0.95), 0 2px 4px rgba(0, 0, 0, 0.95) !important;
+  line-height: 1 !important;
+}
+
+.overlay-total-val.counting {
+  text-shadow: 0 0 14px #ffffff, 0 0 25px #ff1744 !important;
+  animation: badgeCountPulse 0.4s ease-in-out infinite alternate !important;
 }
 
 /* =====================================================================

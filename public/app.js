@@ -1162,9 +1162,9 @@ function animateCountUp(element, target, duration = 800) {
 }
 
 /**
- * Render Final Leaderboard Table (Prompt 4 & UI Animations)
- * Styled exactly after the reference image IMG_20261011_112403.jpg
- * 12 rows, ranked 01 to 12 based on cumulative total points with strict tie-breakers:
+ * Render Final Leaderboard Table over the Exact Reference Template Image
+ * (media_1791710298018_143ad7f8.png)
+ * 12 rows aligned directly to the pre-rendered metal slots and red trapezoid badges:
  * - Sequential gaming slide-in from left
  * - Dynamic points count-up from zero
  */
@@ -1179,10 +1179,9 @@ function renderLeaderboardRows(animate = true) {
 
   cumulativeStats.forEach((t, index) => {
     const rank = index + 1;
-    const rankPadded = String(rank).padStart(2, "0");
 
     const row = document.createElement("div");
-    row.className = `scrims-row rank-${rank}`;
+    row.className = `overlay-row rank-${rank}`;
     row.title = `Click to view ${t.teamName}'s match breakdown`;
 
     // Apply sequential gaming slide-in from left
@@ -1196,37 +1195,39 @@ function renderLeaderboardRows(animate = true) {
       openTeamBreakdownModal(t.teamName);
     });
 
-    // 1. Rank Badge: Left red parallelogram badge (01 to 12)
-    const rankBadge = document.createElement("div");
-    rankBadge.className = "row-rank-badge";
-    rankBadge.textContent = rankPadded;
+    // Rank 1 Crown Icon on top of rank 01 badge
+    if (rank === 1) {
+      const crown = document.createElement("span");
+      crown.className = "overlay-crown-icon";
+      crown.textContent = "👑";
+      row.appendChild(crown);
+    }
 
-    // 2. Team Name Panel: Center metallic panel with grooves matching poster
-    const teamPanel = document.createElement("div");
-    teamPanel.className = "row-team-panel";
-    teamPanel.textContent = t.teamName;
+    // 1. Team Name (precisely aligned over metal slot)
+    const teamNameEl = document.createElement("span");
+    teamNameEl.className = "overlay-team-name";
+    teamNameEl.textContent = t.teamName;
 
-    // 3. Position Column: Cumulative placement points or average placement
-    const posVal = document.createElement("div");
-    posVal.className = "row-pos-val";
-    posVal.textContent = state.positionDisplayMode === "average" ? t.averagePlacement : t.placementPoints;
+    // 2. Position Column (placement points or avg placement)
+    const posValEl = document.createElement("span");
+    posValEl.className = "overlay-position-val";
+    posValEl.textContent = state.positionDisplayMode === "average" ? t.averagePlacement : t.placementPoints;
 
-    // 4. Elimination Column: Total cumulative kills (Tie-breaker metric)
-    const elimVal = document.createElement("div");
-    elimVal.className = "row-elim-val";
-    elimVal.textContent = t.eliminationPoints;
+    // 3. Elimination Column (total cumulative kills)
+    const elimValEl = document.createElement("span");
+    elimValEl.className = "overlay-elimination-val";
+    elimValEl.textContent = t.eliminationPoints;
 
-    // 5. Total Column: Overall cumulative points in red trapezoid badge with count-up
-    const totalBadge = document.createElement("div");
-    totalBadge.className = "row-total-badge";
+    // 4. Total Column (centered directly in right red badge with count-up)
+    const totalValEl = document.createElement("span");
+    totalValEl.className = "overlay-total-val";
 
     const numSpan = document.createElement("span");
     numSpan.className = "count-up-number";
-    totalBadge.appendChild(numSpan);
+    totalValEl.appendChild(numSpan);
 
     if (animate && t.totalPoints > 0) {
       numSpan.textContent = "0";
-      // Stagger count-up start to align with row slide-in
       setTimeout(() => {
         animateCountUp(numSpan, t.totalPoints, 750);
       }, index * 55 + 100);
@@ -1234,11 +1235,10 @@ function renderLeaderboardRows(animate = true) {
       numSpan.textContent = t.totalPoints;
     }
 
-    row.appendChild(rankBadge);
-    row.appendChild(teamPanel);
-    row.appendChild(posVal);
-    row.appendChild(elimVal);
-    row.appendChild(totalBadge);
+    row.appendChild(teamNameEl);
+    row.appendChild(posValEl);
+    row.appendChild(elimValEl);
+    row.appendChild(totalValEl);
 
     scrimsLeaderboardRowsEl.appendChild(row);
   });
@@ -1345,10 +1345,12 @@ function renderMatrixTable() {
  * Download Results as High-Resolution Image (Prompt 5)
  * Captures the leaderboard HTML element using html2canvas with fallback
  */
+/**
+ * Download Results as High-Resolution Image (Prompt 5)
+ * Renders directly onto the high-resolution Jack Sparrow Scrims template image
+ * ensuring 100% pixel-perfect text placement inside every slot and badge.
+ */
 async function handleExportResults(format = "png") {
-  const posterElem = document.getElementById("scrims-poster-capture");
-  if (!posterElem) return;
-
   const btnTextEl = document.getElementById("download-results-btn-text");
   const originalText = btnTextEl ? btnTextEl.textContent : "DOWNLOAD RESULTS";
 
@@ -1356,45 +1358,19 @@ async function handleExportResults(format = "png") {
   if (btnTextEl) btnTextEl.textContent = `GENERATING (${format.toUpperCase()})...`;
   if (btnDownloadResultsBottom) btnDownloadResultsBottom.classList.add("downloading");
   if (btnDownloadPoster) btnDownloadPoster.innerHTML = `<span>⏳ EXPORTING (${format.toUpperCase()})...</span>`;
-  if (exportStatusMessage) exportStatusMessage.textContent = `⏳ Capturing high-definition results with html2canvas (Scale: 2x HD)...`;
+  if (exportStatusMessage) exportStatusMessage.textContent = `⏳ Rendering pixel-perfect HD results onto template image...`;
 
   const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
   const ext = format === "jpg" ? "jpg" : "png";
   const filename = `FreeFire_${safeTitle}_Leaderboard_${Date.now()}.${ext}`;
 
   try {
-    // Check if html2canvas is available
-    if (typeof html2canvas === "function") {
-      const canvas = await html2canvas(posterElem, {
-        scale: 2, // 2x Retina / High-Definition resolution for social media
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#08090d",
-        logging: false,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: posterElem.scrollWidth,
-        windowHeight: posterElem.scrollHeight
-      });
-
-      const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
-      const dataUrl = canvas.toDataURL(mimeType, 0.95);
-
-      triggerFileDownload(dataUrl, filename);
-
-      if (exportStatusMessage) {
-        exportStatusMessage.textContent = `✅ Results poster saved successfully as High-Quality ${format.toUpperCase()}!`;
-        setTimeout(() => {
-          if (exportStatusMessage) exportStatusMessage.textContent = "⚡ 2x Ultra HD capture powered by html2canvas";
-        }, 5000);
-      }
-    } else {
-      // Graceful fallback to built-in canvas generator
-      fallbackCanvasExport(format, filename);
-    }
-  } catch (err) {
-    console.warn("html2canvas export notice, switching to fallback canvas generator:", err);
     fallbackCanvasExport(format, filename);
+  } catch (err) {
+    console.error("Export error:", err);
+    if (exportStatusMessage) {
+      exportStatusMessage.textContent = `⚠️ Error generating image. Please try again.`;
+    }
   } finally {
     // Reset button states
     if (btnTextEl) btnTextEl.textContent = originalText;
@@ -1416,138 +1392,115 @@ function triggerFileDownload(dataUrl, filename) {
 }
 
 /**
- * Built-in Canvas Export Fallback (guarantees export even if html2canvas is blocked)
+ * Built-in Canvas Export: Renders 100% pixel-perfect text onto the exact template graphic
  */
 function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.png") {
   const cumulativeStats = calculateCumulativeStats();
+  const templateImg = document.getElementById("poster-template-bg");
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // High quality resolution (800 x 1000)
-  canvas.width = 800;
-  canvas.height = 1000;
+  function drawDataAndDownload(img) {
+    // 2x Retina Resolution (850 x 1024)
+    canvas.width = (img.naturalWidth || 425) * 2;
+    canvas.height = (img.naturalHeight || 512) * 2;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  // 1. Dark Gradient Background
-  const bgGrad = ctx.createRadialGradient(400, 250, 50, 400, 500, 600);
-  bgGrad.addColorStop(0, "#2a050a");
-  bgGrad.addColorStop(0.5, "#0d0f14");
-  bgGrad.addColorStop(1, "#050608");
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Exact measured vertical centers of all 12 slots in the 512px template
+    const slotCenters512 = [189, 212, 234, 256.5, 279, 301.5, 324, 346.5, 369.5, 392, 414.5, 437.5];
+    const rowHeight = (canvas.height * (272 / 512)) / 12;
 
-  // Red Outer Border & Glow
-  ctx.strokeStyle = "#e50914";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(15, 15, canvas.width - 30, canvas.height - 30);
+    // Pre-calculate fonts (scaled for retina sharpness, adjusted to fit slot height)
+    const crownFontSize = Math.round(canvas.width * 0.021);
+    const teamFontSize = Math.round(canvas.width * 0.023);
+    const posFontSize = Math.round(canvas.width * 0.024);
+    const totalFontSize = Math.round(canvas.width * 0.027);
 
-  // 2. Top Header Artwork
-  ctx.textAlign = "center";
-  ctx.fillStyle = "#ff1744";
-  ctx.font = "bold 16px sans-serif";
-  ctx.fillText("👑 FREE FIRE PAID SCRIMS", 400, 55);
+    cumulativeStats.forEach((t, i) => {
+      // Dead-center vertical coordinate for each slot
+      const rowCenterY = canvas.height * (slotCenters512[i] / 512);
+      const rank = i + 1;
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 36px sans-serif";
-  ctx.fillText(state.tournamentTitle.toUpperCase(), 400, 95);
+      // Crown on Rank 1 (#01)
+      if (rank === 1) {
+        ctx.font = `bold ${crownFontSize}px sans-serif`;
+        ctx.fillStyle = "#ffeb3b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.40);
+      }
 
-  ctx.fillStyle = "#ff334b";
-  ctx.font = "bold 13px sans-serif";
-  ctx.fillText("PLAY   /   FIGHT   /   WIN", 400, 120);
+      // 1. Team Name (Inside brushed metal slot: x = 17.5%)
+      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      // Shadow for high contrast
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
 
-  // Red Laser line
-  const laserGrad = ctx.createLinearGradient(150, 130, 650, 130);
-  laserGrad.addColorStop(0, "transparent");
-  laserGrad.addColorStop(0.5, "#ff1744");
-  laserGrad.addColorStop(1, "transparent");
-  ctx.strokeStyle = laserGrad;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(150, 132);
-  ctx.lineTo(650, 132);
-  ctx.stroke();
+      // Truncate name if too long for the slot
+      let displayName = t.teamName.toUpperCase();
+      const maxTextWidth = canvas.width * 0.32;
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, canvas.width * 0.178, rowCenterY);
 
-  // 3. Table Header
-  const startY = 160;
-  ctx.fillStyle = "#90030a";
-  ctx.fillRect(40, startY, 720, 36);
+      // Reset shadow for numbers
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
 
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 13px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("# RANK", 80, startY + 23);
+      // 2. Position Column (Placement points or avg rank)
+      ctx.font = `bold ${posFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#93c5fd";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
+      ctx.shadowBlur = 6;
+      const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
+      ctx.fillText(posText, canvas.width * 0.575, rowCenterY);
 
-  ctx.textAlign = "left";
-  ctx.fillText("TEAM NAME", 150, startY + 23);
+      // 3. Elimination Column (Cumulative kills)
+      ctx.fillStyle = "#fca5a5";
+      ctx.shadowColor = "rgba(252, 165, 165, 0.7)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.722, rowCenterY);
 
-  ctx.textAlign = "center";
-  ctx.fillText("POSITION", 480, startY + 23);
-  ctx.fillText("ELIMINATION", 600, startY + 23);
-  ctx.fillText("TOTAL", 710, startY + 23);
+      // 4. Total Column (Right red trapezoid badge)
+      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
+      ctx.shadowBlur = 10;
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.880, rowCenterY);
 
-  // 4. 12 Rows
-  const rowHeight = 52;
-  let currentY = startY + 45;
+      // Reset shadow
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+    });
 
-  cumulativeStats.forEach((t, i) => {
-    const rank = String(i + 1).padStart(2, "0");
+    const mime = format === "jpg" ? "image/jpeg" : "image/png";
+    triggerFileDownload(canvas.toDataURL(mime, 0.95), filename);
+    if (exportStatusMessage) {
+      exportStatusMessage.textContent = `✅ Results poster saved successfully (${format.toUpperCase()})!`;
+      setTimeout(() => {
+        if (exportStatusMessage) exportStatusMessage.textContent = "⚡ High-Definition 2x capture perfectly aligned";
+      }, 5000);
+    }
+  }
 
-    // Row Background (dark metallic)
-    ctx.fillStyle = i % 2 === 0 ? "#12151f" : "#171c28";
-    ctx.fillRect(40, currentY, 720, rowHeight - 6);
-
-    // Left rank badge (red)
-    ctx.fillStyle = i === 0 ? "#ff1744" : "#b30018";
-    ctx.fillRect(40, currentY, 65, rowHeight - 6);
-
-    // Rank text
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 18px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(rank, 72, currentY + 30);
-
-    // Team Name
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 15px sans-serif";
-    ctx.textAlign = "left";
-    ctx.fillText(t.teamName, 130, currentY + 30);
-
-    // Position Points
-    ctx.fillStyle = "#93c5fd";
-    ctx.font = "bold 16px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(String(t.placementPoints), 480, currentY + 30);
-
-    // Elimination Kills
-    ctx.fillStyle = "#fca5a5";
-    ctx.fillText(String(t.eliminationPoints), 600, currentY + 30);
-
-    // Right Total Badge (red)
-    ctx.fillStyle = i === 0 ? "#ff1744" : "#b30018";
-    ctx.fillRect(665, currentY, 95, rowHeight - 6);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 18px sans-serif";
-    ctx.fillText(String(t.totalPoints), 712, currentY + 30);
-
-    currentY += rowHeight;
-  });
-
-  // 5. Footer Branding
-  ctx.fillStyle = "#ff1744";
-  ctx.font = "bold 13px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("— FREE FIRE COMMUNITY —", 400, 940);
-
-  ctx.fillStyle = "#9ca3af";
-  ctx.font = "bold 11px sans-serif";
-  ctx.fillText("GAME ON   |   NEW CHALLENGERS   |   PAID SCRIMS", 400, 965);
-
-  const mime = format === "jpg" ? "image/jpeg" : "image/png";
-  triggerFileDownload(canvas.toDataURL(mime, 0.95), filename);
-
-  if (exportStatusMessage) {
-    exportStatusMessage.textContent = `✅ Results poster saved successfully (${format.toUpperCase()})!`;
+  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
+    drawDataAndDownload(templateImg);
+  } else {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => drawDataAndDownload(img);
+    img.src = "assets/jack_sparrow_template.png";
   }
 }
 

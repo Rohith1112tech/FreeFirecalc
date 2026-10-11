@@ -2,10 +2,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const publicDir = path.join(__dirname, 'public');
+const rootDir = path.resolve(__dirname, '..');
+const publicDir = path.join(rootDir, 'public');
 const assetsDir = path.join(publicDir, 'assets');
 
 console.log('⚡ Starting build for production deployment...');
+console.log('Source root directory:', rootDir);
+console.log('Target public directory:', publicDir);
 
 // Ensure directories exist
 if (!fs.existsSync(publicDir)) {
@@ -18,16 +21,18 @@ if (!fs.existsSync(assetsDir)) {
 // Files to copy to public root
 const rootFiles = ['index.html', 'style.css', 'app.js'];
 rootFiles.forEach((file) => {
-  const src = path.join(__dirname, file);
+  const src = path.join(rootDir, file);
   const dest = path.join(publicDir, file);
   if (fs.existsSync(src)) {
     fs.copyFileSync(src, dest);
     console.log(`✓ Copied ${file} -> public/${file}`);
+  } else {
+    console.warn(`⚠️ File not found: ${src}`);
   }
 });
 
 // Copy assets
-const srcAssets = path.join(__dirname, 'assets');
+const srcAssets = path.join(rootDir, 'assets');
 if (fs.existsSync(srcAssets)) {
   const files = fs.readdirSync(srcAssets);
   files.forEach((f) => {
