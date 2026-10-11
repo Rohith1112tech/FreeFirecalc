@@ -1208,17 +1208,22 @@ function renderLeaderboardRows(animate = true) {
     teamNameEl.className = "overlay-team-name";
     teamNameEl.textContent = t.teamName;
 
-    // 2. Position Column (placement points or avg placement)
+    // 2. Booyah Column (number of 1st place finishes)
+    const booyahValEl = document.createElement("span");
+    booyahValEl.className = "overlay-booyah-val";
+    booyahValEl.textContent = t.booyahs || 0;
+
+    // 3. Position Column (placement points or avg placement)
     const posValEl = document.createElement("span");
     posValEl.className = "overlay-position-val";
     posValEl.textContent = state.positionDisplayMode === "average" ? t.averagePlacement : t.placementPoints;
 
-    // 3. Elimination Column (total cumulative kills)
+    // 4. Elimination Column (total cumulative kills)
     const elimValEl = document.createElement("span");
     elimValEl.className = "overlay-elimination-val";
     elimValEl.textContent = t.eliminationPoints;
 
-    // 4. Total Column (centered directly in right red badge with count-up)
+    // 5. Total Column (centered directly in right red badge with count-up)
     const totalValEl = document.createElement("span");
     totalValEl.className = "overlay-total-val";
 
@@ -1236,6 +1241,7 @@ function renderLeaderboardRows(animate = true) {
     }
 
     row.appendChild(teamNameEl);
+    row.appendChild(booyahValEl);
     row.appendChild(posValEl);
     row.appendChild(elimValEl);
     row.appendChild(totalValEl);
@@ -1402,24 +1408,26 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
   const ctx = canvas.getContext("2d");
 
   function drawDataAndDownload(img) {
-    // 2x Retina Resolution (850 x 1024)
-    canvas.width = (img.naturalWidth || 425) * 2;
-    canvas.height = (img.naturalHeight || 512) * 2;
+    // 2x Retina Resolution
+    canvas.width = (img.naturalWidth || 847) * 2;
+    canvas.height = (img.naturalHeight || 1024) * 2;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // Exact measured vertical centers of all 12 slots in the 512px template
-    const slotCenters512 = [189, 212, 234, 256.5, 279, 301.5, 324, 346.5, 369.5, 392, 414.5, 437.5];
-    const rowHeight = (canvas.height * (272 / 512)) / 12;
+    // Exact measured vertical centers of all 12 slots in the 1024px template:
+    // Slot 1: 378, Slot 2: 423, Slot 3: 467, Slot 4: 510.5, Slot 5: 554.5, Slot 6: 599,
+    // Slot 7: 642.5, Slot 8: 686, Slot 9: 730.5, Slot 10: 775.5, Slot 11: 821, Slot 12: 869
+    const slotCenters1024 = [378, 423, 467, 510.5, 554.5, 599, 642.5, 686, 730.5, 775.5, 821, 869];
+    const rowHeight = (canvas.height * (539 / 1024)) / 12;
 
     // Pre-calculate fonts (scaled for retina sharpness, adjusted to fit slot height)
     const crownFontSize = Math.round(canvas.width * 0.021);
-    const teamFontSize = Math.round(canvas.width * 0.023);
-    const posFontSize = Math.round(canvas.width * 0.024);
-    const totalFontSize = Math.round(canvas.width * 0.027);
+    const teamFontSize = Math.round(canvas.width * 0.022);
+    const numFontSize = Math.round(canvas.width * 0.023);
+    const totalFontSize = Math.round(canvas.width * 0.026);
 
     cumulativeStats.forEach((t, i) => {
       // Dead-center vertical coordinate for each slot
-      const rowCenterY = canvas.height * (slotCenters512[i] / 512);
+      const rowCenterY = canvas.height * (slotCenters1024[i] / 1024);
       const rank = i + 1;
 
       // Crown on Rank 1 (#01)
@@ -1436,15 +1444,14 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
-      // Shadow for high contrast
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = 4;
       ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 1;
 
-      // Truncate name if too long for the slot
+      // Truncate name if too long for slot width (up to 27%)
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.32;
+      const maxTextWidth = canvas.width * 0.27;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
@@ -1456,28 +1463,34 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
 
-      // 2. Position Column (Placement points or avg rank)
-      ctx.font = `bold ${posFontSize}px "Orbitron", sans-serif`;
-      ctx.fillStyle = "#93c5fd";
+      // 2. Booyah Column (under BOOYAH header: center x = 51.0%)
+      ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#fef08a";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(254, 240, 138, 0.7)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.510, rowCenterY);
+
+      // 3. Position Column (under POS header: center x = 62.7%)
+      ctx.fillStyle = "#93c5fd";
       ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
       ctx.shadowBlur = 6;
       const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
-      ctx.fillText(posText, canvas.width * 0.575, rowCenterY);
+      ctx.fillText(posText, canvas.width * 0.627, rowCenterY);
 
-      // 3. Elimination Column (Cumulative kills)
+      // 4. Elimination Column (under ELIM header: center x = 74.0%)
       ctx.fillStyle = "#fca5a5";
       ctx.shadowColor = "rgba(252, 165, 165, 0.7)";
       ctx.shadowBlur = 6;
-      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.722, rowCenterY);
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.740, rowCenterY);
 
-      // 4. Total Column (Right red trapezoid badge)
+      // 5. Total Column (Right red trapezoid badge: center x = 87.8%)
       ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
       ctx.shadowBlur = 10;
-      ctx.fillText(String(t.totalPoints), canvas.width * 0.880, rowCenterY);
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.878, rowCenterY);
 
       // Reset shadow
       ctx.shadowColor = "transparent";

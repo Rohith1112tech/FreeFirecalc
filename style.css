@@ -2424,14 +2424,14 @@ body {
   z-index: 15 !important;
 }
 
-/* 1. Team Name Text Slot (Inside the metal slot: x=17.5% to 50%) */
+/* 1. Team Name Text Slot (Inside metal slot: x=17.5% to 45.0%) */
 .overlay-team-name {
   position: absolute !important;
   left: 17.5% !important;
-  width: 32.5% !important;
+  width: 27.5% !important;
   font-family: var(--font-tech), sans-serif !important;
   font-weight: 800 !important;
-  font-size: clamp(7.5px, 1.4vw, 12px) !important;
+  font-size: clamp(7.5px, 1.35vw, 12px) !important;
   color: #ffffff !important;
   letter-spacing: 0.5px !important;
   text-transform: uppercase !important;
@@ -2442,39 +2442,53 @@ body {
   line-height: 1 !important;
 }
 
-/* 2. Position Column Text Slot (x=50.5% to 64.5%) */
-.overlay-position-val {
+/* 2. Booyah Column Text Slot (x=45.0% to 57.0%, under BOOYAH header) */
+.overlay-booyah-val {
   position: absolute !important;
-  left: 50.5% !important;
-  width: 14% !important;
+  left: 45.0% !important;
+  width: 12.0% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
   font-weight: 800 !important;
-  font-size: clamp(8px, 1.45vw, 12.5px) !important;
+  font-size: clamp(8px, 1.4vw, 12.5px) !important;
+  color: #fef08a !important;
+  text-shadow: 0 0 6px rgba(254, 240, 138, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
+  line-height: 1 !important;
+}
+
+/* 3. Position Column Text Slot (x=57.0% to 68.3%, under POS header) */
+.overlay-position-val {
+  position: absolute !important;
+  left: 57.0% !important;
+  width: 11.3% !important;
+  text-align: center !important;
+  font-family: var(--font-display), monospace !important;
+  font-weight: 800 !important;
+  font-size: clamp(8px, 1.4vw, 12.5px) !important;
   color: #93c5fd !important;
   text-shadow: 0 0 6px rgba(147, 197, 253, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
 }
 
-/* 3. Elimination Kills Text Slot (x=64.5% to 80%) */
+/* 4. Elimination Kills Text Slot (x=68.3% to 79.5%, under ELIM header) */
 .overlay-elimination-val {
   position: absolute !important;
-  left: 64.5% !important;
-  width: 15.5% !important;
+  left: 68.3% !important;
+  width: 11.2% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
   font-weight: 800 !important;
-  font-size: clamp(8px, 1.45vw, 12.5px) !important;
+  font-size: clamp(8px, 1.4vw, 12.5px) !important;
   color: #fca5a5 !important;
   text-shadow: 0 0 6px rgba(252, 165, 165, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
 }
 
-/* 4. Total Points Text Slot (Inside right red badge: x=80% to 96%) */
+/* 5. Total Points Text Slot (Inside right red badge: x=80% to 95.5%) */
 .overlay-total-val {
   position: absolute !important;
   left: 80% !important;
-  width: 16% !important;
+  width: 15.5% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
   font-weight: 900 !important;
