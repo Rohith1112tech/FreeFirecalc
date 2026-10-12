@@ -178,6 +178,8 @@ const btnOAuthSignIn = document.getElementById("btn-oauth-signin");
 const inputOAuthClientId = document.getElementById("input-oauth-client-id");
 const inputOAuthClientSecret = document.getElementById("input-oauth-client-secret");
 const btnSaveOAuthCreds = document.getElementById("btn-save-oauth-creds");
+const btnOAuthPopup = document.getElementById("btn-oauth-popup");
+const btnOAuthSignout = document.getElementById("btn-oauth-signout");
 
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
@@ -536,6 +538,12 @@ function bindEvents() {
   }
   if (btnOAuthSignIn) {
     btnOAuthSignIn.addEventListener("click", handleOAuthSignInClick);
+  }
+  if (btnOAuthPopup) {
+    btnOAuthPopup.addEventListener("click", handleOAuthSignInPopup);
+  }
+  if (btnOAuthSignout) {
+    btnOAuthSignout.addEventListener("click", handleOAuthSignOut);
   }
   if (btnSaveOAuthCreds) {
     btnSaveOAuthCreds.addEventListener("click", handleSaveOAuthCreds);
@@ -1959,6 +1967,26 @@ function closeGoogleAccountModal() {
   }
 }
 
+function getOAuthRedirectUri() {
+  if (window.location.origin.includes("localhost")) {
+    return "http://localhost:3000/oauth2callback";
+  }
+  return "https://freefirecalc.netlify.app/oauth2callback";
+}
+
+function getGoogleOAuthUrl() {
+  const redirectUri = getOAuthRedirectUri();
+  return (
+    "https://accounts.google.com/o/oauth2/v2/auth?" +
+    "client_id=" + encodeURIComponent(GOOGLE_OAUTH_CLIENT_ID) +
+    "&redirect_uri=" + encodeURIComponent(redirectUri) +
+    "&response_type=token" +
+    "&scope=" + encodeURIComponent(GOOGLE_OAUTH_SCOPES) +
+    "&include_granted_scopes=true" +
+    "&prompt=consent"
+  );
+}
+
 /**
  * Check Google OAuth Connection Status
  */
@@ -1989,6 +2017,9 @@ async function checkOAuthStatusUI() {
         if (btnOAuthSignIn) {
           btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
         }
+        if (btnOAuthSignout) {
+          btnOAuthSignout.style.display = "inline-flex";
+        }
         return;
       } else if (res.status === 401) {
         clearBrowserOAuthToken();
@@ -2010,6 +2041,9 @@ async function checkOAuthStatusUI() {
         if (btnOAuthSignIn) {
           btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
         }
+        if (btnOAuthSignout) {
+          btnOAuthSignout.style.display = "inline-flex";
+        }
         return;
       }
     }
@@ -2023,67 +2057,73 @@ async function checkOAuthStatusUI() {
   if (btnOAuthSignIn) {
     btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span></span>`;
   }
+  if (btnOAuthSignout) {
+    btnOAuthSignout.style.display = "none";
+  }
 }
 
 /**
- * Handle Sign In Click (Google Identity Services popup or OAuth redirect)
+ * Handle Sign In Click - Direct Full-Page Redirect to Google Login
+ * Navigates directly to Google's official sign-in screen without popup blockage or origin errors!
  */
 function handleOAuthSignInClick() {
-  // Option A: Use Google Identity Services (GIS) popup if available
-  if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-    try {
-      if (!gisTokenClient) {
-        gisTokenClient = window.google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_OAUTH_CLIENT_ID,
-          scope: GOOGLE_OAUTH_SCOPES,
-          callback: (response) => {
-            if (response && response.access_token) {
-              saveBrowserOAuthToken(response.access_token, response.expires_in || 3600);
-              checkOAuthStatusUI();
-              alert("✅ Google Account successfully connected! Backups and Posters will now upload directly using your 5 TB quota.");
-            } else if (response && response.error) {
-              alert("⚠️ Google authorization error: " + response.error);
-            }
-          }
-        });
-      }
-      gisTokenClient.requestAccessToken({ prompt: 'consent' });
-      return;
-    } catch (gisErr) {
-      console.warn("GIS initialization error, using popup/redirect:", gisErr);
-    }
+  const url = getGoogleOAuthUrl();
+  window.location.href = url;
+}
+
+/**
+ * Alternative: Sign In in a Popup Window
+ */
+function handleOAuthSignInPopup() {
+  const url = getGoogleOAuthUrl();
+  const popup = window.open(url, "google_login_popup", "width=600,height=700");
+  if (!popup || popup.closed || typeof popup.closed === "undefined") {
+    // Popup was blocked by browser, fallback to direct redirect
+    window.location.href = url;
+    return;
   }
 
-  // Option B: Standard OAuth 2.0 Web Popup/Redirect flow
-  const redirectUri = window.location.origin.includes("localhost")
-    ? `${window.location.origin}/oauth2callback`
-    : "https://freefirecalc.netlify.app/oauth2callback";
-
-  const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-    `client_id=${encodeURIComponent(GOOGLE_OAUTH_CLIENT_ID)}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&response_type=token` +
-    `&scope=${encodeURIComponent(GOOGLE_OAUTH_SCOPES)}` +
-    `&prompt=consent`;
-
-  window.open(oauthUrl, "_blank", "width=600,height=700");
-
   let attempts = 0;
-  const pollInterval = setInterval(() => {
+  const poll = setInterval(() => {
     attempts++;
-    if (attempts > 30) clearInterval(pollInterval);
-    const token = getBrowserOAuthToken();
-    if (token) {
-      clearInterval(pollInterval);
+    if (attempts > 30) clearInterval(poll);
+    if (getBrowserOAuthToken()) {
+      clearInterval(poll);
       checkOAuthStatusUI();
+      try { popup.close(); } catch (_) {}
     }
-  }, 2500);
+  }, 2000);
+}
+
+/**
+ * Disconnect / Sign Out Google Account
+ */
+function handleOAuthSignOut() {
+  clearBrowserOAuthToken();
+  checkOAuthStatusUI();
+  alert("Signed out from Google Drive. You can reconnect anytime.");
 }
 
 /**
  * Handle OAuth Callback params from URL on load
  */
 function handleOAuthCallbackFromUrl() {
+  // Check for error in hash or query
+  if (window.location.hash && window.location.hash.includes("error=")) {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const errorMsg = hashParams.get("error_description") || hashParams.get("error");
+    alert("⚠️ Google Authorization Notice: " + errorMsg);
+    window.history.replaceState({}, document.title, window.location.pathname.replace(/\/oauth2callback\/?$/, "/") || "/");
+    return;
+  }
+  if (window.location.search && window.location.search.includes("error=")) {
+    const searchParams = new URLSearchParams(window.location.search);
+    const errorMsg = searchParams.get("error_description") || searchParams.get("error");
+    alert("⚠️ Google Authorization Notice: " + errorMsg);
+    window.history.replaceState({}, document.title, window.location.pathname.replace(/\/oauth2callback\/?$/, "/") || "/");
+    return;
+  }
+
   // 1. Implicit OAuth token in URL hash (#access_token=...)
   if (window.location.hash && window.location.hash.includes("access_token=")) {
     try {

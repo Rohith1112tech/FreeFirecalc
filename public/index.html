@@ -513,13 +513,21 @@
 
               <!-- Quick Action: Direct 1-Click Sign In Button -->
               <div style="text-align: center; margin-bottom: 1.5rem;">
-                <button type="button" id="btn-oauth-signin" class="cyber-btn primary-start-btn" style="width: 100%; justify-content: center; padding: 0.85rem 1.25rem; font-size: 0.95rem;">
+                <button type="button" id="btn-oauth-signin" class="cyber-btn primary-start-btn" style="width: 100%; justify-content: center; padding: 0.85rem 1.25rem; font-size: 0.95rem; margin-bottom: 0.6rem;">
                   <span class="btn-content">
                     <span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span>
                   </span>
                 </button>
-                <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.5rem;">
-                  Grants permission to upload backups and posters into your Drive folder: <code>1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5</code>
+                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                  <button type="button" id="btn-oauth-popup" class="cyber-btn secondary-btn" style="font-size: 0.75rem; padding: 0.35rem 0.75rem;">
+                    <span>🪟 SIGN IN IN POPUP</span>
+                  </button>
+                  <button type="button" id="btn-oauth-signout" class="cyber-btn danger-btn" style="font-size: 0.75rem; padding: 0.35rem 0.75rem; display: none;">
+                    <span>🚪 SIGN OUT / DISCONNECT</span>
+                  </button>
+                </div>
+                <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.75rem;">
+                  Directly signs into your Google account to grant upload permission to Drive folder: <code>1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5</code>
                 </p>
               </div>
 
@@ -558,8 +566,6 @@
       document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
     }
   </script>
-  <!-- Google Identity Services (GIS) for Direct Client-Side OAuth 2.0 Uploads -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="app.js"></script>
 </body>
 </html>
