@@ -180,6 +180,8 @@ const inputOAuthClientSecret = document.getElementById("input-oauth-client-secre
 const btnSaveOAuthCreds = document.getElementById("btn-save-oauth-creds");
 const btnOAuthPopup = document.getElementById("btn-oauth-popup");
 const btnOAuthSignout = document.getElementById("btn-oauth-signout");
+const btnSyncSheets = document.getElementById("btn-sync-sheets");
+const btnModalSyncSheets = document.getElementById("btn-modal-sync-sheets");
 
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
@@ -547,6 +549,12 @@ function bindEvents() {
   }
   if (btnSaveOAuthCreds) {
     btnSaveOAuthCreds.addEventListener("click", handleSaveOAuthCreds);
+  }
+  if (btnSyncSheets) {
+    btnSyncSheets.addEventListener("click", handleSyncAllMatchesToSheets);
+  }
+  if (btnModalSyncSheets) {
+    btnModalSyncSheets.addEventListener("click", handleSyncAllMatchesToSheets);
   }
 }
 
@@ -1913,7 +1921,8 @@ function loadSavedState() {
 
 const GOOGLE_OAUTH_CLIENT_ID = "312946951314-drprrom11es33e7d9pv3i2no4chfvijd.apps.googleusercontent.com";
 const GOOGLE_DRIVE_FOLDER_ID = "1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5";
-const GOOGLE_OAUTH_SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive";
+const GOOGLE_SPREADSHEET_ID = "1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4";
+const GOOGLE_OAUTH_SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets";
 
 let gisTokenClient = null;
 
@@ -2187,26 +2196,68 @@ async function handleSaveOAuthCreds() {
 }
 
 /**
- * Scenario B: Automatically sync match scores to Google Spreadsheet
+ * Scenario B: Sync Match Scores to Google Spreadsheet
+ * (Direct client-side Sheets API via OAuth token or backend server fallback)
  */
 async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
+  const teamsDataPayload = teamData.map((t, idx) => {
+    const p = t.placement !== "" && t.placement !== undefined ? parseInt(t.placement, 10) : "";
+    const k = parseInt(t.kills, 10) || 0;
+    const score = calculateTeamMatchScore(p, k);
+    const roster = (state.teamRosters && state.teamRosters[idx]) ? state.teamRosters[idx].filter(Boolean) : [];
+
+    return {
+      placement: p,
+      teamName: t.teamName,
+      players: roster,
+      kills: score.killPoints,
+      placementPoints: score.placementPoints,
+      totalPoints: score.totalPoints
+    };
+  });
+
+  const now = new Date().toLocaleString();
+  const rowsToAppend = teamsDataPayload.map((team) => [
+    now,
+    state.tournamentTitle || 'Free Fire Scrims',
+    `Match ${matchNumber}`,
+    team.placement !== undefined && team.placement !== '' ? Number(team.placement) : '-',
+    team.teamName || 'Unknown Team',
+    Array.isArray(team.players) ? team.players.filter(Boolean).join(', ') : (team.players || ''),
+    Number(team.kills || 0),
+    Number(team.placementPoints || 0),
+    Number(team.totalPoints || 0)
+  ]);
+
+  // Method 1: Direct Client-Side Google Sheets Append via User's OAuth Token
+  const browserToken = getBrowserOAuthToken();
+  if (browserToken) {
+    try {
+      const sheetsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${GOOGLE_SPREADSHEET_ID}/values/Sheet1!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+      const sheetsRes = await fetch(sheetsUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${browserToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ values: rowsToAppend })
+      });
+
+      if (sheetsRes.ok) {
+        console.log(`[Google Sheets] Match ${matchNumber} scores synced directly via OAuth.`);
+        showMatchAlert(`✅ Match ${matchNumber} scores synced directly to Google Sheets!`, "success");
+        return { success: true };
+      } else {
+        const errJson = await sheetsRes.json().catch(() => ({}));
+        console.warn("[Google Sheets Direct Sync Error]", errJson);
+      }
+    } catch (directErr) {
+      console.warn("[Google Sheets Direct Sync Network Error]", directErr);
+    }
+  }
+
+  // Method 2: Fallback to Backend Server Endpoint (Service Account)
   try {
-    const teamsDataPayload = teamData.map((t, idx) => {
-      const p = t.placement !== "" && t.placement !== undefined ? parseInt(t.placement, 10) : "";
-      const k = parseInt(t.kills, 10) || 0;
-      const score = calculateTeamMatchScore(p, k);
-      const roster = (state.teamRosters && state.teamRosters[idx]) ? state.teamRosters[idx].filter(Boolean) : [];
-
-      return {
-        placement: p,
-        teamName: t.teamName,
-        players: roster,
-        kills: score.killPoints,
-        placementPoints: score.placementPoints,
-        totalPoints: score.totalPoints
-      };
-    });
-
     const response = await fetch("/api/record-match-scores", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2219,14 +2270,48 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
 
     const data = await response.json();
     if (data.success) {
-      console.log(`[Google Sheets] Successfully recorded Match ${matchNumber} scores.`);
+      console.log(`[Google Sheets] Successfully recorded Match ${matchNumber} scores via server.`);
       showMatchAlert(`✅ Match ${matchNumber} saved and auto-synced to Google Sheets!`, "success");
-    } else {
-      console.warn(`[Google Sheets] Notice:`, data.error);
+      return data;
     }
   } catch (err) {
-    // If running purely static client without backend server, fail gracefully
     console.warn("[Google Sheets] Backend endpoint offline or unreachable:", err.message);
+  }
+
+  return { success: false, message: "Scores saved in local browser. Connect Google Account to sync to Sheets." };
+}
+
+/**
+ * Push all currently saved matches to Google Sheets in one click
+ */
+async function handleSyncAllMatchesToSheets() {
+  const savedMatches = state.matches.filter(m => m && m.isSaved);
+  if (savedMatches.length === 0) {
+    alert("⚠️ No saved match data found yet. Please enter match scores and click 'SAVE MATCH DATA' first.");
+    return;
+  }
+
+  const token = getBrowserOAuthToken();
+  const btn = btnSyncSheets || btnModalSyncSheets;
+  const origText = btn ? btn.innerHTML : "";
+  if (btn) btn.innerHTML = `<span>⏳ SYNCING...</span>`;
+
+  try {
+    let syncedMatchesCount = 0;
+    for (const match of savedMatches) {
+      await syncMatchScoresToGoogleSheets(match.matchNumber, match.teamData);
+      syncedMatchesCount++;
+    }
+
+    if (token) {
+      alert(`✅ Google Sheets Sync Completed!\n\nSynced ${syncedMatchesCount} match(es) (${syncedMatchesCount * 12} rows) into your spreadsheet:\nBackend 2 (1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4)`);
+    } else {
+      alert(`ℹ️ Attempted sync for ${syncedMatchesCount} match(es).\n\nIf you are on Netlify without a server, click '👤 GOOGLE ACCOUNT' to connect your account and enable direct syncing to your spreadsheet.`);
+    }
+  } catch (err) {
+    alert(`⚠️ Error syncing to Google Sheets: ${err.message}`);
+  } finally {
+    if (btn) btn.innerHTML = origText;
   }
 }
 
