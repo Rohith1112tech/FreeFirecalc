@@ -186,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTeamInputs();
   bindEvents();
   updateFilledCount();
+  handleOAuthCallbackFromUrl();
   checkOAuthStatusUI();
 
   if (state.activeScreen === "tournament") {
@@ -1898,12 +1899,52 @@ function loadSavedState() {
 
 /**
  * =====================================================================
- * GOOGLE INTEGRATION HANDLERS (Scenario A: Drive, Scenario B: Sheets)
+ * GOOGLE INTEGRATION HANDLERS (Scenario A: Drive 5TB, Scenario B: Sheets)
  * =====================================================================
  */
 
+const GOOGLE_OAUTH_CLIENT_ID = "312946951314-drprrom11es33e7d9pv3i2no4chfvijd.apps.googleusercontent.com";
+const GOOGLE_DRIVE_FOLDER_ID = "1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5";
+const GOOGLE_OAUTH_SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive";
+
+let gisTokenClient = null;
+
 /**
- * Google Account Modal Controls & OAuth UI
+ * Token management in browser localStorage
+ */
+function getBrowserOAuthToken() {
+  try {
+    const raw = localStorage.getItem("ff_google_oauth_token");
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data.access_token) return null;
+    if (data.expires_at && Date.now() > data.expires_at) {
+      localStorage.removeItem("ff_google_oauth_token");
+      return null;
+    }
+    return data.access_token;
+  } catch (_) {
+    return null;
+  }
+}
+
+function saveBrowserOAuthToken(token, expiresIn = 3600) {
+  try {
+    const data = {
+      access_token: token,
+      expires_at: Date.now() + (expiresIn - 60) * 1000,
+      saved_at: Date.now()
+    };
+    localStorage.setItem("ff_google_oauth_token", JSON.stringify(data));
+  } catch (_) {}
+}
+
+function clearBrowserOAuthToken() {
+  localStorage.removeItem("ff_google_oauth_token");
+}
+
+/**
+ * Google Account Modal Controls
  */
 function openGoogleAccountModal() {
   if (googleAccountModal) {
@@ -1918,62 +1959,165 @@ function closeGoogleAccountModal() {
   }
 }
 
+/**
+ * Check Google OAuth Connection Status
+ */
 async function checkOAuthStatusUI() {
   if (!oauthStatusBadge || !oauthStatusDesc) return;
+
+  // 1. Check browser token first
+  const browserToken = getBrowserOAuthToken();
+  if (browserToken) {
+    try {
+      const res = await fetch("https://www.googleapis.com/drive/v3/about?fields=user,storageQuota", {
+        headers: { Authorization: `Bearer ${browserToken}` }
+      });
+      if (res.ok) {
+        const aboutData = await res.json();
+        const userEmail = (aboutData.user && aboutData.user.emailAddress) || "Authorized User";
+        let quotaText = "5 TB Quota";
+        if (aboutData.storageQuota && aboutData.storageQuota.limit) {
+          const limitGb = Math.round(aboutData.storageQuota.limit / (1024 * 1024 * 1024));
+          const limitTb = (limitGb / 1024).toFixed(1);
+          quotaText = limitTb >= 1 ? `${limitTb} TB Quota` : `${limitGb} GB Quota`;
+        }
+
+        oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
+        oauthStatusBadge.style.color = "#86efac";
+        oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
+        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(userEmail)}</b> (${quotaText}).<br><span style="color:#a7f3d0;">✓ Google Drive uploads will save directly into Folder: <code>${GOOGLE_DRIVE_FOLDER_ID}</code></span>`;
+        if (btnOAuthSignIn) {
+          btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
+        }
+        return;
+      } else if (res.status === 401) {
+        clearBrowserOAuthToken();
+      }
+    } catch (_) {}
+  }
+
+  // 2. Check local server status if running
   try {
     const res = await fetch("/api/oauth/status");
-    const data = await res.json();
-    if (data.authenticated) {
-      oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
-      oauthStatusBadge.style.color = "#86efac";
-      oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
-      const email = data.user && data.user.emailAddress ? data.user.emailAddress : (data.userEmail || "Google Account");
-      oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(email)}</b>.<br><span style="color:#a7f3d0;">✓ Google Drive uploads will use your 5 TB storage quota.</span>`;
-      if (btnOAuthSignIn) {
-        btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
-      }
-    } else {
-      oauthStatusBadge.style.background = "rgba(239, 68, 68, 0.2)";
-      oauthStatusBadge.style.color = "#fca5a5";
-      oauthStatusBadge.textContent = "NOT CONNECTED";
-      oauthStatusDesc.textContent = data.message || "Not authorized yet. Click below to sign in with your 5 TB Google account.";
-      if (btnOAuthSignIn) {
-        btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span></span>`;
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated) {
+        oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
+        oauthStatusBadge.style.color = "#86efac";
+        oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
+        const email = (data.user && data.user.emailAddress) || data.userEmail || "Google Account";
+        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(email)}</b>.<br><span style="color:#a7f3d0;">✓ Server connected to Google Drive using your account quota.</span>`;
+        if (btnOAuthSignIn) {
+          btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
+        }
+        return;
       }
     }
-  } catch (err) {
-    oauthStatusBadge.textContent = "STANDALONE";
-    oauthStatusBadge.style.background = "rgba(156, 163, 175, 0.2)";
-    oauthStatusBadge.style.color = "#9ca3af";
-    oauthStatusDesc.textContent = "Running in client-only mode or server offline. Start server (npm start) to sync with Drive.";
+  } catch (_) {}
+
+  // 3. Not connected
+  oauthStatusBadge.style.background = "rgba(239, 68, 68, 0.2)";
+  oauthStatusBadge.style.color = "#fca5a5";
+  oauthStatusBadge.textContent = "NOT CONNECTED";
+  oauthStatusDesc.textContent = "Not authorized yet. Click below to sign in with your 5 TB Google account to enable Drive backups and poster uploads.";
+  if (btnOAuthSignIn) {
+    btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span></span>`;
   }
 }
 
-async function handleOAuthSignInClick() {
-  try {
-    const res = await fetch("/api/oauth/auth-url");
-    const data = await res.json();
-    if (data.authUrl) {
-      window.open(data.authUrl, "_blank", "width=600,height=700");
-      let attempts = 0;
-      const interval = setInterval(async () => {
-        attempts++;
-        if (attempts > 20) clearInterval(interval);
-        try {
-          const statusRes = await fetch("/api/oauth/status");
-          const statusData = await statusRes.json();
-          if (statusData.authenticated) {
-            clearInterval(interval);
-            checkOAuthStatusUI();
-            alert("✅ Google Account successfully connected! Backups and Posters will now upload using your 5 TB quota.");
+/**
+ * Handle Sign In Click (Google Identity Services popup or OAuth redirect)
+ */
+function handleOAuthSignInClick() {
+  // Option A: Use Google Identity Services (GIS) popup if available
+  if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+    try {
+      if (!gisTokenClient) {
+        gisTokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_OAUTH_CLIENT_ID,
+          scope: GOOGLE_OAUTH_SCOPES,
+          callback: (response) => {
+            if (response && response.access_token) {
+              saveBrowserOAuthToken(response.access_token, response.expires_in || 3600);
+              checkOAuthStatusUI();
+              alert("✅ Google Account successfully connected! Backups and Posters will now upload directly using your 5 TB quota.");
+            } else if (response && response.error) {
+              alert("⚠️ Google authorization error: " + response.error);
+            }
           }
-        } catch (_) {}
-      }, 3000);
-    } else {
-      alert("⚠️ OAuth Error: " + (data.error || "Could not generate authorization URL. Please configure Client ID and Secret first."));
+        });
+      }
+      gisTokenClient.requestAccessToken({ prompt: 'consent' });
+      return;
+    } catch (gisErr) {
+      console.warn("GIS initialization error, using popup/redirect:", gisErr);
     }
-  } catch (err) {
-    alert("⚠️ Could not contact server: " + err.message);
+  }
+
+  // Option B: Standard OAuth 2.0 Web Popup/Redirect flow
+  const redirectUri = window.location.origin.includes("localhost")
+    ? `${window.location.origin}/oauth2callback`
+    : "https://freefirecalc.netlify.app/oauth2callback";
+
+  const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${encodeURIComponent(GOOGLE_OAUTH_CLIENT_ID)}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&response_type=token` +
+    `&scope=${encodeURIComponent(GOOGLE_OAUTH_SCOPES)}` +
+    `&prompt=consent`;
+
+  window.open(oauthUrl, "_blank", "width=600,height=700");
+
+  let attempts = 0;
+  const pollInterval = setInterval(() => {
+    attempts++;
+    if (attempts > 30) clearInterval(pollInterval);
+    const token = getBrowserOAuthToken();
+    if (token) {
+      clearInterval(pollInterval);
+      checkOAuthStatusUI();
+    }
+  }, 2500);
+}
+
+/**
+ * Handle OAuth Callback params from URL on load
+ */
+function handleOAuthCallbackFromUrl() {
+  // 1. Implicit OAuth token in URL hash (#access_token=...)
+  if (window.location.hash && window.location.hash.includes("access_token=")) {
+    try {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get("access_token");
+      const expiresIn = parseInt(hashParams.get("expires_in") || "3600", 10);
+      if (accessToken) {
+        saveBrowserOAuthToken(accessToken, expiresIn);
+        const cleanPath = window.location.pathname.replace(/\/oauth2callback\/?$/, "/") || "/";
+        window.history.replaceState({}, document.title, cleanPath);
+        setTimeout(() => {
+          checkOAuthStatusUI();
+          alert("✅ Google Account (5 TB) successfully connected!\n\nBackups and Posters will now upload directly to your Drive.");
+        }, 300);
+        return;
+      }
+    } catch (e) {
+      console.error("Error parsing OAuth hash token:", e);
+    }
+  }
+
+  // 2. Query code in URL (?code=...)
+  if (window.location.search && window.location.search.includes("code=")) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
+    if (code) {
+      fetch(`/oauth2callback?code=${encodeURIComponent(code)}`)
+        .then(() => {
+          const cleanPath = window.location.pathname.replace(/\/oauth2callback\/?$/, "/") || "/";
+          window.history.replaceState({}, document.title, cleanPath);
+          checkOAuthStatusUI();
+        })
+        .catch(() => {});
+    }
   }
 }
 
@@ -2047,6 +2191,80 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
 }
 
 /**
+ * Unified Google Drive Upload Function (Scenario A)
+ * Directly uploads to Google Drive Folder: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5
+ * Uses user's 5 TB quota via OAuth 2.0 Web Token in browser, or server backend.
+ */
+async function uploadFileToDrive({ filename, mimeType, base64Data, description }) {
+  const browserToken = getBrowserOAuthToken();
+
+  // 1. Direct Web Upload if browser token is present (Fast, works on Netlify & localhost)
+  if (browserToken) {
+    const boundary = "-------ff_drive_boundary_" + Date.now();
+    const delimiter = `\r\n--${boundary}\r\n`;
+    const closeDelimiter = `\r\n--${boundary}--`;
+
+    const metadata = {
+      name: filename,
+      parents: [GOOGLE_DRIVE_FOLDER_ID],
+      description: description || "Free Fire Scrims Tournament File"
+    };
+
+    const rawBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+
+    const multipartBody =
+      delimiter +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify(metadata) +
+      delimiter +
+      `Content-Type: ${mimeType}\r\n` +
+      'Content-Transfer-Encoding: base64\r\n\r\n' +
+      rawBase64 +
+      closeDelimiter;
+
+    const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${browserToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`
+      },
+      body: multipartBody
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      return { success: true, ...data, method: "direct_oauth_web" };
+    }
+
+    if (res.status === 401) {
+      clearBrowserOAuthToken();
+      checkOAuthStatusUI();
+      throw new Error("Your Google sign-in session expired. Please click 'GOOGLE ACCOUNT' and sign in again.");
+    }
+
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(errJson.error ? errJson.error.message : `Drive upload failed with HTTP status ${res.status}`);
+  }
+
+  // 2. Try server-side upload endpoint
+  try {
+    const serverRes = await fetch("/api/upload-drive-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename, mimeType, base64Data, description })
+    });
+    if (serverRes.ok) {
+      const sData = await serverRes.json();
+      if (sData.success) return sData;
+    }
+  } catch (_) {}
+
+  // If not signed in yet, open the modal and alert the user
+  openGoogleAccountModal();
+  throw new Error("Google Account not connected yet. Please click 'SIGN IN WITH GOOGLE' to authorize uploads to your 5 TB Drive.");
+}
+
+/**
  * Scenario A: Upload Tournament Backup JSON to Google Drive
  */
 async function handleCloudDriveBackup() {
@@ -2068,25 +2286,20 @@ async function handleCloudDriveBackup() {
     const filename = `${(state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_")}_Backup_${Date.now()}.json`;
     const base64Data = "data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(backupData, null, 2))));
 
-    const response = await fetch("/api/upload-drive-file", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename,
-        mimeType: "application/json",
-        base64Data,
-        description: `Free Fire Scrims Tournament backup for ${state.tournamentTitle}`
-      })
+    const result = await uploadFileToDrive({
+      filename,
+      mimeType: "application/json",
+      base64Data,
+      description: `Free Fire Scrims Tournament backup for ${state.tournamentTitle}`
     });
 
-    const data = await response.json();
-    if (data.success) {
-      alert(`✅ Cloud Backup Saved to Google Drive!\n\nFile: ${filename}\nGoogle Drive Folder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5`);
+    if (result.success) {
+      alert(`✅ Cloud Backup Saved to Google Drive!\n\nFile: ${filename}\nGoogle Drive Folder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5\nMethod: 5 TB Account OAuth Upload`);
     } else {
-      alert(`⚠️ Could not save to Google Drive: ${data.error}`);
+      alert(`⚠️ Could not save to Google Drive: ${result.error || "Unknown error"}`);
     }
   } catch (err) {
-    alert(`⚠️ Google Drive upload error: ${err.message}. Make sure the backend server (npm start) is running.`);
+    alert(`⚠️ Google Drive upload error: ${err.message}`);
   } finally {
     btnCloudBackup.innerHTML = originalHtml;
   }
@@ -2104,7 +2317,7 @@ async function handleCloudDrivePosterExport(format = "png") {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  function processAndUpload(img) {
+  async function processAndUpload(img) {
     canvas.width = (img.naturalWidth || 847) * 2;
     canvas.height = (img.naturalHeight || 1024) * 2;
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -2189,36 +2402,31 @@ async function handleCloudDrivePosterExport(format = "png") {
     const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
     const filename = `FreeFire_${safeTitle}_Leaderboard_${Date.now()}.${format}`;
 
-    fetch("/api/upload-drive-file", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const result = await uploadFileToDrive({
         filename,
         mimeType: mime,
         base64Data: dataUrl,
         description: `Exported Leaderboard Poster for ${state.tournamentTitle}`
-      })
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          if (exportStatusMessage) {
-            exportStatusMessage.textContent = `✅ Saved to Google Drive! (${filename})`;
-          }
-          alert(`✅ Poster Saved to Google Drive!\n\nFile: ${filename}\nFolder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5`);
-        } else {
-          if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Drive error: ${data.error}`;
-          alert(`⚠️ Drive error: ${data.error}`);
-        }
-      })
-      .catch((err) => {
-        if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Backend error: ${err.message}`;
-        alert(`⚠️ Could not upload to Google Drive: ${err.message}`);
       });
+
+      if (result.success) {
+        if (exportStatusMessage) {
+          exportStatusMessage.textContent = `✅ Saved to Google Drive! (${filename})`;
+        }
+        alert(`✅ Poster Saved to Google Drive!\n\nFile: ${filename}\nFolder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5\nMethod: 5 TB Account Upload`);
+      } else {
+        if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Drive error: ${result.error}`;
+        alert(`⚠️ Drive error: ${result.error}`);
+      }
+    } catch (err) {
+      if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Drive error: ${err.message}`;
+      alert(`⚠️ Could not upload poster to Google Drive: ${err.message}`);
+    }
   }
 
   if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
-    processAndUpload(templateImg);
+    await processAndUpload(templateImg);
   } else {
     const img = new Image();
     img.crossOrigin = "anonymous";

@@ -8,6 +8,7 @@ const SPREADSHEET_ID = '1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4';
 
 const OAUTH_TOKENS_PATH = path.join(__dirname, 'oauth_tokens.json');
 const OAUTH_CLIENT_PATH = path.join(__dirname, 'oauth_client.json');
+const CLIENT_SECRET_PATH = path.join(__dirname, 'client_secret.json');
 
 // OAuth 2.0 Scopes required for uploading to Google Drive on behalf of user
 const OAUTH_SCOPES = [
@@ -60,22 +61,27 @@ function getOAuthClientConfig() {
     return {
       clientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
       clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
-      redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI || 'http://localhost:3000/oauth2callback'
+      redirectUri: process.env.GOOGLE_OAUTH_REDIRECT_URI || 'https://freefirecalc.netlify.app/oauth2callback'
     };
   }
 
-  // Check oauth_client.json file
-  if (fs.existsSync(OAUTH_CLIENT_PATH)) {
-    try {
-      const parsed = JSON.parse(fs.readFileSync(OAUTH_CLIENT_PATH, 'utf8'));
-      const details = parsed.web || parsed.installed || parsed;
-      return {
-        clientId: details.client_id,
-        clientSecret: details.client_secret,
-        redirectUri: (details.redirect_uris && details.redirect_uris[0]) || 'http://localhost:3000/oauth2callback'
-      };
-    } catch (err) {
-      console.warn('Could not parse oauth_client.json:', err.message);
+  // Check client_secret.json and oauth_client.json files
+  const fileCandidates = [CLIENT_SECRET_PATH, OAUTH_CLIENT_PATH];
+  for (const candidatePath of fileCandidates) {
+    if (fs.existsSync(candidatePath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(candidatePath, 'utf8'));
+        const details = parsed.web || parsed.installed || parsed;
+        if (details.client_id) {
+          return {
+            clientId: details.client_id,
+            clientSecret: details.client_secret,
+            redirectUri: (details.redirect_uris && details.redirect_uris[0]) || 'https://freefirecalc.netlify.app/oauth2callback'
+          };
+        }
+      } catch (err) {
+        console.warn(`Could not parse ${candidatePath}:`, err.message);
+      }
     }
   }
 

@@ -11,6 +11,7 @@ service-account*.json
 oauth_tokens.json
 *token*.json
 client_secret*.json
+oauth_client*.json
 
 # IDE & Editor files
 .vscode/
