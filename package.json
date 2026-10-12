@@ -15,5 +15,8 @@
     "esports"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "googleapis": "^185.0.0"
+  }
 }

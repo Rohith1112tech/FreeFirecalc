@@ -144,6 +144,8 @@ const downloadResultsBtnText = document.getElementById("download-results-btn-tex
 const exportStatusMessage = document.getElementById("export-status-message");
 const btnFormatPng = document.getElementById("btn-format-png");
 const btnFormatJpg = document.getElementById("btn-format-jpg");
+const btnCloudBackup = document.getElementById("btn-cloud-backup");
+const btnExportToDrive = document.getElementById("btn-export-to-drive");
 
 // Matrix Elements (Prompt 3)
 const matrixHeaderRow = document.getElementById("matrix-header-row");
@@ -484,6 +486,16 @@ function bindEvents() {
       if (btnDownloadPoster) {
         btnDownloadPoster.innerHTML = `<span>📸 DOWNLOAD POSTER (JPG)</span>`;
       }
+    });
+  }
+
+  if (btnCloudBackup) {
+    btnCloudBackup.addEventListener("click", handleCloudDriveBackup);
+  }
+
+  if (btnExportToDrive) {
+    btnExportToDrive.addEventListener("click", () => {
+      handleCloudDrivePosterExport(state.exportFormat || "png");
     });
   }
 
@@ -1022,10 +1034,15 @@ function handleSaveMatchData() {
 
   const matchNum = state.selectedMatchIndex + 1;
   if (wasPreviouslySaved) {
-    showMatchAlert(`Match ${matchNum} corrected successfully! Cumulative totals, leaderboards, and tie-breakers have been recalculated.`, "success");
+    showMatchAlert(`Match ${matchNum} corrected! Updating local data and syncing to Google Sheets...`, "success");
   } else {
-    showMatchAlert(`Match ${matchNum} data saved successfully! Standings and cumulative scores updated.`, "success");
+    showMatchAlert(`Match ${matchNum} saved! Syncing scores to Google Sheets...`, "success");
   }
+
+  // Automatic Google Sheets Synchronization (Scenario B)
+  syncMatchScoresToGoogleSheets(matchNum, currentMatch.teamData).catch((err) => {
+    console.warn("Google Sheets background sync notice:", err);
+  });
 }
 
 /**
@@ -1847,3 +1864,235 @@ function loadSavedState() {
     console.warn("Could not load tournament state from localStorage:", err);
   }
 }
+
+/**
+ * =====================================================================
+ * GOOGLE INTEGRATION HANDLERS (Scenario A: Drive, Scenario B: Sheets)
+ * =====================================================================
+ */
+
+/**
+ * Scenario B: Automatically sync match scores to Google Spreadsheet
+ */
+async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
+  try {
+    const teamsDataPayload = teamData.map((t, idx) => {
+      const p = t.placement !== "" && t.placement !== undefined ? parseInt(t.placement, 10) : "";
+      const k = parseInt(t.kills, 10) || 0;
+      const score = calculateTeamMatchScore(p, k);
+      const roster = (state.teamRosters && state.teamRosters[idx]) ? state.teamRosters[idx].filter(Boolean) : [];
+
+      return {
+        placement: p,
+        teamName: t.teamName,
+        players: roster,
+        kills: score.killPoints,
+        placementPoints: score.placementPoints,
+        totalPoints: score.totalPoints
+      };
+    });
+
+    const response = await fetch("/api/record-match-scores", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tournamentTitle: state.tournamentTitle,
+        matchNumber,
+        teamsData: teamsDataPayload
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      console.log(`[Google Sheets] Successfully recorded Match ${matchNumber} scores.`);
+      showMatchAlert(`✅ Match ${matchNumber} saved and auto-synced to Google Sheets!`, "success");
+    } else {
+      console.warn(`[Google Sheets] Notice:`, data.error);
+    }
+  } catch (err) {
+    // If running purely static client without backend server, fail gracefully
+    console.warn("[Google Sheets] Backend endpoint offline or unreachable:", err.message);
+  }
+}
+
+/**
+ * Scenario A: Upload Tournament Backup JSON to Google Drive
+ */
+async function handleCloudDriveBackup() {
+  if (!btnCloudBackup) return;
+
+  const originalHtml = btnCloudBackup.innerHTML;
+  btnCloudBackup.innerHTML = `<span>⏳ UPLOADING...</span>`;
+
+  try {
+    const backupData = {
+      tournamentTitle: state.tournamentTitle,
+      totalMatches: state.totalMatches,
+      teams: state.teams,
+      teamRosters: state.teamRosters,
+      matches: state.matches,
+      savedAt: new Date().toISOString()
+    };
+
+    const filename = `${(state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_")}_Backup_${Date.now()}.json`;
+    const base64Data = "data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(backupData, null, 2))));
+
+    const response = await fetch("/api/upload-drive-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename,
+        mimeType: "application/json",
+        base64Data,
+        description: `Free Fire Scrims Tournament backup for ${state.tournamentTitle}`
+      })
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      alert(`✅ Cloud Backup Saved to Google Drive!\n\nFile: ${filename}\nGoogle Drive Folder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5`);
+    } else {
+      alert(`⚠️ Could not save to Google Drive: ${data.error}`);
+    }
+  } catch (err) {
+    alert(`⚠️ Google Drive upload error: ${err.message}. Make sure the backend server (npm start) is running.`);
+  } finally {
+    btnCloudBackup.innerHTML = originalHtml;
+  }
+}
+
+/**
+ * Scenario A: Export Leaderboard Poster Image directly to Google Drive
+ */
+async function handleCloudDrivePosterExport(format = "png") {
+  if (exportStatusMessage) {
+    exportStatusMessage.textContent = "⏳ Generating poster image and uploading to Google Drive...";
+  }
+
+  const templateImg = document.getElementById("poster-template-bg");
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  function processAndUpload(img) {
+    canvas.width = (img.naturalWidth || 847) * 2;
+    canvas.height = (img.naturalHeight || 1024) * 2;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const cumulativeStats = calculateCumulativeStats();
+    const slotCenters1024 = [378, 423, 467, 510.5, 554.5, 599, 642.5, 686, 730.5, 775.5, 821, 869];
+    const rowHeight = (canvas.height * (539 / 1024)) / 12;
+
+    const crownFontSize = Math.round(canvas.width * 0.021);
+    const teamFontSize = Math.round(canvas.width * 0.022);
+    const numFontSize = Math.round(canvas.width * 0.023);
+    const totalFontSize = Math.round(canvas.width * 0.026);
+
+    cumulativeStats.forEach((t, i) => {
+      const rowCenterY = canvas.height * (slotCenters1024[i] / 1024);
+      const rank = i + 1;
+
+      if (rank === 1) {
+        ctx.font = `bold ${crownFontSize}px sans-serif`;
+        ctx.fillStyle = "#ffeb3b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.40);
+      }
+
+      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      let displayName = t.teamName.toUpperCase();
+      const maxTextWidth = canvas.width * 0.27;
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, canvas.width * 0.178, rowCenterY);
+
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // Booyah
+      ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#fef08a";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(254, 240, 138, 0.7)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.510, rowCenterY);
+
+      // Pos
+      ctx.fillStyle = "#93c5fd";
+      ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
+      ctx.shadowBlur = 6;
+      const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
+      ctx.fillText(posText, canvas.width * 0.627, rowCenterY);
+
+      // Elim
+      ctx.fillStyle = "#fca5a5";
+      ctx.shadowColor = "rgba(252, 165, 165, 0.7)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.740, rowCenterY);
+
+      // Total
+      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
+      ctx.shadowBlur = 10;
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.878, rowCenterY);
+
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+    });
+
+    const mime = format === "jpg" ? "image/jpeg" : "image/png";
+    const dataUrl = canvas.toDataURL(mime, 0.95);
+    const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filename = `FreeFire_${safeTitle}_Leaderboard_${Date.now()}.${format}`;
+
+    fetch("/api/upload-drive-file", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename,
+        mimeType: mime,
+        base64Data: dataUrl,
+        description: `Exported Leaderboard Poster for ${state.tournamentTitle}`
+      })
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          if (exportStatusMessage) {
+            exportStatusMessage.textContent = `✅ Saved to Google Drive! (${filename})`;
+          }
+          alert(`✅ Poster Saved to Google Drive!\n\nFile: ${filename}\nFolder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5`);
+        } else {
+          if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Drive error: ${data.error}`;
+          alert(`⚠️ Drive error: ${data.error}`);
+        }
+      })
+      .catch((err) => {
+        if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Backend error: ${err.message}`;
+        alert(`⚠️ Could not upload to Google Drive: ${err.message}`);
+      });
+  }
+
+  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
+    processAndUpload(templateImg);
+  } else {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => processAndUpload(img);
+    img.src = "assets/jack_sparrow_template.png";
+  }
+}
+

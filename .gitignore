@@ -5,6 +5,9 @@ package-lock.json
 # Environment and sensitive files
 .env
 .env.local
+credentials.json
+*credentials*.json
+service-account*.json
 
 # IDE & Editor files
 .vscode/
