@@ -8,6 +8,9 @@ package-lock.json
 credentials.json
 *credentials*.json
 service-account*.json
+oauth_tokens.json
+*token*.json
+client_secret*.json
 
 # IDE & Editor files
 .vscode/

@@ -168,6 +168,17 @@ const resetDialogSavedCount = document.getElementById("reset-dialog-saved-count"
 const autosaveStatusPill = document.getElementById("autosave-status-pill");
 const autosaveText = document.getElementById("autosave-text");
 
+// Google Account / OAuth 2.0 Elements
+const btnGoogleAccount = document.getElementById("btn-google-account");
+const googleAccountModal = document.getElementById("google-account-modal-backdrop");
+const btnCloseGoogleModal = document.getElementById("btn-close-google-modal");
+const oauthStatusBadge = document.getElementById("oauth-status-badge");
+const oauthStatusDesc = document.getElementById("oauth-status-desc");
+const btnOAuthSignIn = document.getElementById("btn-oauth-signin");
+const inputOAuthClientId = document.getElementById("input-oauth-client-id");
+const inputOAuthClientSecret = document.getElementById("input-oauth-client-secret");
+const btnSaveOAuthCreds = document.getElementById("btn-save-oauth-creds");
+
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
   loadSavedState();
@@ -175,6 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderTeamInputs();
   bindEvents();
   updateFilledCount();
+  checkOAuthStatusUI();
 
   if (state.activeScreen === "tournament") {
     showTournamentScreen();
@@ -507,6 +519,25 @@ function bindEvents() {
     teamModalBackdrop.addEventListener("click", (e) => {
       if (e.target === teamModalBackdrop) closeTeamBreakdownModal();
     });
+  }
+
+  // Google Account / OAuth 2.0 Modal Controls
+  if (btnGoogleAccount) {
+    btnGoogleAccount.addEventListener("click", openGoogleAccountModal);
+  }
+  if (btnCloseGoogleModal) {
+    btnCloseGoogleModal.addEventListener("click", closeGoogleAccountModal);
+  }
+  if (googleAccountModal) {
+    googleAccountModal.addEventListener("click", (e) => {
+      if (e.target === googleAccountModal) closeGoogleAccountModal();
+    });
+  }
+  if (btnOAuthSignIn) {
+    btnOAuthSignIn.addEventListener("click", handleOAuthSignInClick);
+  }
+  if (btnSaveOAuthCreds) {
+    btnSaveOAuthCreds.addEventListener("click", handleSaveOAuthCreds);
   }
 }
 
@@ -1870,6 +1901,106 @@ function loadSavedState() {
  * GOOGLE INTEGRATION HANDLERS (Scenario A: Drive, Scenario B: Sheets)
  * =====================================================================
  */
+
+/**
+ * Google Account Modal Controls & OAuth UI
+ */
+function openGoogleAccountModal() {
+  if (googleAccountModal) {
+    googleAccountModal.style.display = "flex";
+    checkOAuthStatusUI();
+  }
+}
+
+function closeGoogleAccountModal() {
+  if (googleAccountModal) {
+    googleAccountModal.style.display = "none";
+  }
+}
+
+async function checkOAuthStatusUI() {
+  if (!oauthStatusBadge || !oauthStatusDesc) return;
+  try {
+    const res = await fetch("/api/oauth/status");
+    const data = await res.json();
+    if (data.authenticated) {
+      oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
+      oauthStatusBadge.style.color = "#86efac";
+      oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
+      const email = data.user && data.user.emailAddress ? data.user.emailAddress : (data.userEmail || "Google Account");
+      oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(email)}</b>.<br><span style="color:#a7f3d0;">✓ Google Drive uploads will use your 5 TB storage quota.</span>`;
+      if (btnOAuthSignIn) {
+        btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
+      }
+    } else {
+      oauthStatusBadge.style.background = "rgba(239, 68, 68, 0.2)";
+      oauthStatusBadge.style.color = "#fca5a5";
+      oauthStatusBadge.textContent = "NOT CONNECTED";
+      oauthStatusDesc.textContent = data.message || "Not authorized yet. Click below to sign in with your 5 TB Google account.";
+      if (btnOAuthSignIn) {
+        btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span></span>`;
+      }
+    }
+  } catch (err) {
+    oauthStatusBadge.textContent = "STANDALONE";
+    oauthStatusBadge.style.background = "rgba(156, 163, 175, 0.2)";
+    oauthStatusBadge.style.color = "#9ca3af";
+    oauthStatusDesc.textContent = "Running in client-only mode or server offline. Start server (npm start) to sync with Drive.";
+  }
+}
+
+async function handleOAuthSignInClick() {
+  try {
+    const res = await fetch("/api/oauth/auth-url");
+    const data = await res.json();
+    if (data.authUrl) {
+      window.open(data.authUrl, "_blank", "width=600,height=700");
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        if (attempts > 20) clearInterval(interval);
+        try {
+          const statusRes = await fetch("/api/oauth/status");
+          const statusData = await statusRes.json();
+          if (statusData.authenticated) {
+            clearInterval(interval);
+            checkOAuthStatusUI();
+            alert("✅ Google Account successfully connected! Backups and Posters will now upload using your 5 TB quota.");
+          }
+        } catch (_) {}
+      }, 3000);
+    } else {
+      alert("⚠️ OAuth Error: " + (data.error || "Could not generate authorization URL. Please configure Client ID and Secret first."));
+    }
+  } catch (err) {
+    alert("⚠️ Could not contact server: " + err.message);
+  }
+}
+
+async function handleSaveOAuthCreds() {
+  const clientId = inputOAuthClientId ? inputOAuthClientId.value.trim() : "";
+  const clientSecret = inputOAuthClientSecret ? inputOAuthClientSecret.value.trim() : "";
+  if (!clientId || !clientSecret) {
+    alert("Please enter both Client ID and Client Secret.");
+    return;
+  }
+  try {
+    const res = await fetch("/api/oauth/configure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId, clientSecret })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ OAuth credentials configured! Now click 'SIGN IN WITH GOOGLE' to grant access.");
+      checkOAuthStatusUI();
+    } else {
+      alert("⚠️ Failed: " + data.error);
+    }
+  } catch (err) {
+    alert("⚠️ Error saving credentials: " + err.message);
+  }
+}
 
 /**
  * Scenario B: Automatically sync match scores to Google Spreadsheet
