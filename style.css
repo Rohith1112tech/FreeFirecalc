@@ -2802,48 +2802,62 @@ body {
 }
 
 .scrims-exact-poster-container.theme-cyan .poster-overlay-slots {
-  top: 37.11% !important;
-  bottom: 19.53% !important;
+  top: 37.94% !important;
+  bottom: 19.68% !important;
 }
 
 .scrims-exact-poster-container.theme-cyan .overlay-crown-icon {
-  left: 7.2% !important;
+  left: 12.8% !important;
+  transform: translateX(-50%) !important;
+  top: -4px !important;
+  font-size: clamp(8px, 1.2vw, 12px) !important;
 }
 
 /* 1. Team Name in Cyan theme */
 .scrims-exact-poster-container.theme-cyan .overlay-team-name {
-  left: 14.8% !important;
-  width: 33.0% !important;
+  left: 19.0% !important;
+  width: 28.5% !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: clamp(7.5px, 1.3vw, 12px) !important;
 }
 
-/* 2. Position Column (under POS: 48.1% to 58.6%) */
+/* 2. Position Column (under POS: 349px to 424px -> 48.14% to 58.48%) */
 .scrims-exact-poster-container.theme-cyan .overlay-position-val {
-  left: 48.1% !important;
-  width: 10.5% !important;
+  left: 48.2% !important;
+  width: 10.2% !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   color: #38bdf8 !important;
   text-shadow: 0 0 8px rgba(56, 189, 248, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
 }
 
-/* 3. Elimination Column (under ELIM: 58.6% to 70.0%) */
+/* 3. Elimination Column (under ELIM: 424px to 507px -> 58.48% to 69.93%) */
 .scrims-exact-poster-container.theme-cyan .overlay-elimination-val {
-  left: 58.6% !important;
+  left: 58.5% !important;
   width: 11.4% !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   color: #fb923c !important;
   text-shadow: 0 0 8px rgba(251, 146, 60, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
 }
 
-/* 4. Booyah Column (under BOOYAH: 70.0% to 82.2%) */
+/* 4. Booyah Column (under BOOYAH: 507px to 595px -> 69.93% to 82.07%) */
 .scrims-exact-poster-container.theme-cyan .overlay-booyah-val {
   left: 70.0% !important;
   width: 12.0% !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   color: #fef08a !important;
   text-shadow: 0 0 8px rgba(254, 240, 138, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
 }
 
-/* 5. Total Column (under cyan trapezoids: 82.2% to 97.2%) */
+/* 5. Total Column (under cyan trapezoids: 602px to 688px -> 83.0% to 94.9%) */
 .scrims-exact-poster-container.theme-cyan .overlay-total-val {
-  left: 82.2% !important;
-  width: 15.0% !important;
+  left: 83.0% !important;
+  width: 11.9% !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   color: #ffffff !important;
   text-shadow: 0 0 10px rgba(6, 182, 212, 0.95), 0 2px 4px rgba(0, 0, 0, 0.95) !important;
 }

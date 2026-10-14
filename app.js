@@ -1582,8 +1582,8 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
 
   if (isCyan) {
     // Cyan Template (725 x 1024 base -> 1450 x 2048 at 2x Retina)
-    const cyanSlotCenters = [403, 438.5, 473.5, 510, 546, 582.5, 619.5, 655.5, 692.5, 728.5, 765.5, 802];
-    const rowHeight = (canvas.height * (440 / 1024)) / 12;
+    const cyanSlotCenters = [406.75, 443, 479, 514.75, 550.75, 587.25, 623.75, 660.25, 696.5, 732.5, 768.5, 804.5];
+    const rowHeight = (canvas.height * (434 / 1024)) / 12;
 
     const crownFontSize = Math.round(canvas.width * 0.022);
     const teamFontSize = Math.round(canvas.width * 0.022);
@@ -1601,10 +1601,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillStyle = "#ffeb3b";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("👑", canvas.width * 0.082, rowCenterY - rowHeight * 0.45);
+        ctx.fillText("👑", canvas.width * 0.128, rowCenterY - rowHeight * 0.45);
       }
 
-      // 1. Team Name (Slot: 14.8% to 47.8%)
+      // 1. Team Name (Slot: 19.0% to 47.5%)
       ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
@@ -1615,11 +1615,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.31;
+      const maxTextWidth = canvas.width * 0.28;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.155, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.190, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
@@ -1627,7 +1627,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 0;
 
       // In Cyan: Column order is POS -> ELIM -> BOOYAH -> TOTAL
-      // 2. Position Column (under POS header: center 53.35%)
+      // 2. Position Column (under POS header: center 53.31%)
       ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#38bdf8";
       ctx.shadowColor = "rgba(56, 189, 248, 0.8)";
@@ -1635,26 +1635,26 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
-      ctx.fillText(posText, canvas.width * 0.5335, rowCenterY);
+      ctx.fillText(posText, canvas.width * 0.5331, rowCenterY);
 
-      // 3. Elimination Column (under ELIM header: center 64.3%)
+      // 3. Elimination Column (under ELIM header: center 64.21%)
       ctx.fillStyle = "#fb923c";
       ctx.shadowColor = "rgba(251, 146, 60, 0.8)";
       ctx.shadowBlur = 6;
-      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.643, rowCenterY);
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.6421, rowCenterY);
 
-      // 4. Booyah Column (under BOOYAH header: center 76.1%)
+      // 4. Booyah Column (under BOOYAH header: center 76.0%)
       ctx.fillStyle = "#fef08a";
       ctx.shadowColor = "rgba(254, 240, 138, 0.8)";
       ctx.shadowBlur = 6;
-      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.761, rowCenterY);
+      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.760, rowCenterY);
 
-      // 5. Total Column (under cyan trapezoids: center 89.7%)
+      // 5. Total Column (under cyan trapezoids: center 88.97%)
       ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "rgba(6, 182, 212, 0.95)";
       ctx.shadowBlur = 10;
-      ctx.fillText(String(t.totalPoints), canvas.width * 0.897, rowCenterY);
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.8897, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
