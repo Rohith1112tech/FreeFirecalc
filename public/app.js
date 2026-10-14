@@ -68,6 +68,7 @@ const state = {
   activeScreen: "setup", // 'setup' | 'tournament'
   activeSubView: "view-match-input", // 'view-match-input' | 'view-leaderboard' | 'view-matrix'
   positionDisplayMode: "points", // 'points' (Cumulative Placement Points) | 'average' (Average Placement Rank)
+  selectedPosterTheme: "red", // 'red' (Red Crimson) | 'cyan' (Cyan Storm)
   exportFormat: "jpg", // 'jpg' default
   selectedMatchIndex: 0, // 0-indexed (0 = Match 1)
   // Match history & scores
@@ -137,6 +138,10 @@ const btnModePoints = document.getElementById("btn-mode-points");
 const btnModeAvg = document.getElementById("btn-mode-avg");
 const btnDownloadPoster = document.getElementById("btn-download-poster");
 const headerPositionLabel = document.getElementById("header-position-label");
+const btnThemeRed = document.getElementById("btn-theme-red");
+const btnThemeCyan = document.getElementById("btn-theme-cyan");
+const scrimsPosterCapture = document.getElementById("scrims-poster-capture");
+const posterTemplateBg = document.getElementById("poster-template-bg");
 
 // Prominent Bottom Export Controls (Prompt 5)
 const btnDownloadResultsBottom = document.getElementById("btn-download-results-bottom");
@@ -186,6 +191,7 @@ const btnModalSyncSheets = document.getElementById("btn-modal-sync-sheets");
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
   loadSavedState();
+  setPosterTheme(state.selectedPosterTheme || "red");
   initMatchesState();
   renderTeamInputs();
   bindEvents();
@@ -471,6 +477,14 @@ function bindEvents() {
       btnModePoints.classList.remove("active");
       renderLeaderboardRows();
     });
+  }
+
+  // Poster Template Theme Switcher (Red Crimson vs Cyan Storm)
+  if (btnThemeRed) {
+    btnThemeRed.addEventListener("click", () => setPosterTheme("red"));
+  }
+  if (btnThemeCyan) {
+    btnThemeCyan.addEventListener("click", () => setPosterTheme("cyan"));
   }
 
   // Download Results & Poster as Image (Prompt 5)
@@ -1294,6 +1308,33 @@ function animateCountUp(element, target, duration = 800) {
 }
 
 /**
+ * Switch Poster Template Theme ('red' | 'cyan')
+ */
+function setPosterTheme(theme) {
+  state.selectedPosterTheme = theme === "cyan" ? "cyan" : "red";
+  if (scrimsPosterCapture) {
+    scrimsPosterCapture.classList.remove("theme-red", "theme-cyan");
+    scrimsPosterCapture.classList.add(`theme-${state.selectedPosterTheme}`);
+  }
+  if (posterTemplateBg) {
+    posterTemplateBg.src = state.selectedPosterTheme === "cyan"
+      ? "assets/jack_sparrow_cyan_template.jpg"
+      : "assets/jack_sparrow_template.png";
+  }
+  if (btnThemeRed && btnThemeCyan) {
+    if (state.selectedPosterTheme === "cyan") {
+      btnThemeCyan.classList.add("active");
+      btnThemeRed.classList.remove("active");
+    } else {
+      btnThemeRed.classList.add("active");
+      btnThemeCyan.classList.remove("active");
+    }
+  }
+  saveState();
+  renderLeaderboardRows(false);
+}
+
+/**
  * Render Final Leaderboard Table over the Exact Reference Template Image
  * (media_1791710298018_143ad7f8.png)
  * 12 rows aligned directly to the pre-rendered metal slots and red trapezoid badges:
@@ -1528,37 +1569,30 @@ function triggerFileDownload(dataUrl, filename) {
 }
 
 /**
- * Built-in Canvas Export: Renders 100% pixel-perfect text onto the exact template graphic
+ * Built-in Canvas Renderer: Renders pixel-perfect text onto the exact active template graphic
+ * Supports both Red Crimson (847x1024) and Cyan Storm (725x1024)
  */
-function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.jpg") {
+function drawPosterCanvas(canvas, ctx, img, theme = "red") {
+  const isCyan = theme === "cyan";
   const cumulativeStats = calculateCumulativeStats();
-  const templateImg = document.getElementById("poster-template-bg");
 
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
+  canvas.width = (img.naturalWidth || (isCyan ? 725 : 847)) * 2;
+  canvas.height = (img.naturalHeight || 1024) * 2;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  function drawDataAndDownload(img) {
-    // 2x Retina Resolution
-    canvas.width = (img.naturalWidth || 847) * 2;
-    canvas.height = (img.naturalHeight || 1024) * 2;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  if (isCyan) {
+    // Cyan Template (725 x 1024 base -> 1450 x 2048 at 2x Retina)
+    const cyanSlotCenters = [403, 438.5, 473.5, 510, 546, 582.5, 619.5, 655.5, 692.5, 728.5, 765.5, 802];
+    const rowHeight = (canvas.height * (440 / 1024)) / 12;
 
-    // Exact measured vertical centers of all 12 slots in the 1024px template:
-    // Slot 1: 378, Slot 2: 423, Slot 3: 467, Slot 4: 510.5, Slot 5: 554.5, Slot 6: 599,
-    // Slot 7: 642.5, Slot 8: 686, Slot 9: 730.5, Slot 10: 775.5, Slot 11: 821, Slot 12: 869
-    const slotCenters1024 = [378, 423, 467, 510.5, 554.5, 599, 642.5, 686, 730.5, 775.5, 821, 869];
-    const rowHeight = (canvas.height * (539 / 1024)) / 12;
-
-    // Pre-calculate fonts (scaled for retina sharpness, adjusted to fit slot height)
-    const crownFontSize = Math.round(canvas.width * 0.021);
+    const crownFontSize = Math.round(canvas.width * 0.022);
     const teamFontSize = Math.round(canvas.width * 0.022);
-    const numFontSize = Math.round(canvas.width * 0.023);
-    const totalFontSize = Math.round(canvas.width * 0.026);
+    const numFontSize = Math.round(canvas.width * 0.024);
+    const totalFontSize = Math.round(canvas.width * 0.028);
 
     cumulativeStats.forEach((t, i) => {
       if (i >= 12) return;
-      // Dead-center vertical coordinate for each slot
-      const rowCenterY = canvas.height * (slotCenters1024[i] / 1024);
+      const rowCenterY = canvas.height * (cyanSlotCenters[i] / 1024);
       const rank = i + 1;
 
       // Crown on Rank 1 (#01)
@@ -1567,10 +1601,88 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
         ctx.fillStyle = "#ffeb3b";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+        ctx.fillText("👑", canvas.width * 0.082, rowCenterY - rowHeight * 0.45);
+      }
+
+      // 1. Team Name (Slot: 14.8% to 47.8%)
+      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,0.95)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      let displayName = t.teamName.toUpperCase();
+      const maxTextWidth = canvas.width * 0.31;
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, canvas.width * 0.155, rowCenterY);
+
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // In Cyan: Column order is POS -> ELIM -> BOOYAH -> TOTAL
+      // 2. Position Column (under POS header: center 53.35%)
+      ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#38bdf8";
+      ctx.shadowColor = "rgba(56, 189, 248, 0.8)";
+      ctx.shadowBlur = 6;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
+      ctx.fillText(posText, canvas.width * 0.5335, rowCenterY);
+
+      // 3. Elimination Column (under ELIM header: center 64.3%)
+      ctx.fillStyle = "#fb923c";
+      ctx.shadowColor = "rgba(251, 146, 60, 0.8)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.643, rowCenterY);
+
+      // 4. Booyah Column (under BOOYAH header: center 76.1%)
+      ctx.fillStyle = "#fef08a";
+      ctx.shadowColor = "rgba(254, 240, 138, 0.8)";
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.761, rowCenterY);
+
+      // 5. Total Column (under cyan trapezoids: center 89.7%)
+      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(6, 182, 212, 0.95)";
+      ctx.shadowBlur = 10;
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.897, rowCenterY);
+
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+    });
+  } else {
+    // Red Template (847 x 1024 base -> 1694 x 2048 at 2x Retina)
+    const redSlotCenters = [378, 423, 467, 510.5, 554.5, 599, 642.5, 686, 730.5, 775.5, 821, 869];
+    const rowHeight = (canvas.height * (539 / 1024)) / 12;
+
+    const crownFontSize = Math.round(canvas.width * 0.021);
+    const teamFontSize = Math.round(canvas.width * 0.022);
+    const numFontSize = Math.round(canvas.width * 0.023);
+    const totalFontSize = Math.round(canvas.width * 0.026);
+
+    cumulativeStats.forEach((t, i) => {
+      if (i >= 12) return;
+      const rowCenterY = canvas.height * (redSlotCenters[i] / 1024);
+      const rank = i + 1;
+
+      if (rank === 1) {
+        ctx.font = `bold ${crownFontSize}px sans-serif`;
+        ctx.fillStyle = "#ffeb3b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
         ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.40);
       }
 
-      // 1. Team Name (Inside brushed metal slot: x = 17.5%)
+      // 1. Team Name (Slot: 17.5% to 45.0%)
       ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
@@ -1580,7 +1692,6 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
       ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 1;
 
-      // Truncate name if too long for slot width (up to 27%)
       let displayName = t.teamName.toUpperCase();
       const maxTextWidth = canvas.width * 0.27;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
@@ -1588,13 +1699,13 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
       }
       ctx.fillText(displayName, canvas.width * 0.178, rowCenterY);
 
-      // Reset shadow for numbers
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
 
-      // 2. Booyah Column (under BOOYAH header: center x = 51.0%)
+      // In Red: Column order is BOOYAH -> POS -> ELIM -> TOTAL
+      // 2. Booyah (center 51.0%)
       ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#fef08a";
       ctx.textAlign = "center";
@@ -1603,31 +1714,73 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
       ctx.shadowBlur = 6;
       ctx.fillText(String(t.booyahs || 0), canvas.width * 0.510, rowCenterY);
 
-      // 3. Position Column (under POS header: center x = 62.7%)
+      // 3. Position (center 62.7%)
       ctx.fillStyle = "#93c5fd";
       ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
       ctx.shadowBlur = 6;
       const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
       ctx.fillText(posText, canvas.width * 0.627, rowCenterY);
 
-      // 4. Elimination Column (under ELIM header: center x = 74.0%)
+      // 4. Elimination (center 74.0%)
       ctx.fillStyle = "#fca5a5";
       ctx.shadowColor = "rgba(252, 165, 165, 0.7)";
       ctx.shadowBlur = 6;
       ctx.fillText(String(t.eliminationPoints), canvas.width * 0.740, rowCenterY);
 
-      // 5. Total Column (Right red trapezoid badge: center x = 87.8%)
+      // 5. Total (center 87.8%)
       ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
       ctx.shadowBlur = 10;
       ctx.fillText(String(t.totalPoints), canvas.width * 0.878, rowCenterY);
 
-      // Reset shadow
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
     });
+  }
+}
 
+/**
+ * Loads the active template image and calls callback with rendered canvas
+ */
+function getPosterImageAndDraw(callback) {
+  const currentTheme = state.selectedPosterTheme || "red";
+  const templateImg = document.getElementById("poster-template-bg");
+  const expectedSrc = currentTheme === "cyan"
+    ? "assets/jack_sparrow_cyan_template.jpg"
+    : "assets/jack_sparrow_template.png";
+  const expectedFilename = currentTheme === "cyan"
+    ? "jack_sparrow_cyan_template.jpg"
+    : "jack_sparrow_template.png";
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0 && templateImg.src && templateImg.src.includes(expectedFilename)) {
+    drawPosterCanvas(canvas, ctx, templateImg, currentTheme);
+    callback(canvas);
+  } else {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      drawPosterCanvas(canvas, ctx, img, currentTheme);
+      callback(canvas);
+    };
+    img.onerror = () => {
+      console.error("Failed to load poster template image:", expectedSrc);
+      if (exportStatusMessage) {
+        exportStatusMessage.textContent = "⚠️ Failed to load template image. Please try again.";
+      }
+    };
+    img.src = expectedSrc;
+  }
+}
+
+/**
+ * Built-in Canvas Export: Renders 100% pixel-perfect text onto the exact template graphic
+ */
+function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.jpg") {
+  getPosterImageAndDraw((canvas) => {
     const mime = format === "png" ? "image/png" : "image/jpeg";
     triggerFileDownload(canvas.toDataURL(mime, 0.95), filename);
     if (exportStatusMessage) {
@@ -1636,16 +1789,7 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
         if (exportStatusMessage) exportStatusMessage.textContent = "";
       }, 5000);
     }
-  }
-
-  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
-    drawDataAndDownload(templateImg);
-  } else {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => drawDataAndDownload(img);
-    img.src = "assets/jack_sparrow_template.png";
-  }
+  });
 }
 
 /**
@@ -1857,6 +2001,7 @@ function saveState() {
       activeSubView: state.activeSubView,
       selectedMatchIndex: state.selectedMatchIndex,
       positionDisplayMode: state.positionDisplayMode,
+      selectedPosterTheme: state.selectedPosterTheme || "red",
       exportFormat: state.exportFormat,
       matches: state.matches
     };
@@ -1886,6 +2031,7 @@ function loadSavedState() {
       if (parsed.activeSubView) state.activeSubView = parsed.activeSubView;
       if (parsed.selectedMatchIndex !== undefined) state.selectedMatchIndex = parsed.selectedMatchIndex;
       if (parsed.positionDisplayMode) state.positionDisplayMode = parsed.positionDisplayMode;
+      if (parsed.selectedPosterTheme) state.selectedPosterTheme = parsed.selectedPosterTheme;
       if (parsed.exportFormat) state.exportFormat = parsed.exportFormat;
       if (Array.isArray(parsed.matches)) state.matches = parsed.matches;
 
@@ -2449,91 +2595,7 @@ async function handleCloudDrivePosterExport(format = "jpg") {
     exportStatusMessage.textContent = "⏳ Generating poster image and uploading to Google Drive...";
   }
 
-  const templateImg = document.getElementById("poster-template-bg");
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  async function processAndUpload(img) {
-    canvas.width = (img.naturalWidth || 847) * 2;
-    canvas.height = (img.naturalHeight || 1024) * 2;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-    const cumulativeStats = calculateCumulativeStats();
-    const slotCenters1024 = [378, 423, 467, 510.5, 554.5, 599, 642.5, 686, 730.5, 775.5, 821, 869];
-    const rowHeight = (canvas.height * (539 / 1024)) / 12;
-
-    const crownFontSize = Math.round(canvas.width * 0.021);
-    const teamFontSize = Math.round(canvas.width * 0.022);
-    const numFontSize = Math.round(canvas.width * 0.023);
-    const totalFontSize = Math.round(canvas.width * 0.026);
-
-    cumulativeStats.forEach((t, i) => {
-      if (i >= 12) return;
-      const rowCenterY = canvas.height * (slotCenters1024[i] / 1024);
-      const rank = i + 1;
-
-      if (rank === 1) {
-        ctx.font = `bold ${crownFontSize}px sans-serif`;
-        ctx.fillStyle = "#ffeb3b";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.40);
-      }
-
-      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
-      ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.shadowColor = "rgba(0,0,0,0.9)";
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
-
-      let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.27;
-      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
-        displayName = displayName.slice(0, -1);
-      }
-      ctx.fillText(displayName, canvas.width * 0.178, rowCenterY);
-
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-
-      // Booyah
-      ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
-      ctx.fillStyle = "#fef08a";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.shadowColor = "rgba(254, 240, 138, 0.7)";
-      ctx.shadowBlur = 6;
-      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.510, rowCenterY);
-
-      // Pos
-      ctx.fillStyle = "#93c5fd";
-      ctx.shadowColor = "rgba(147, 197, 253, 0.7)";
-      ctx.shadowBlur = 6;
-      const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
-      ctx.fillText(posText, canvas.width * 0.627, rowCenterY);
-
-      // Elim
-      ctx.fillStyle = "#fca5a5";
-      ctx.shadowColor = "rgba(252, 165, 165, 0.7)";
-      ctx.shadowBlur = 6;
-      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.740, rowCenterY);
-
-      // Total
-      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
-      ctx.fillStyle = "#ffffff";
-      ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
-      ctx.shadowBlur = 10;
-      ctx.fillText(String(t.totalPoints), canvas.width * 0.878, rowCenterY);
-
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur = 0;
-    });
-
+  getPosterImageAndDraw(async (canvas) => {
     const mime = format === "jpg" ? "image/jpeg" : "image/png";
     const dataUrl = canvas.toDataURL(mime, 0.95);
     const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -2560,15 +2622,6 @@ async function handleCloudDrivePosterExport(format = "jpg") {
       if (exportStatusMessage) exportStatusMessage.textContent = `⚠️ Drive error: ${err.message}`;
       alert(`⚠️ Could not upload poster to Google Drive: ${err.message}`);
     }
-  }
-
-  if (templateImg && templateImg.complete && templateImg.naturalWidth > 0) {
-    await processAndUpload(templateImg);
-  } else {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => processAndUpload(img);
-    img.src = "assets/jack_sparrow_template.png";
-  }
+  });
 }
 

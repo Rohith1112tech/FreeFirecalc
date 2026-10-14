@@ -319,10 +319,24 @@
         <!-- SECTION B: FINAL LEADERBOARD RESULTS (Prompt 4) -->
         <div id="view-leaderboard" class="tourney-subview">
 
-          <!-- The Complete Final Poster Container (Matching IMG_20261011_112403.jpg) -->
-          <!-- The Exact Pixel-Perfect Poster matching user's uploaded template -->
-          <div class="scrims-exact-poster-container" id="scrims-poster-capture">
-            <!-- Background Template Image (media_1791710298018_143ad7f8.png) -->
+          <!-- Poster Template Theme Selector -->
+          <div class="poster-theme-selector">
+            <span class="theme-select-label">POSTER THEME:</span>
+            <div class="theme-select-buttons">
+              <button type="button" class="theme-pill-btn active" id="btn-theme-red" data-theme="red">
+                <span class="theme-circle red-circle"></span>
+                <span>RED CRIMSON</span>
+              </button>
+              <button type="button" class="theme-pill-btn" id="btn-theme-cyan" data-theme="cyan">
+                <span class="theme-circle cyan-circle"></span>
+                <span>CYAN STORM</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- The Complete Final Poster Container -->
+          <div class="scrims-exact-poster-container theme-red" id="scrims-poster-capture">
+            <!-- Background Template Image -->
             <img src="assets/jack_sparrow_template.png" alt="Free Fire Scrims Leaderboard" class="poster-template-bg" id="poster-template-bg">
 
             <!-- Dynamic Leaderboard Data Overlay (precisely mapped to the 12 template slots) -->
