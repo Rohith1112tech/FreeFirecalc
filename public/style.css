@@ -964,7 +964,101 @@ body {
 
 .tourney-controls {
   display: flex;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.tourney-controls .cyber-btn {
+  font-family: var(--font-tech), sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 0.78rem !important;
+  letter-spacing: 1px !important;
+  padding: 0.55rem 0.9rem !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.35rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  line-height: 1.2 !important;
+  box-sizing: border-box !important;
+}
+
+/* 1. Google Account Button (Clean Dark Blue) */
+.tourney-controls #btn-google-account {
+  background: rgba(30, 58, 138, 0.25) !important;
+  border: 1px solid rgba(59, 130, 246, 0.6) !important;
+  color: #93c5fd !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.tourney-controls #btn-google-account:hover {
+  background: rgba(30, 58, 138, 0.55) !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+/* 2. Sync Sheets Button (Clean Dark Emerald) */
+.tourney-controls #btn-sync-sheets {
+  background: rgba(6, 78, 59, 0.25) !important;
+  border: 1px solid rgba(16, 185, 129, 0.6) !important;
+  color: #6ee7b7 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.tourney-controls #btn-sync-sheets:hover {
+  background: rgba(6, 78, 59, 0.55) !important;
+  border-color: #34d399 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+/* 3. Drive Backup Button (Dark Crimson) */
+.tourney-controls #btn-cloud-backup {
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.35) 0%, rgba(153, 27, 27, 0.45) 100%) !important;
+  border: 1px solid rgba(239, 68, 68, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.tourney-controls #btn-cloud-backup:hover {
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.6) 0%, rgba(185, 28, 28, 0.7) 100%) !important;
+  border-color: #ff334b !important;
+  box-shadow: 0 0 15px rgba(229, 9, 20, 0.55) !important;
+  transform: translateY(-1px);
+}
+
+/* 4. Edit Setup / Teams Button (Dark Steel) */
+.tourney-controls #btn-back-setup {
+  background: rgba(20, 24, 34, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #d1d5db !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.tourney-controls #btn-back-setup:hover {
+  background: rgba(35, 15, 22, 0.85) !important;
+  border-color: var(--crimson-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+/* 5. Reset Tournament Button (Dark Crimson Danger) */
+.tourney-controls #btn-reset-tournament {
+  background: rgba(50, 10, 15, 0.65) !important;
+  border: 1px solid rgba(229, 9, 20, 0.45) !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+.tourney-controls #btn-reset-tournament:hover {
+  background: rgba(185, 28, 28, 0.6) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(229, 9, 20, 0.5) !important;
+  transform: translateY(-1px);
 }
 
 /* LEADERBOARD POSTER FRAME (MATCHING THE UPLOADED IMAGE) */
