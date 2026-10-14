@@ -342,38 +342,29 @@
             </div>
           </div>
 
-          <!-- PROMINENT BOTTOM EXPORT SECTION (Prompt 5) -->
+          <!-- PROMINENT BOTTOM EXPORT SECTION -->
           <div class="leaderboard-bottom-export-panel">
-            <div class="export-panel-inner">
-              <div class="export-meta-info">
-                <div class="export-badge">📸 SOCIAL MEDIA READY EXPORT</div>
-                <h3>EXPORT TOURNAMENT RESULTS</h3>
-                <p>Generate a high-definition image of the final results poster matching the Free Fire scrims aesthetic, ready to share directly on WhatsApp, Instagram, Discord, and YouTube.</p>
-                <div class="export-format-selector">
-                  <span class="format-label">SELECT FORMAT:</span>
-                  <button type="button" class="format-pill-btn active" id="btn-format-png" data-format="png">PNG (Lossless HD)</button>
-                  <button type="button" class="format-pill-btn" id="btn-format-jpg" data-format="jpg">JPG (Compact)</button>
-                  <button type="button" class="format-pill-btn" id="btn-export-to-drive" style="border-color: #f59e0b; color: #fde68a;">☁️ SAVE TO DRIVE</button>
-                </div>
-              </div>
+            <div class="export-panel-buttons-only">
+              <button type="button" id="btn-download-results-bottom" class="cyber-btn primary-start-btn download-results-prominent-btn">
+                <span class="btn-cutout-left"></span>
+                <span class="btn-content">
+                  <span class="btn-flame-icon">📸</span>
+                  <span class="btn-text" id="download-results-btn-text">DOWNLOAD RESULTS</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+                  </svg>
+                </span>
+                <span class="btn-cutout-right"></span>
+              </button>
 
-              <div class="export-action-box">
-                <button type="button" id="btn-download-results-bottom" class="cyber-btn primary-start-btn download-results-prominent-btn">
-                  <span class="btn-cutout-left"></span>
-                  <span class="btn-content">
-                    <span class="btn-flame-icon">📸</span>
-                    <span class="btn-text" id="download-results-btn-text">DOWNLOAD RESULTS</span>
-                    <svg class="btn-arrow" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
-                    </svg>
-                  </span>
-                  <span class="btn-cutout-right"></span>
-                </button>
-                <div id="export-status-message" class="export-status-note">
-                  ⚡ 2x Ultra HD capture powered by html2canvas
-                </div>
-              </div>
+              <button type="button" id="btn-export-to-drive" class="cyber-btn save-to-drive-btn">
+                <span class="btn-content">
+                  <span class="btn-flame-icon">☁️</span>
+                  <span>SAVE TO DRIVE</span>
+                </span>
+              </button>
             </div>
+            <div id="export-status-message" class="export-status-note"></div>
           </div>
         </div>
 

@@ -68,7 +68,7 @@ const state = {
   activeScreen: "setup", // 'setup' | 'tournament'
   activeSubView: "view-match-input", // 'view-match-input' | 'view-leaderboard' | 'view-matrix'
   positionDisplayMode: "points", // 'points' (Cumulative Placement Points) | 'average' (Average Placement Rank)
-  exportFormat: "png", // 'png' | 'jpg'
+  exportFormat: "jpg", // 'jpg' default
   selectedMatchIndex: 0, // 0-indexed (0 = Match 1)
   // Match history & scores
   matches: []
@@ -476,13 +476,13 @@ function bindEvents() {
   // Download Results & Poster as Image (Prompt 5)
   if (btnDownloadResultsBottom) {
     btnDownloadResultsBottom.addEventListener("click", () => {
-      handleExportResults(state.exportFormat || "png");
+      handleExportResults(state.exportFormat || "jpg");
     });
   }
 
   if (btnDownloadPoster) {
     btnDownloadPoster.addEventListener("click", () => {
-      handleExportResults(state.exportFormat || "png");
+      handleExportResults(state.exportFormat || "jpg");
     });
   }
 
@@ -491,18 +491,12 @@ function bindEvents() {
       state.exportFormat = "png";
       btnFormatPng.classList.add("active");
       btnFormatJpg.classList.remove("active");
-      if (btnDownloadPoster) {
-        btnDownloadPoster.innerHTML = `<span>📸 DOWNLOAD POSTER (PNG)</span>`;
-      }
     });
 
     btnFormatJpg.addEventListener("click", () => {
       state.exportFormat = "jpg";
       btnFormatJpg.classList.add("active");
       btnFormatPng.classList.remove("active");
-      if (btnDownloadPoster) {
-        btnDownloadPoster.innerHTML = `<span>📸 DOWNLOAD POSTER (JPG)</span>`;
-      }
     });
   }
 
@@ -512,7 +506,7 @@ function bindEvents() {
 
   if (btnExportToDrive) {
     btnExportToDrive.addEventListener("click", () => {
-      handleCloudDrivePosterExport(state.exportFormat || "png");
+      handleCloudDrivePosterExport(state.exportFormat || "jpg");
     });
   }
 
@@ -1494,18 +1488,17 @@ function renderMatrixTable() {
  * Renders directly onto the high-resolution Jack Sparrow Scrims template image
  * ensuring 100% pixel-perfect text placement inside every slot and badge.
  */
-async function handleExportResults(format = "png") {
+async function handleExportResults(format = "jpg") {
   const btnTextEl = document.getElementById("download-results-btn-text");
   const originalText = btnTextEl ? btnTextEl.textContent : "DOWNLOAD RESULTS";
 
   // Visual Loading Feedback
-  if (btnTextEl) btnTextEl.textContent = `GENERATING (${format.toUpperCase()})...`;
+  if (btnTextEl) btnTextEl.textContent = "GENERATING...";
   if (btnDownloadResultsBottom) btnDownloadResultsBottom.classList.add("downloading");
-  if (btnDownloadPoster) btnDownloadPoster.innerHTML = `<span>⏳ EXPORTING (${format.toUpperCase()})...</span>`;
-  if (exportStatusMessage) exportStatusMessage.textContent = `⏳ Rendering pixel-perfect HD results onto template image...`;
+  if (exportStatusMessage) exportStatusMessage.textContent = "⏳ Generating high-definition results image...";
 
   const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
-  const ext = format === "jpg" ? "jpg" : "png";
+  const ext = format === "png" ? "png" : "jpg";
   const filename = `FreeFire_${safeTitle}_Leaderboard_${Date.now()}.${ext}`;
 
   try {
@@ -1513,13 +1506,12 @@ async function handleExportResults(format = "png") {
   } catch (err) {
     console.error("Export error:", err);
     if (exportStatusMessage) {
-      exportStatusMessage.textContent = `⚠️ Error generating image. Please try again.`;
+      exportStatusMessage.textContent = "⚠️ Error generating image. Please try again.";
     }
   } finally {
     // Reset button states
     if (btnTextEl) btnTextEl.textContent = originalText;
     if (btnDownloadResultsBottom) btnDownloadResultsBottom.classList.remove("downloading");
-    if (btnDownloadPoster) btnDownloadPoster.innerHTML = `<span>📸 DOWNLOAD POSTER (${format.toUpperCase()})</span>`;
   }
 }
 
@@ -1538,7 +1530,7 @@ function triggerFileDownload(dataUrl, filename) {
 /**
  * Built-in Canvas Export: Renders 100% pixel-perfect text onto the exact template graphic
  */
-function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.png") {
+function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.jpg") {
   const cumulativeStats = calculateCumulativeStats();
   const templateImg = document.getElementById("poster-template-bg");
 
@@ -1636,12 +1628,12 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
       ctx.shadowBlur = 0;
     });
 
-    const mime = format === "jpg" ? "image/jpeg" : "image/png";
+    const mime = format === "png" ? "image/png" : "image/jpeg";
     triggerFileDownload(canvas.toDataURL(mime, 0.95), filename);
     if (exportStatusMessage) {
-      exportStatusMessage.textContent = `✅ Results poster saved successfully (${format.toUpperCase()})!`;
+      exportStatusMessage.textContent = "✅ Results poster saved successfully!";
       setTimeout(() => {
-        if (exportStatusMessage) exportStatusMessage.textContent = "⚡ High-Definition 2x capture perfectly aligned";
+        if (exportStatusMessage) exportStatusMessage.textContent = "";
       }, 5000);
     }
   }
@@ -1801,7 +1793,7 @@ function handleExecuteTournamentReset() {
   state.activeSubView = "view-match-input";
   state.selectedMatchIndex = 0;
   state.positionDisplayMode = "points";
-  state.exportFormat = "png";
+  state.exportFormat = "jpg";
   state.matches = [];
 
   // 3. Re-initialize match structures & setup inputs
@@ -2452,7 +2444,7 @@ async function handleCloudDriveBackup() {
 /**
  * Scenario A: Export Leaderboard Poster Image directly to Google Drive
  */
-async function handleCloudDrivePosterExport(format = "png") {
+async function handleCloudDrivePosterExport(format = "jpg") {
   if (exportStatusMessage) {
     exportStatusMessage.textContent = "⏳ Generating poster image and uploading to Google Drive...";
   }

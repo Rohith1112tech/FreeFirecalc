@@ -2640,98 +2640,39 @@ body {
   background: linear-gradient(90deg, transparent, #ff1744 30%, #ff1744 70%, transparent);
 }
 
-.export-panel-inner {
+.export-panel-buttons-only {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
+  justify-content: center;
   gap: 1.5rem;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
-.export-meta-info {
-  flex: 1;
-  min-width: 280px;
-}
-
-.export-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(229, 9, 20, 0.2);
-  border: 1px solid rgba(229, 9, 20, 0.45);
-  color: #fca5a5;
-  font-family: var(--font-tech);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-}
-
-.export-meta-info h3 {
+.save-to-drive-btn {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(180, 83, 9, 0.35) 100%);
+  border: 2px solid #f59e0b;
+  color: #fef3c7;
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-weight: 900;
+  font-weight: 800;
+  font-size: 1.1rem;
   letter-spacing: 2px;
-  color: #ffffff;
-  margin-bottom: 0.35rem;
-  text-transform: uppercase;
-}
-
-.export-meta-info p {
-  font-size: 0.82rem;
-  color: #9ca3af;
-  line-height: 1.45;
-  max-width: 520px;
-  margin-bottom: 0.85rem;
-}
-
-.export-format-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-}
-
-.format-label {
-  font-family: var(--font-tech);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  color: #d1d5db;
-}
-
-.format-pill-btn {
-  background: rgba(20, 24, 32, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #9ca3af;
-  font-family: var(--font-tech);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  padding: 0.3rem 0.85rem;
+  padding: 1.15rem 2.8rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.format-pill-btn:hover {
-  border-color: var(--crimson-primary);
-  color: #ffffff;
-}
-
-.format-pill-btn.active {
-  background: var(--crimson-badge-grad);
-  border-color: #ff334b;
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
-}
-
-.export-action-box {
-  display: flex;
-  flex-direction: column;
+  transition: all 0.25s ease;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+}
+
+.save-to-drive-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: #fbbf24;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.4) 0%, rgba(180, 83, 9, 0.5) 100%);
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.55), 0 0 15px rgba(251, 191, 36, 0.4);
 }
 
 /* Big Aggressive Download Results Button */
