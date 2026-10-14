@@ -885,7 +885,7 @@ function renderMatchTeamForms() {
     placementSelect.dataset.teamIndex = teamIdx;
     placementSelect.innerHTML = `<option value="">-- Select Placement --</option>`;
 
-    for (let p = 1; p <= Math.max(totalTeamsCount, 12); p++) {
+    for (let p = 1; p <= totalTeamsCount; p++) {
       const pts = PLACEMENT_POINTS[p] !== undefined ? PLACEMENT_POINTS[p] : 0;
       const opt = document.createElement("option");
       opt.value = p;
@@ -1564,6 +1564,7 @@ function fallbackCanvasExport(format = "png", filename = "FreeFire_Leaderboard.p
     const totalFontSize = Math.round(canvas.width * 0.026);
 
     cumulativeStats.forEach((t, i) => {
+      if (i >= 12) return;
       // Dead-center vertical coordinate for each slot
       const rowCenterY = canvas.height * (slotCenters1024[i] / 1024);
       const rank = i + 1;
@@ -2475,6 +2476,7 @@ async function handleCloudDrivePosterExport(format = "png") {
     const totalFontSize = Math.round(canvas.width * 0.026);
 
     cumulativeStats.forEach((t, i) => {
+      if (i >= 12) return;
       const rowCenterY = canvas.height * (slotCenters1024[i] / 1024);
       const rank = i + 1;
 

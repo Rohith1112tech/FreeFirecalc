@@ -2469,6 +2469,7 @@ body {
   right: 0 !important;
   display: flex !important;
   flex-direction: column !important;
+  justify-content: flex-start !important;
   pointer-events: auto !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -2477,11 +2478,15 @@ body {
 
 /* Individual Overlay Row aligned exactly to each of the 12 template slots */
 .overlay-row {
-  flex: 1 1 0% !important;
+  height: calc(100% / 12) !important;
+  min-height: calc(100% / 12) !important;
+  max-height: calc(100% / 12) !important;
+  flex: 0 0 calc(100% / 12) !important;
   display: flex !important;
   align-items: center !important;
   position: relative !important;
   width: 100% !important;
+  box-sizing: border-box !important;
   cursor: pointer !important;
   transition: background 0.15s ease !important;
   margin: 0 !important;
