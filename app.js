@@ -33,13 +33,20 @@ function getKillPoints(kills) {
   return isNaN(k) || k < 0 ? 0 : k; // 1 point per kill
 }
 
-function calculateTeamMatchScore(placement, kills) {
+function getMinusPoints(minus) {
+  const m = parseInt(minus, 10);
+  return isNaN(m) || m < 0 ? 0 : m; // Penalty deduction points
+}
+
+function calculateTeamMatchScore(placement, kills, minus = 0) {
   const placePts = getPlacementPoints(placement);
   const killPts = getKillPoints(kills);
+  const minusPts = getMinusPoints(minus);
   return {
     placementPoints: placePts,
     killPoints: killPts,
-    totalPoints: placePts + killPts // Total = Placement Points + Kill Points
+    minusPoints: minusPts,
+    totalPoints: placePts + killPts - minusPts // Total = Placement Points + Kill Points - Minus Points
   };
 }
 
@@ -237,7 +244,8 @@ function initMatchesState() {
           teamData: state.teams.map((teamName) => ({
             teamName,
             placement: "",
-            kills: 0
+            kills: 0,
+            minus: 0
           }))
         });
       }
@@ -249,7 +257,8 @@ function initMatchesState() {
         m.teamData = state.teams.map((teamName) => ({
           teamName,
           placement: "",
-          kills: 0
+          kills: 0,
+          minus: 0
         }));
       } else {
         m.teamData.forEach((td, idx) => {
@@ -1219,10 +1228,11 @@ function renderMatchTeamForms() {
     const slotNumber = String(teamIdx + 1).padStart(2, "0");
     const existing = (currentMatch.teamData && currentMatch.teamData[teamIdx]) || {
       placement: "",
-      kills: 0
+      kills: 0,
+      minus: 0
     };
 
-    const score = calculateTeamMatchScore(existing.placement, existing.kills);
+    const score = calculateTeamMatchScore(existing.placement, existing.kills, existing.minus);
     const roster = (state.teamRosters && state.teamRosters[teamIdx]) ? state.teamRosters[teamIdx].filter((p) => p && p.trim()) : [];
 
     const card = document.createElement("div");
@@ -1240,10 +1250,11 @@ function renderMatchTeamForms() {
       <span class="team-label-name">${escapeHtml(teamName)}</span>
     `;
 
+    const minusPreview = score.minusPoints > 0 ? ` - ${score.minusPoints} Minus` : "";
     const ptsPreview = document.createElement("div");
     ptsPreview.className = "team-pts-preview";
     ptsPreview.id = `pts-preview-${teamIdx}`;
-    ptsPreview.innerHTML = `PTS: <b id="pts-val-${teamIdx}">${score.totalPoints}</b> <span style="font-size:0.75rem;opacity:0.85;margin-left:4px;">(${score.placementPoints} Place + ${score.killPoints} Kills)</span>`;
+    ptsPreview.innerHTML = `PTS: <b id="pts-val-${teamIdx}">${score.totalPoints}</b> <span style="font-size:0.75rem;opacity:0.85;margin-left:4px;">(${score.placementPoints} Place + ${score.killPoints} Kills${minusPreview})</span>`;
 
     cardHeader.appendChild(metaGroup);
     cardHeader.appendChild(ptsPreview);
@@ -1291,7 +1302,7 @@ function renderMatchTeamForms() {
 
     placementSelect.addEventListener("change", (e) => {
       const val = e.target.value ? parseInt(e.target.value, 10) : "";
-      if (!currentMatch.teamData[teamIdx]) currentMatch.teamData[teamIdx] = { teamName, kills: 0 };
+      if (!currentMatch.teamData[teamIdx]) currentMatch.teamData[teamIdx] = { teamName, kills: 0, minus: 0 };
       currentMatch.teamData[teamIdx].placement = val;
 
       updateCardPointsPreview(teamIdx);
@@ -1323,7 +1334,7 @@ function renderMatchTeamForms() {
     killsInput.addEventListener("input", (e) => {
       let val = parseInt(e.target.value, 10);
       if (isNaN(val) || val < 0) val = 0;
-      if (!currentMatch.teamData[teamIdx]) currentMatch.teamData[teamIdx] = { teamName, placement: "" };
+      if (!currentMatch.teamData[teamIdx]) currentMatch.teamData[teamIdx] = { teamName, placement: "", minus: 0 };
       currentMatch.teamData[teamIdx].kills = val;
 
       updateCardPointsPreview(teamIdx);
@@ -1337,6 +1348,46 @@ function renderMatchTeamForms() {
     inputsRow.appendChild(killsBlock);
 
     card.appendChild(inputsRow);
+
+    // Minus Points Row under Placement Section
+    const minusRow = document.createElement("div");
+    minusRow.className = "card-minus-row";
+
+    const minusBlock = document.createElement("div");
+    minusBlock.className = "minus-field-block";
+
+    const minusLabel = document.createElement("label");
+    minusLabel.className = "minus-label";
+    minusLabel.innerHTML = `<span>⛔ MINUS POINTS (PENALTY DEDUCTION)</span>`;
+
+    const minusWrap = document.createElement("div");
+    minusWrap.className = "minus-input-wrap";
+    minusWrap.innerHTML = `<span class="minus-prefix">⛔</span>`;
+
+    const minusInput = document.createElement("input");
+    minusInput.type = "number";
+    minusInput.className = "minus-input";
+    minusInput.min = "0";
+    minusInput.max = "99";
+    minusInput.value = existing.minus !== undefined ? existing.minus : 0;
+    minusInput.dataset.teamIndex = teamIdx;
+    minusInput.placeholder = "0";
+
+    minusInput.addEventListener("input", (e) => {
+      let val = parseInt(e.target.value, 10);
+      if (isNaN(val) || val < 0) val = 0;
+      if (!currentMatch.teamData[teamIdx]) currentMatch.teamData[teamIdx] = { teamName, placement: "", kills: 0, minus: 0 };
+      currentMatch.teamData[teamIdx].minus = val;
+
+      updateCardPointsPreview(teamIdx);
+    });
+
+    minusWrap.appendChild(minusInput);
+    minusBlock.appendChild(minusLabel);
+    minusBlock.appendChild(minusWrap);
+    minusRow.appendChild(minusBlock);
+
+    card.appendChild(minusRow);
 
     matchTeamsGridContainer.appendChild(card);
   });
@@ -1352,10 +1403,11 @@ function updateCardPointsPreview(teamIdx) {
   if (!currentMatch || !currentMatch.teamData[teamIdx]) return;
 
   const data = currentMatch.teamData[teamIdx];
-  const score = calculateTeamMatchScore(data.placement, data.kills);
+  const score = calculateTeamMatchScore(data.placement, data.kills, data.minus);
   const ptsPreviewEl = document.getElementById(`pts-preview-${teamIdx}`);
   if (ptsPreviewEl) {
-    ptsPreviewEl.innerHTML = `PTS: <b id="pts-val-${teamIdx}">${score.totalPoints}</b> <span style="font-size:0.75rem;opacity:0.85;margin-left:4px;">(${score.placementPoints} Place + ${score.killPoints} Kills)</span>`;
+    const minusPreview = score.minusPoints > 0 ? ` - ${score.minusPoints} Minus` : "";
+    ptsPreviewEl.innerHTML = `PTS: <b id="pts-val-${teamIdx}">${score.totalPoints}</b> <span style="font-size:0.75rem;opacity:0.85;margin-left:4px;">(${score.placementPoints} Place + ${score.killPoints} Kills${minusPreview})</span>`;
   }
 }
 
@@ -1449,10 +1501,12 @@ function handleSaveMatchData() {
     return;
   }
 
-  // 3. Normalize kills
+  // 3. Normalize kills and minus
   currentMatch.teamData.forEach((t) => {
     const k = parseInt(t.kills, 10);
     t.kills = isNaN(k) || k < 0 ? 0 : k;
+    const m = parseInt(t.minus, 10);
+    t.minus = isNaN(m) || m < 0 ? 0 : m;
   });
 
   // Determine if this was an edit correction
@@ -1496,6 +1550,9 @@ function handleAutoAssignRanks() {
     if (t.kills === undefined || t.kills === 0) {
       t.kills = Math.max(0, Math.floor(Math.random() * 5) + (12 - ranks[idx] > 6 ? 2 : 0));
     }
+    if (t.minus === undefined) {
+      t.minus = 0;
+    }
   });
 
   renderMatchTeamForms();
@@ -1513,7 +1570,8 @@ function handleResetCurrentMatch() {
       currentMatch.teamData = state.teams.map((teamName) => ({
         teamName,
         placement: "",
-        kills: 0
+        kills: 0,
+        minus: 0
       }));
       saveState();
       renderMatchTeamForms();
@@ -1568,6 +1626,7 @@ function calculateCumulativeStats() {
     matchesPlayed: 0,
     placementPoints: 0,
     eliminationPoints: 0, // Total cumulative kills
+    minusPoints: 0,       // Total cumulative minus / penalty deduction
     totalPoints: 0,       // Overall cumulative points
     booyahs: 0,
     placementSum: 0,
@@ -1584,11 +1643,12 @@ function calculateCumulativeStats() {
         const teamMatchData = match.teamData.find((t) => t.teamName === teamStat.teamName);
         if (teamMatchData && teamMatchData.placement) {
           const p = parseInt(teamMatchData.placement, 10);
-          const score = calculateTeamMatchScore(p, teamMatchData.kills);
+          const score = calculateTeamMatchScore(p, teamMatchData.kills, teamMatchData.minus);
 
           teamStat.matchesPlayed += 1;
           teamStat.placementPoints += score.placementPoints;
           teamStat.eliminationPoints += score.killPoints;
+          teamStat.minusPoints += score.minusPoints;
           teamStat.totalPoints += score.totalPoints;
           teamStat.placementSum += p;
 
@@ -1601,6 +1661,7 @@ function calculateCumulativeStats() {
             placement: p,
             placementPoints: score.placementPoints,
             kills: score.killPoints,
+            minus: score.minusPoints,
             totalPoints: score.totalPoints,
             isPlayed: true
           });
@@ -1614,6 +1675,7 @@ function calculateCumulativeStats() {
         placement: "-",
         placementPoints: 0,
         kills: 0,
+        minus: 0,
         totalPoints: 0,
         isPlayed: false
       });
@@ -1659,8 +1721,12 @@ function calculateCumulativeStats() {
  */
 function animateCountUp(element, target, duration = 800) {
   const targetNum = parseInt(target, 10);
-  if (isNaN(targetNum) || targetNum <= 0) {
+  if (isNaN(targetNum) || targetNum === 0) {
     element.textContent = "0";
+    return;
+  }
+  if (targetNum < 0) {
+    element.textContent = String(targetNum);
     return;
   }
 
@@ -1879,7 +1945,7 @@ function renderMatrixTable() {
         rowHtml += `
           <td class="match-cell">
             ${matchScore.totalPoints}
-            <span class="match-cell-sub">#${matchScore.placement} (${matchScore.kills}k)</span>
+            <span class="match-cell-sub">#${matchScore.placement} (${matchScore.kills}k${matchScore.minus > 0 ? ` -${matchScore.minus}` : ""})</span>
           </td>
         `;
       } else {
@@ -2209,6 +2275,7 @@ function openTeamBreakdownModal(teamName) {
         <div class="modal-breakdown-details">
           <span>Rank: <b>#${mb.placement}</b> (${mb.placementPoints} pts)</span>
           <span>Kills: <b>${mb.kills}</b> (${mb.kills} pts)</span>
+          ${mb.minus > 0 ? `<span>Minus: <b style="color:#ef4444;">-${mb.minus}</b> (-${mb.minus} pts)</span>` : ""}
         </div>
         <div class="modal-match-total">${mb.totalPoints} PTS</div>
       `;
@@ -2229,6 +2296,7 @@ function openTeamBreakdownModal(teamName) {
       <div>
         <div class="summary-stat-label">CUMULATIVE PLACEMENT PTS: <b>${teamStat.placementPoints}</b></div>
         <div class="summary-stat-label">CUMULATIVE ELIMINATION PTS: <b>${teamStat.eliminationPoints}</b></div>
+        ${teamStat.minusPoints > 0 ? `<div class="summary-stat-label" style="color:#fca5a5;">CUMULATIVE PENALTY / MINUS: <b>-${teamStat.minusPoints}</b></div>` : ""}
         <div class="summary-stat-label">BOOYAHS WON: <b>${teamStat.booyahs}</b></div>
       </div>
       <div style="text-align: right;">
@@ -2723,7 +2791,8 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
   const teamsDataPayload = teamData.map((t, idx) => {
     const p = t.placement !== "" && t.placement !== undefined ? parseInt(t.placement, 10) : "";
     const k = parseInt(t.kills, 10) || 0;
-    const score = calculateTeamMatchScore(p, k);
+    const m = parseInt(t.minus, 10) || 0;
+    const score = calculateTeamMatchScore(p, k, m);
     const roster = (state.teamRosters && state.teamRosters[idx]) ? state.teamRosters[idx].filter(Boolean) : [];
 
     return {
@@ -2731,6 +2800,7 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
       teamName: t.teamName,
       players: roster,
       kills: score.killPoints,
+      minus: score.minusPoints,
       placementPoints: score.placementPoints,
       totalPoints: score.totalPoints
     };

@@ -2218,6 +2218,66 @@ body {
   opacity: 0.8;
 }
 
+/* Minus Points / Penalty Deduction Input Row */
+.card-minus-row {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.minus-field-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.minus-label {
+  font-family: var(--font-tech);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  color: #f87171;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.minus-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 120px;
+}
+
+.minus-input {
+  width: 100%;
+  background: rgba(25, 8, 12, 0.9);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  padding: 0.45rem 0.65rem 0.45rem 2rem;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.minus-input:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+}
+
+.minus-prefix {
+  position: absolute;
+  left: 0.55rem;
+  font-size: 0.85rem;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
 .conflict-warning-tag {
   font-size: 0.74rem;
   color: #f87171;
@@ -3462,10 +3522,14 @@ body {
     gap: 0.5rem;
   }
 
-  .placement-select, .kills-input {
+  .placement-select, .kills-input, .minus-input {
     font-size: 0.88rem;
     padding: 0.55rem 0.5rem;
     min-height: 42px; /* Touch target minimum */
+  }
+
+  .minus-input-wrap {
+    width: 110px;
   }
 
   .save-match-btn {
@@ -3667,6 +3731,14 @@ body {
   .card-inputs-row {
     grid-template-columns: 1fr 95px;
     gap: 0.4rem;
+  }
+
+  .minus-input-wrap {
+    width: 95px;
+  }
+
+  .minus-label {
+    font-size: 0.68rem;
   }
 
   .scrims-table-header {
