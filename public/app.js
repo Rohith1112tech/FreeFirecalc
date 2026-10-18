@@ -1691,25 +1691,25 @@ function calculateCumulativeStats() {
     }
   });
 
-  // Official Prompt 8 Strict Tie-Breaker Sorting Hierarchy:
+  // Official Tournament Tie-Breaker Sorting Hierarchy:
   // 1. Primary: Cumulative Total Points (Highest first)
-  // 2. Tie-breaker 1: Higher cumulative Kill Points (Eliminations)
-  // 3. Tie-breaker 2: If kills are also tied, the team with the most Booyahs (1st place finishes) breaks the tie
-  // 4. Sub-fallback: Cumulative placement points
+  // 2. Tie-breaker Priority 1: Most Booyahs (1st place finishes)
+  // 3. Tie-breaker Priority 2: Higher cumulative Kill Points (Eliminations)
+  // 4. Tie-breaker Priority 3: Higher cumulative Placement Points
   stats.sort((a, b) => {
     // Rule 1: Total Points
     if (b.totalPoints !== a.totalPoints) {
       return b.totalPoints - a.totalPoints;
     }
-    // Rule 2 (Tie-breaker 1): Higher cumulative Kill Points
-    if (b.eliminationPoints !== a.eliminationPoints) {
-      return b.eliminationPoints - a.eliminationPoints;
-    }
-    // Rule 3 (Tie-breaker 2): Most Booyahs (1st place finishes)
+    // Rule 2 (Tie-breaker Priority 1): Most Booyahs (1st place finishes)
     if (b.booyahs !== a.booyahs) {
       return b.booyahs - a.booyahs;
     }
-    // Sub-fallback: Placement Points
+    // Rule 3 (Tie-breaker Priority 2): Higher cumulative Kill Points (Eliminations)
+    if (b.eliminationPoints !== a.eliminationPoints) {
+      return b.eliminationPoints - a.eliminationPoints;
+    }
+    // Rule 4 (Tie-breaker Priority 3): Cumulative Placement Points
     return b.placementPoints - a.placementPoints;
   });
 

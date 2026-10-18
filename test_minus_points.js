@@ -124,8 +124,9 @@ const tournamentStats = [
 
 tournamentStats.sort((a, b) => {
   if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+  if (b.booyahs !== a.booyahs) return b.booyahs - a.booyahs;
   if (b.eliminationPoints !== a.eliminationPoints) return b.eliminationPoints - a.eliminationPoints;
-  return b.booyahs - a.booyahs;
+  return b.placementPoints - a.placementPoints;
 });
 
 assert.strictEqual(tournamentStats[0].teamName, "TEAM BRAVO", "TEAM BRAVO should be #1 due to higher net points");
