@@ -139,6 +139,32 @@
                   Enter team names and their 4 players. You can register any number of teams (up to 12). During match scoring, player names will be shown to easily identify and score each team.
                 </p>
 
+                <!-- Roster Quick Actions Bar (Paste Slot List / Autofill / Clear) -->
+                <div class="roster-actions-row">
+                  <button type="button" id="btn-open-paste-modal" class="cyber-btn primary-start-btn paste-roster-btn" title="Paste WhatsApp/Discord slot list & lineups directly">
+                    <span class="btn-cutout-left"></span>
+                    <span class="btn-content">
+                      <span class="btn-flame-icon">📋</span>
+                      <span>PASTE SLOT LIST &amp; LINEUP</span>
+                    </span>
+                    <span class="btn-cutout-right"></span>
+                  </button>
+                  <div class="roster-sub-actions">
+                    <button type="button" id="btn-quick-fill-setup" class="action-ghost-btn" title="Autofill sample lineup">
+                      <span>⚡ Example Lineup</span>
+                    </button>
+                    <button type="button" id="btn-clear-all-setup" class="action-ghost-btn danger" title="Clear all 12 slots">
+                      <span>🗑️ Clear Slots</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Toast / Notice banner when slot list is imported or pasted -->
+                <div id="roster-import-banner" class="match-alert-box success" style="display: none; margin-bottom: 1rem;">
+                  <span class="alert-icon">✅</span>
+                  <span id="roster-import-message">12 Slots &amp; Player Lineups populated successfully!</span>
+                </div>
+
                 <!-- 12 Slot Inputs Grid -->
                 <div class="teams-input-grid" id="teams-input-container">
                   <!-- Generated dynamically by app.js with high-tech badge styling -->
@@ -416,6 +442,45 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paste Slot List & Player Lineups Modal -->
+        <div id="paste-lineup-modal-backdrop" class="modal-backdrop" style="display: none;">
+          <div class="modal-card paste-lineup-modal-card">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-crown">📋</span>
+                <h3>IMPORT SLOT LIST &amp; LINEUPS</h3>
+              </div>
+              <button type="button" class="modal-close-btn" id="btn-close-paste-modal">✕</button>
+            </div>
+            <div class="modal-body">
+              <p style="font-size: 0.85rem; color: #d1d5db; margin-bottom: 0.85rem; line-height: 1.5;">
+                Paste your registration message from WhatsApp, Discord, or notes below. Format like <code>Slot 1: Team Name (3 or 4 Players)</code> followed by player names will be automatically assigned to each slot.
+              </p>
+              <div class="cyber-input-wrap" style="margin-bottom: 0.75rem;">
+                <textarea id="paste-lineup-textarea" class="cyber-textarea" rows="11" placeholder="Slot 1: Cg x E-Sports (3 Players)&#10;&#10;Dᴀʀᴇ☯Dᴇᴠɪʟ™&#10;&#10;15.Crushzz!&#10;&#10;15 Wᴏʟғ&#10;&#10;Slot 2: T2W ESPORTS 1 (4 Players)&#10;..."></textarea>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <div class="preview-count-badge" id="paste-preview-count">0 / 12 SLOTS DETECTED</div>
+                <button type="button" id="btn-load-sample-lineup" class="action-ghost-btn" style="font-size: 0.75rem;">
+                  <span>📝 Load Example Lineup</span>
+                </button>
+              </div>
+              <div id="paste-detected-summary" class="paste-detected-summary">
+                <span style="color: #6b7280; font-style: italic;">Paste your text above to see live preview...</span>
+              </div>
+            </div>
+            <div class="modal-summary-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(13, 16, 22, 0.95);">
+              <button type="button" id="btn-cancel-paste-modal" class="cyber-btn secondary-btn">
+                <span>CANCEL</span>
+              </button>
+              <button type="button" id="btn-confirm-import-lineup" class="cyber-btn primary-start-btn">
+                <span class="btn-flame-icon">⚡</span>
+                <span>IMPORT &amp; POPULATE SLOTS</span>
+              </button>
             </div>
           </div>
         </div>

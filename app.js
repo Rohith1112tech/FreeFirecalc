@@ -88,6 +88,21 @@ const teamsFilledCountEl = document.getElementById("teams-filled-count");
 const btnQuickFill = document.getElementById("btn-quick-fill");
 const btnClearTeams = document.getElementById("btn-clear-teams");
 
+// Roster Actions & Paste Lineup Modal (Prompt 9: Slot List & Player Lineup)
+const btnOpenPasteModal = document.getElementById("btn-open-paste-modal");
+const pasteLineupModalBackdrop = document.getElementById("paste-lineup-modal-backdrop");
+const btnClosePasteModal = document.getElementById("btn-close-paste-modal");
+const btnCancelPasteModal = document.getElementById("btn-cancel-paste-modal");
+const btnConfirmImportLineup = document.getElementById("btn-confirm-import-lineup");
+const btnLoadSampleLineup = document.getElementById("btn-load-sample-lineup");
+const pasteLineupTextarea = document.getElementById("paste-lineup-textarea");
+const pastePreviewCount = document.getElementById("paste-preview-count");
+const pasteDetectedSummary = document.getElementById("paste-detected-summary");
+const btnQuickFillSetup = document.getElementById("btn-quick-fill-setup");
+const btnClearAllSetup = document.getElementById("btn-clear-all-setup");
+const rosterImportBanner = document.getElementById("roster-import-banner");
+const rosterImportMessage = document.getElementById("roster-import-message");
+
 const btnStartTournament = document.getElementById("btn-start-tournament");
 const setupErrorMsg = document.getElementById("setup-error-msg");
 
@@ -338,6 +353,276 @@ function renderTeamInputs() {
   }
 }
 
+// Example Slot List & Player Lineup from user (Prompt 9)
+const SAMPLE_LINEUP_TEXT = `Slot 1: Cg x E-Sports (3 Players)
+
+Dᴀʀᴇ☯Dᴇᴠɪʟ™
+
+15.Crushzz!
+
+15 Wᴏʟғ
+
+Slot 2: T2W ESPORTS 1 (4 Players)
+
+Tɴ ᴠ́ɪɴᴄᴇɴᴢᴏᶠʳ
+
+♛~ᴍᴏᴏɴ|⦅
+
+BKෆமச்சான்ෆ
+
+Ꮗᵰ நிலா
+
+Slot 3: Durex (4 Players)
+
+RFZ ZUKO
+
+SARON 10
+
+BL CʏʙᴇʀGod슸
+
+JENIᴬᵂᴹ ꜞ
+
+Slot 4: Monster Esports (4 Players)
+
+༒︎⚔️கட்டேவன்☂︎༒︎
+
+SG 🅖︎🅤︎🅝︎ᦗ
+
+SAD VILLAN ᦗ
+
+Assᴀssɪɴ G O D π
+
+Slot 5: SeeOurName (4 Players)
+
+ZW FLASH
+
+ZW GTK
+
+TN ÉXE !
+
+chickenᴾᵛᴾᦗ
+
+Slot 6: SOUL REAPERS (4 Players)
+
+FFK࿐FLASH✓
+
+FFK࿐SPIDEY☆࿐
+
+FFK࿐PIKACHU
+
+FFK࿐SNIPER
+
+Slot 7: zoies E-SPORTS (3 Players)
+
+நான் சம்பவம்
+
+Aɴʙᴜ
+
+BLAST 모
+
+Slot 8: MZ.HEROZ (4 Players)
+
+mugulan23451
+
+Mz.ghost02
+
+Mz.TWIN 26
+
+Mz.PRIME
+
+Slot 9: DPI Warriors (4 Players)
+
+Xx!Fixa!
+
+jilla4746U
+
+༒Dxneshᦗ
+
+Tɴ✰KலலாRU
+
+Slot 10: TAZ Elite (4 Players)
+
+TAZ SH4DOW
+
+TG.Rouk24!!
+
+@G.KBABA@
+
+HTG Hasan
+
+Slot 11: TAMIL THUGS (4 Players)
+
+FFK࿐Rᴀᴠɪ
+
+TT ᴘʀɪɴᴄᴇ✓
+
+JV MAN LIVE모
+
+HACrrr !!
+
+Slot 12: OCG ESPORTS (4 Players)
+
+OCG ศหล࿐
+
+VT SARAN ☯
+
+OCG DAMN!
+
+SANTHO X OCG`;
+
+/**
+ * Parse Lineup & Slot Registration Text (WhatsApp/Discord format)
+ */
+function parseSlotList(rawText) {
+  if (!rawText || typeof rawText !== "string") return {};
+
+  const lines = rawText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+
+  if (lines.length === 0) return {};
+
+  const slots = {};
+  let currentSlot = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Check for explicit "Slot X" or "S X" (e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1")
+    const explicitSlotMatch = line.match(/^(?:slot|s)\s*(\d+)[\s.:\-–—]*(.*)$/i);
+    // Check for "1. Team Name" or "1 - Team Name"
+    const numberedSlotMatch = !explicitSlotMatch && line.match(/^(\d+)[\s.:\-–—]+(.*)$/);
+
+    let detectedSlotNum = null;
+    let rawTeamName = "";
+
+    if (explicitSlotMatch) {
+      detectedSlotNum = parseInt(explicitSlotMatch[1], 10);
+      rawTeamName = explicitSlotMatch[2] || "";
+    } else if (numberedSlotMatch) {
+      const num = parseInt(numberedSlotMatch[1], 10);
+      if (num >= 1 && num <= 12 && (currentSlot === null || num === currentSlot + 1 || (currentSlot !== null && slots[currentSlot] && slots[currentSlot].players.length >= 2))) {
+        detectedSlotNum = num;
+        rawTeamName = numberedSlotMatch[2] || "";
+      }
+    }
+
+    if (detectedSlotNum !== null && detectedSlotNum >= 1 && detectedSlotNum <= 12) {
+      let teamName = rawTeamName.trim();
+      // Remove trailing player count e.g. "(3 Players)", "(4 Players)", "[4P]", etc.
+      teamName = teamName.replace(/[\(\[\{]\s*\d+\s*(?:players?|p)?\s*[\)\]\}]/gi, "").trim();
+      // Remove leading punctuation
+      teamName = teamName.replace(/^[:\-–—\s]+/, "").trim();
+
+      currentSlot = detectedSlotNum;
+      slots[currentSlot] = {
+        teamName: teamName || `TEAM ${String(currentSlot).padStart(2, "0")}`,
+        players: []
+      };
+      continue;
+    }
+
+    // Otherwise, if we have an active slot, this line is a player name
+    if (currentSlot !== null && slots[currentSlot]) {
+      let playerName = line;
+      // If line is formatted as "P1: Name" or "Player 1: Name"
+      const pMatch = playerName.match(/^(?:p[1-4]|player\s*[1-4])\s*[:.\-–—]\s*(.*)$/i);
+      if (pMatch) {
+        playerName = pMatch[1].trim();
+      }
+
+      if (slots[currentSlot].players.length < 4 && playerName.length > 0) {
+        slots[currentSlot].players.push(playerName);
+      }
+    }
+  }
+
+  return slots;
+}
+
+/**
+ * Apply parsed slots into application state and update DOM
+ */
+function applyParsedSlots(parsedSlots) {
+  if (!parsedSlots || typeof parsedSlots !== "object") return 0;
+  const slotNums = Object.keys(parsedSlots);
+  if (slotNums.length === 0) return 0;
+
+  if (!state.teamRosters) state.teamRosters = {};
+
+  let count = 0;
+  for (let i = 0; i < 12; i++) {
+    const slotNum = i + 1;
+    if (parsedSlots[slotNum]) {
+      state.teams[i] = parsedSlots[slotNum].teamName;
+      const pList = parsedSlots[slotNum].players || [];
+      state.teamRosters[i] = [
+        pList[0] || "",
+        pList[1] || "",
+        pList[2] || "",
+        pList[3] || ""
+      ];
+      count++;
+    }
+  }
+
+  saveState();
+  renderTeamInputs();
+  updateFilledCount();
+  clearError();
+
+  showRosterImportBanner(`🎉 Successfully populated ${count} teams & player lineups into slots!`);
+  return count;
+}
+
+let rosterBannerTimeout = null;
+function showRosterImportBanner(msg) {
+  if (!rosterImportBanner || !rosterImportMessage) return;
+  rosterImportMessage.textContent = msg;
+  rosterImportBanner.style.display = "flex";
+
+  clearTimeout(rosterBannerTimeout);
+  rosterBannerTimeout = setTimeout(() => {
+    if (rosterImportBanner) {
+      rosterImportBanner.style.display = "none";
+    }
+  }, 4500);
+}
+
+function updatePastePreviewUI() {
+  if (!pasteLineupTextarea || !pastePreviewCount || !pasteDetectedSummary) return;
+  const text = pasteLineupTextarea.value.trim();
+  const parsed = parseSlotList(text);
+  const count = Object.keys(parsed).length;
+
+  pastePreviewCount.textContent = `${count} / 12 SLOTS DETECTED`;
+  if (count > 0) {
+    pastePreviewCount.classList.add("has-slots");
+  } else {
+    pastePreviewCount.classList.remove("has-slots");
+  }
+
+  if (count === 0) {
+    pasteDetectedSummary.innerHTML = `<span style="color: #6b7280; font-style: italic;">Paste your text above to see live preview...</span>`;
+    return;
+  }
+
+  pasteDetectedSummary.innerHTML = "";
+  for (let s = 1; s <= 12; s++) {
+    if (parsed[s]) {
+      const item = document.createElement("div");
+      item.className = "paste-summary-item";
+      const pStr = parsed[s].players.length > 0 ? parsed[s].players.join(", ") : "No players listed";
+      item.innerHTML = `
+        <span class="paste-item-team">Slot ${s}: ${parsed[s].teamName}</span>
+        <span class="paste-item-players" title="${pStr}">${pStr}</span>
+      `;
+      pasteDetectedSummary.appendChild(item);
+    }
+  }
+}
+
 /**
  * Event Bindings
  */
@@ -394,6 +679,102 @@ function bindEvents() {
         input.value = "";
       });
       updateFilledCount();
+    }
+  });
+
+  // --- Roster Actions & Paste Lineup Modal Events (Prompt 9) ---
+  if (btnOpenPasteModal && pasteLineupModalBackdrop) {
+    btnOpenPasteModal.addEventListener("click", () => {
+      pasteLineupModalBackdrop.style.display = "flex";
+      if (pasteLineupTextarea) {
+        if (!pasteLineupTextarea.value.trim()) {
+          pasteLineupTextarea.value = SAMPLE_LINEUP_TEXT;
+        }
+        updatePastePreviewUI();
+        pasteLineupTextarea.focus();
+      }
+    });
+  }
+
+  function closePasteLineupModal() {
+    if (pasteLineupModalBackdrop) {
+      pasteLineupModalBackdrop.style.display = "none";
+    }
+  }
+
+  if (btnClosePasteModal) btnClosePasteModal.addEventListener("click", closePasteLineupModal);
+  if (btnCancelPasteModal) btnCancelPasteModal.addEventListener("click", closePasteLineupModal);
+  if (pasteLineupModalBackdrop) {
+    pasteLineupModalBackdrop.addEventListener("click", (e) => {
+      if (e.target === pasteLineupModalBackdrop) closePasteLineupModal();
+    });
+  }
+
+  if (pasteLineupTextarea) {
+    pasteLineupTextarea.addEventListener("input", updatePastePreviewUI);
+  }
+
+  if (btnLoadSampleLineup && pasteLineupTextarea) {
+    btnLoadSampleLineup.addEventListener("click", () => {
+      pasteLineupTextarea.value = SAMPLE_LINEUP_TEXT;
+      updatePastePreviewUI();
+    });
+  }
+
+  if (btnConfirmImportLineup && pasteLineupTextarea) {
+    btnConfirmImportLineup.addEventListener("click", () => {
+      const text = pasteLineupTextarea.value.trim();
+      const parsed = parseSlotList(text);
+      const count = Object.keys(parsed).length;
+      if (count === 0) {
+        alert("⚠️ No valid slots detected. Please make sure slots are formatted like 'Slot 1: Team Name'.");
+        return;
+      }
+      applyParsedSlots(parsed);
+      closePasteLineupModal();
+    });
+  }
+
+  if (btnQuickFillSetup) {
+    btnQuickFillSetup.addEventListener("click", () => {
+      const parsed = parseSlotList(SAMPLE_LINEUP_TEXT);
+      applyParsedSlots(parsed);
+    });
+  }
+
+  if (btnClearAllSetup) {
+    btnClearAllSetup.addEventListener("click", () => {
+      if (confirm("Clear all 12 teams and player rosters?")) {
+        state.teams = Array(12).fill("");
+        state.teamRosters = {};
+        for (let i = 0; i < 12; i++) state.teamRosters[i] = ["", "", "", ""];
+        saveState();
+        renderTeamInputs();
+        updateFilledCount();
+        clearError();
+      }
+    });
+  }
+
+  // Global Paste Interceptor on Setup Screen:
+  // When user pastes a WhatsApp/Discord slot list anywhere on the setup screen, auto-parse and fill!
+  document.addEventListener("paste", (e) => {
+    if (state.activeScreen !== "setup") return;
+    if (e.target && e.target.id === "paste-lineup-textarea") return; // Allow normal typing in modal textarea
+
+    const clipboardData = e.clipboardData || window.clipboardData;
+    if (!clipboardData) return;
+    const pastedText = clipboardData.getData("text");
+    if (!pastedText) return;
+
+    // Check if the pasted text looks like a slot list (contains "slot" or has >= 2 non-empty lines)
+    if (/slot\s*\d+/i.test(pastedText) || pastedText.split(/\r?\n/).filter((l) => l.trim().length > 0).length >= 3) {
+      const parsed = parseSlotList(pastedText);
+      const numSlots = Object.keys(parsed).length;
+      if (numSlots > 0) {
+        e.preventDefault();
+        applyParsedSlots(parsed);
+      }
     }
   });
 
