@@ -612,7 +612,14 @@ function applyParsedSlots(parsedSlots) {
   updateFilledCount();
   clearError();
 
-  showRosterImportBanner(`🎉 Successfully populated ${count} teams & player lineups into slots!`);
+  const teamsCard = document.querySelector(".teams-card");
+  if (teamsCard) {
+    teamsCard.classList.remove("roster-updated-glow");
+    void teamsCard.offsetWidth; // Trigger DOM reflow to restart animation
+    teamsCard.classList.add("roster-updated-glow");
+  }
+
+  showRosterImportBanner(`🎉 Added ${count} teams & player lineups to Competing Teams!`);
   return count;
 }
 
@@ -819,6 +826,11 @@ function bindEvents() {
       const count = applyParsedSlots(parsed);
       if (count === 0) {
         showRosterImportBanner("⚠️ No slots detected. Please check format (e.g. 'Slot 1: Team Name') and try again.");
+      } else if (window.innerWidth <= 1024) {
+        const teamsCard = document.querySelector(".teams-card");
+        if (teamsCard) {
+          teamsCard.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
       }
     });
   }

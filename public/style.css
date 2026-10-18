@@ -283,6 +283,13 @@ body {
   display: grid;
   grid-template-columns: 360px 1fr;
   gap: 1.5rem;
+  align-items: start;
+}
+
+.setup-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 @media (max-width: 980px) {
@@ -604,21 +611,32 @@ body {
 }
 
 /* ========================================================
-   MESSY SLOT LIST RAW IMPORTER PANEL (Image 1 Style)
+   LEFT SIDEBAR: PASTE SLOTS & LINEUPS CARD (User Red Loop Area)
    ======================================================== */
-.messy-slot-importer-panel {
-  background: linear-gradient(135deg, rgba(8, 16, 26, 0.96) 0%, rgba(4, 10, 18, 0.98) 100%);
-  border: 1px solid rgba(0, 229, 255, 0.35);
+.paste-roster-sidebar-card {
+  background: rgba(13, 16, 22, 0.92);
+  border: 1px solid rgba(229, 9, 20, 0.35);
   border-radius: 6px;
-  padding: 1.1rem 1.35rem 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 0 25px rgba(0, 229, 255, 0.08), inset 0 0 15px rgba(0, 229, 255, 0.02);
+  box-shadow: 
+    0 12px 30px -8px rgba(0, 0, 0, 0.8),
+    inset 0 0 15px rgba(229, 9, 20, 0.05);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-.messy-slot-importer-panel:focus-within {
-  border-color: rgba(0, 229, 255, 0.6);
-  box-shadow: 0 0 30px rgba(0, 229, 255, 0.15), inset 0 0 20px rgba(0, 229, 255, 0.04);
+.paste-roster-sidebar-card:focus-within {
+  border-color: rgba(229, 9, 20, 0.7);
+  box-shadow: 
+    0 12px 35px -6px rgba(0, 0, 0, 0.9),
+    0 0 20px rgba(229, 9, 20, 0.25);
+}
+
+.paste-roster-sidebar-card .card-header {
+  border-bottom: 1px solid rgba(229, 9, 20, 0.25);
+  padding: 0.95rem 1.25rem;
+}
+
+.paste-roster-sidebar-card .card-body {
+  padding: 1.15rem;
 }
 
 .importer-top-header {
@@ -637,7 +655,7 @@ body {
 
 .importer-sparkle-icon {
   font-size: 1.15rem;
-  color: #00e5ff;
+  color: #ff4d6d;
 }
 
 .importer-title {
@@ -645,38 +663,43 @@ body {
   font-size: 1.05rem;
   font-weight: 900;
   letter-spacing: 1.2px;
-  color: #00e5ff;
+  color: #fff;
   text-transform: uppercase;
   margin: 0;
-  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
 }
 
 .importer-sample-link {
-  background: transparent;
-  border: none;
-  color: #00e5ff;
+  background: rgba(229, 9, 20, 0.15);
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  border-radius: 4px;
+  color: #fca5a5;
   font-family: var(--font-tech);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  text-decoration: underline;
   cursor: pointer;
-  padding: 0.2rem 0;
+  padding: 0.25rem 0.65rem;
   transition: all 0.2s ease;
 }
 
 .importer-sample-link:hover {
-  color: #7dd3fc;
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+  background: rgba(229, 9, 20, 0.3);
+  color: #ffffff;
+  border-color: #ff1744;
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.4);
 }
 
-.importer-subtitle {
+.importer-card-hint {
   color: #94a3b8;
   font-family: var(--font-tech);
-  font-size: 0.82rem;
-  margin: 0.35rem 0 0.85rem 0;
-  letter-spacing: 0.3px;
-  line-height: 1.4;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.2px;
+}
+
+.importer-card-hint strong {
+  color: #f87171;
 }
 
 .importer-textarea-container {
@@ -687,79 +710,71 @@ body {
 .messy-slot-textarea {
   width: 100%;
   box-sizing: border-box;
-  background: rgba(4, 8, 14, 0.95);
-  border: 1px solid rgba(0, 229, 255, 0.45);
+  background: rgba(5, 7, 11, 0.95);
+  border: 1px solid rgba(229, 9, 20, 0.35);
   border-radius: 5px;
   color: #ffffff;
   font-family: Consolas, 'Courier New', monospace;
-  font-size: 0.86rem;
-  padding: 0.85rem 1rem;
-  line-height: 1.5;
+  font-size: 0.82rem;
+  padding: 0.75rem 0.85rem;
+  line-height: 1.45;
   resize: vertical;
-  min-height: 130px;
-  max-height: 350px;
+  min-height: 175px;
+  max-height: 320px;
   outline: none;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .messy-slot-textarea::placeholder {
-  color: rgba(148, 163, 184, 0.55);
+  color: rgba(148, 163, 184, 0.5);
   font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.8rem;
 }
 
 .messy-slot-textarea:focus {
-  border-color: #00e5ff;
-  box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
+  border-color: #ff1744;
+  box-shadow: 0 0 18px rgba(229, 9, 20, 0.35);
+  background: rgba(9, 12, 18, 0.98);
 }
 
-.importer-bottom-row {
+.importer-sidebar-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.75rem;
-  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
 }
 
-.importer-support-info {
-  color: #64748b;
-  font-family: var(--font-tech);
-  font-size: 0.78rem;
-  letter-spacing: 0.3px;
-  flex: 1;
-  min-width: 250px;
-}
-
-.importer-actions-group {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
+.clear-btn-sidebar {
+  padding: 0.6rem 0.85rem !important;
+  font-size: 0.78rem !important;
+  white-space: nowrap;
 }
 
 .importer-clean-btn {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  background: linear-gradient(135deg, #e50914 0%, #b71c1c 100%);
   color: #ffffff;
-  border: 1px solid #00e5ff;
+  border: 1px solid #ff4d6d;
   border-radius: 5px;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   letter-spacing: 1.2px;
-  padding: 0.55rem 1.35rem;
+  padding: 0.65rem 1rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: center;
+  gap: 0.5rem;
   cursor: pointer;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 16px rgba(229, 9, 20, 0.4);
   transition: all 0.2s ease;
   text-transform: uppercase;
 }
 
 .importer-clean-btn:hover {
-  background: linear-gradient(135deg, #00e5ff 0%, #0096c7 100%);
-  color: #020617;
-  border-color: #38bdf8;
-  box-shadow: 0 0 22px rgba(0, 229, 255, 0.65);
+  background: linear-gradient(135deg, #ff1744 0%, #d50000 100%);
+  color: #ffffff;
+  border-color: #ff8597;
+  box-shadow: 0 0 24px rgba(255, 23, 68, 0.7);
   transform: translateY(-1px);
 }
 
@@ -767,8 +782,48 @@ body {
   transform: translateY(0);
 }
 
+.add-to-teams-btn {
+  flex: 1;
+}
+
 .btn-clean-sparkle {
   font-size: 0.95rem;
+}
+
+.importer-sidebar-status {
+  font-family: var(--font-tech);
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-top: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.35;
+}
+
+.importer-sidebar-status .status-dot {
+  color: #10b981;
+  font-size: 0.65rem;
+}
+
+/* Subtle pulse glow animation on Competing Teams card when populated */
+@keyframes rosterAddPulse {
+  0% {
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(229, 9, 20, 0.05);
+    border-color: rgba(229, 9, 20, 0.3);
+  }
+  40% {
+    box-shadow: 0 0 35px rgba(229, 9, 20, 0.6), inset 0 0 25px rgba(229, 9, 20, 0.2);
+    border-color: #ff1744;
+  }
+  100% {
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(229, 9, 20, 0.05);
+    border-color: rgba(229, 9, 20, 0.3);
+  }
+}
+
+.roster-updated-glow {
+  animation: rosterAddPulse 1.2s ease-out;
 }
 
 /* Paste Slot List Modal & Textarea */

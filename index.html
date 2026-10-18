@@ -119,6 +119,43 @@
                 </div>
               </div>
             </div>
+
+            <!-- Left Sidebar Dedicated Paste Box & Add to Competing Teams Area -->
+            <div class="cyber-card paste-roster-sidebar-card" id="paste-roster-sidebar-card">
+              <div class="card-header card-header-split">
+                <div class="header-title-group">
+                  <span class="card-icon">📋</span>
+                  <h2>PASTE SLOTS &amp; LINEUPS</h2>
+                </div>
+                <button type="button" id="btn-paste-sample-messy" class="importer-sample-link" title="Load sample slot list and lineup">
+                  ⚡ Paste Sample
+                </button>
+              </div>
+
+              <div class="card-body">
+                <p class="importer-card-hint">
+                  Paste WhatsApp or Discord slot messages below. Click <strong>ADD TO COMPETING TEAMS</strong> to automatically assign each team and their 4 players into Slots 01–12.
+                </p>
+
+                <div class="importer-textarea-container">
+                  <textarea id="messy-slot-textarea" class="messy-slot-textarea sidebar-importer-textarea" rows="9" placeholder="Paste slot list &amp; player lineups here...&#10;&#10;Example:&#10;Slot 1: Cg x E-Sports (3 Players)&#10;Dᴀʀᴇ☯Dᴇᴠɪʟ™&#10;15.Crushzz!&#10;15 Wᴏʟғ&#10;&#10;Slot 2: T2W ESPORTS 1 (4 Players)..."></textarea>
+                </div>
+
+                <div class="importer-sidebar-actions">
+                  <button type="button" id="btn-clear-all-setup" class="action-ghost-btn danger clear-btn-sidebar" title="Clear pasted text and all slots">
+                    <span>🗑️ Clear</span>
+                  </button>
+                  <button type="button" id="btn-clean-parse-slots" class="importer-clean-btn add-to-teams-btn">
+                    <span class="btn-clean-sparkle">➕</span>
+                    <span>ADD TO COMPETING TEAMS ➔</span>
+                  </button>
+                </div>
+
+                <div class="importer-sidebar-status">
+                  <span class="status-dot">●</span> Supports 'Slot 1:', '1)', player tags &amp; Tamil/Unicode fonts.
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Right Column: Competing Teams Input Slots & Rosters -->
@@ -139,45 +176,9 @@
                   Enter team names and their 4 players. You can register any number of teams (up to 12). During match scoring, player names will be shown to easily identify and score each team.
                 </p>
 
-                <!-- Dedicated Separate Area: MESSY SLOT LIST RAW IMPORTER (Prompt 9 & User Request) -->
-                <div class="messy-slot-importer-panel" id="messy-slot-importer-panel">
-                  <div class="importer-top-header">
-                    <div class="importer-title-wrap">
-                      <span class="importer-sparkle-icon">✨</span>
-                      <h3 class="importer-title">MESSY SLOT LIST RAW IMPORTER</h3>
-                    </div>
-                    <button type="button" id="btn-paste-sample-messy" class="importer-sample-link" title="Fill user example slot list & lineup">
-                      Paste Sample Messy Text
-                    </button>
-                  </div>
-
-                  <p class="importer-subtitle">
-                    Paste unformatted WhatsApp, Discord, or notes slot messages. The parser extracts all 12 slots automatically.
-                  </p>
-
-                  <div class="importer-textarea-container">
-                    <textarea id="messy-slot-textarea" class="messy-slot-textarea" rows="6" placeholder="Paste messy list here, for example:&#10;*Slot list**1)DND GAMING**2) TAMILANS**3) TOTAL GAMING - Mafia, Fozy..."></textarea>
-                  </div>
-
-                  <div class="importer-bottom-row">
-                    <div class="importer-support-info">
-                      Supports WhatsApp '**', numbered bullets '1)', '1.', 'Slot 1:', hyphens, and brackets.
-                    </div>
-                    <div class="importer-actions-group">
-                      <button type="button" id="btn-clear-all-setup" class="action-ghost-btn danger" title="Clear all 12 slots" style="padding: 0.5rem 0.85rem; font-size: 0.78rem;">
-                        <span>🗑️ Clear Slots</span>
-                      </button>
-                      <button type="button" id="btn-clean-parse-slots" class="importer-clean-btn">
-                        <span class="btn-clean-sparkle">✨</span>
-                        <span>CLEAN &amp; PARSE SLOTS</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Toast / Notice banner when slot list is imported or pasted -->
-                <div id="roster-import-banner" class="match-alert-box success" style="display: none; margin-bottom: 1rem;">
-                  <span class="alert-icon">✅</span>
+                <div id="roster-import-banner" class="match-alert-box success" style="display: none; margin-bottom: 1.25rem;">
+                  <span class="alert-icon">🎉</span>
                   <span id="roster-import-message">12 Slots &amp; Player Lineups populated successfully!</span>
                 </div>
 
