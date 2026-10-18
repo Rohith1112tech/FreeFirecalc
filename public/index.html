@@ -139,23 +139,39 @@
                   Enter team names and their 4 players. You can register any number of teams (up to 12). During match scoring, player names will be shown to easily identify and score each team.
                 </p>
 
-                <!-- Roster Quick Actions Bar (Paste Slot List / Autofill / Clear) -->
-                <div class="roster-actions-row">
-                  <button type="button" id="btn-open-paste-modal" class="cyber-btn primary-start-btn paste-roster-btn" title="Paste WhatsApp/Discord slot list & lineups directly">
-                    <span class="btn-cutout-left"></span>
-                    <span class="btn-content">
-                      <span class="btn-flame-icon">📋</span>
-                      <span>PASTE SLOT LIST &amp; LINEUP</span>
-                    </span>
-                    <span class="btn-cutout-right"></span>
-                  </button>
-                  <div class="roster-sub-actions">
-                    <button type="button" id="btn-quick-fill-setup" class="action-ghost-btn" title="Autofill sample lineup">
-                      <span>⚡ Example Lineup</span>
+                <!-- Dedicated Separate Area: MESSY SLOT LIST RAW IMPORTER (Prompt 9 & User Request) -->
+                <div class="messy-slot-importer-panel" id="messy-slot-importer-panel">
+                  <div class="importer-top-header">
+                    <div class="importer-title-wrap">
+                      <span class="importer-sparkle-icon">✨</span>
+                      <h3 class="importer-title">MESSY SLOT LIST RAW IMPORTER</h3>
+                    </div>
+                    <button type="button" id="btn-paste-sample-messy" class="importer-sample-link" title="Fill user example slot list & lineup">
+                      Paste Sample Messy Text
                     </button>
-                    <button type="button" id="btn-clear-all-setup" class="action-ghost-btn danger" title="Clear all 12 slots">
-                      <span>🗑️ Clear Slots</span>
-                    </button>
+                  </div>
+
+                  <p class="importer-subtitle">
+                    Paste unformatted WhatsApp, Discord, or notes slot messages. The parser extracts all 12 slots automatically.
+                  </p>
+
+                  <div class="importer-textarea-container">
+                    <textarea id="messy-slot-textarea" class="messy-slot-textarea" rows="6" placeholder="Paste messy list here, for example:&#10;*Slot list**1)DND GAMING**2) TAMILANS**3) TOTAL GAMING - Mafia, Fozy..."></textarea>
+                  </div>
+
+                  <div class="importer-bottom-row">
+                    <div class="importer-support-info">
+                      Supports WhatsApp '**', numbered bullets '1)', '1.', 'Slot 1:', hyphens, and brackets.
+                    </div>
+                    <div class="importer-actions-group">
+                      <button type="button" id="btn-clear-all-setup" class="action-ghost-btn danger" title="Clear all 12 slots" style="padding: 0.5rem 0.85rem; font-size: 0.78rem;">
+                        <span>🗑️ Clear Slots</span>
+                      </button>
+                      <button type="button" id="btn-clean-parse-slots" class="importer-clean-btn">
+                        <span class="btn-clean-sparkle">✨</span>
+                        <span>CLEAN &amp; PARSE SLOTS</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
 

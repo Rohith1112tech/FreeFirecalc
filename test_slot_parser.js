@@ -14,13 +14,19 @@ function parseSlotList(rawText) {
   const slots = {};
   let currentSlot = null;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  // Detect whether the input uses explicit "Slot X" / "SX" tokens
+  const hasExplicitSlotTokens = lines.some((l) => /^(?:slot|s)\s*\d+[\s.:\-–—]*/i.test(l));
 
-    // Check for explicit "Slot X" or "S X" (e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1")
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Remove WhatsApp formatting bold stars e.g. *Slot 1: Team* or *1) Team*
+    line = line.replace(/^\*+|\*+$/g, "").trim();
+
+    // 1. Explicit "Slot X" or "S X" e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1"
     const explicitSlotMatch = line.match(/^(?:slot|s)\s*(\d+)[\s.:\-–—]*(.*)$/i);
-    // Check for "1. Team Name" or "1 - Team Name" only if 1 <= num <= 12 and explicitly formatted
-    const numberedSlotMatch = !explicitSlotMatch && line.match(/^(\d+)[\s.:\-–—]+(.*)$/);
+    // 2. Numbered "1. Team Name" or "1) Team Name" (only if text doesn't use explicit Slot tokens)
+    const numberedSlotMatch = !explicitSlotMatch && !hasExplicitSlotTokens && line.match(/^(\d+)[\s.:)\]\-–—]+(.*)$/);
 
     let detectedSlotNum = null;
     let rawTeamName = "";
@@ -30,8 +36,7 @@ function parseSlotList(rawText) {
       rawTeamName = explicitSlotMatch[2] || "";
     } else if (numberedSlotMatch) {
       const num = parseInt(numberedSlotMatch[1], 10);
-      // Only treat as slot header if 1 <= num <= 12 and (either no current slot yet, or num === currentSlot + 1)
-      if (num >= 1 && num <= 12 && (currentSlot === null || num === currentSlot + 1 || (currentSlot !== null && slots[currentSlot] && slots[currentSlot].players.length >= 2))) {
+      if (num >= 1 && num <= 12) {
         detectedSlotNum = num;
         rawTeamName = numberedSlotMatch[2] || "";
       }
@@ -42,7 +47,7 @@ function parseSlotList(rawText) {
       // Remove trailing player count e.g. "(3 Players)", "(4 Players)", "[4P]", etc.
       teamName = teamName.replace(/[\(\[\{]\s*\d+\s*(?:players?|p)?\s*[\)\]\}]/gi, "").trim();
       // Remove leading punctuation
-      teamName = teamName.replace(/^[:\-–—\s]+/, "").trim();
+      teamName = teamName.replace(/^[:\-–—.)\]\s]+/, "").trim();
 
       currentSlot = detectedSlotNum;
       slots[currentSlot] = {
@@ -52,17 +57,21 @@ function parseSlotList(rawText) {
       continue;
     }
 
-    // Otherwise, if we have an active slot, this line is a player name
+    // Otherwise, if we have an active slot, this line is a player name (or multiple comma-separated players)
     if (currentSlot !== null && slots[currentSlot]) {
-      let playerName = line;
-      // If line is formatted as "P1: Name" or "Player 1: Name"
-      const pMatch = playerName.match(/^(?:p[1-4]|player\s*[1-4])\s*[:.\-–—]\s*(.*)$/i);
-      if (pMatch) {
-        playerName = pMatch[1].trim();
-      }
+      // Clean player line: remove leading "1.", "1)", "P1:", "Player 1:", "-", "•"
+      let cleanedPlayerLine = line.replace(/^(?:(?:p[1-4]|player\s*[1-4]|[1-4])\s*[:.\-–—)\]]\s*|[-•*]\s*)/i, "").trim();
 
-      if (slots[currentSlot].players.length < 4 && playerName.length > 0) {
-        slots[currentSlot].players.push(playerName);
+      // Check if players are comma-separated on a single line e.g. "PlayerA, PlayerB, PlayerC, PlayerD"
+      if (cleanedPlayerLine.includes(",") && slots[currentSlot].players.length === 0) {
+        const parts = cleanedPlayerLine.split(",").map((p) => p.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (slots[currentSlot].players.length < 4) {
+            slots[currentSlot].players.push(p);
+          }
+        }
+      } else if (cleanedPlayerLine.length > 0 && slots[currentSlot].players.length < 4) {
+        slots[currentSlot].players.push(cleanedPlayerLine);
       }
     }
   }
@@ -199,19 +208,22 @@ assert.strictEqual(result[1].players.length, 3);
 assert.strictEqual(result[1].players[0], "Dᴀʀᴇ☯Dᴇᴠɪʟ™");
 assert.strictEqual(result[1].players[1], "15.Crushzz!");
 assert.strictEqual(result[1].players[2], "15 Wᴏʟғ");
-console.log("✓ Slot 1 (3 players with unicode symbols & numeric tags) verified.");
+console.log("✓ Slot 1 (3 players with unicode symbols & numeric tags) verified in exact order.");
 
 // Verify Slot 2 (Tamil characters)
 assert.strictEqual(result[2].teamName, "T2W ESPORTS 1");
 assert.strictEqual(result[2].players.length, 4);
+assert.strictEqual(result[2].players[0], "Tɴ ᴠ́ɪɴᴄᴇɴᴢᴏᶠʳ");
+assert.strictEqual(result[2].players[1], "♛~ᴍᴏᴏɴ|⦅");
 assert.strictEqual(result[2].players[2], "BKෆமச்சான்ෆ");
 assert.strictEqual(result[2].players[3], "Ꮗᵰ நிலா");
-console.log("✓ Slot 2 (4 players with Tamil characters & symbols) verified.");
+console.log("✓ Slot 2 (4 players in exact order: P1, P2, P3, P4) verified.");
 
 // Verify Slot 7 (3 players)
 assert.strictEqual(result[7].teamName, "zoies E-SPORTS");
 assert.strictEqual(result[7].players.length, 3);
 assert.strictEqual(result[7].players[0], "நான் சம்பவம்");
+assert.strictEqual(result[7].players[1], "Aɴʙᴜ");
 assert.strictEqual(result[7].players[2], "BLAST 모");
 console.log("✓ Slot 7 (3 players with Tamil & Korean glyphs) verified.");
 
@@ -221,6 +233,35 @@ assert.strictEqual(result[12].players.length, 4);
 assert.strictEqual(result[12].players[0], "OCG ศหล࿐");
 assert.strictEqual(result[12].players[3], "SANTHO X OCG");
 console.log("✓ Slot 12 (4 players with Thai & gamer glyphs) verified.");
+
+// Test Case: Numbered player lineups
+const numberedSample = `Slot 1: Total Gaming
+1. AjjuBhai
+2. Mafia
+3. FozyAjay
+4. Bala
+
+Slot 2: Blind Esports
+1) PlayerOne
+2) PlayerTwo
+3) PlayerThree
+4) PlayerFour`;
+
+const numberedRes = parseSlotList(numberedSample);
+assert.strictEqual(numberedRes[1].players[0], "AjjuBhai");
+assert.strictEqual(numberedRes[1].players[1], "Mafia");
+assert.strictEqual(numberedRes[2].players[0], "PlayerOne");
+assert.strictEqual(numberedRes[2].players[3], "PlayerFour");
+console.log("✓ Numbered player lineups (1. / 1)) correctly parsed without being confused for slot numbers.");
+
+// Test Case: Comma-separated lineups
+const commaSample = `Slot 1: DND Gaming
+Killer, Ninja, Psycho, Demon`;
+const commaRes = parseSlotList(commaSample);
+assert.strictEqual(commaRes[1].players.length, 4);
+assert.strictEqual(commaRes[1].players[0], "Killer");
+assert.strictEqual(commaRes[1].players[3], "Demon");
+console.log("✓ Comma-separated single line player rosters correctly parsed.");
 
 console.log("\n=======================================================");
 console.log("🎉 ALL SLOT LIST PARSER TESTS PASSED 100%!");

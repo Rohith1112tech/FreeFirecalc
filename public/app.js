@@ -110,6 +110,11 @@ const btnClearAllSetup = document.getElementById("btn-clear-all-setup");
 const rosterImportBanner = document.getElementById("roster-import-banner");
 const rosterImportMessage = document.getElementById("roster-import-message");
 
+// Separate Area: MESSY SLOT LIST RAW IMPORTER elements
+const messySlotTextarea = document.getElementById("messy-slot-textarea");
+const btnPasteSampleMessy = document.getElementById("btn-paste-sample-messy");
+const btnCleanParseSlots = document.getElementById("btn-clean-parse-slots");
+
 const btnStartTournament = document.getElementById("btn-start-tournament");
 const setupErrorMsg = document.getElementById("setup-error-msg");
 
@@ -304,7 +309,7 @@ function renderTeamInputs() {
     input.dataset.index = i;
     input.placeholder = `TEAM ${slotNumber} NAME (OPTIONAL)`;
     input.value = currentVal;
-    input.maxLength = 30;
+    input.maxLength = 50;
 
     input.addEventListener("input", (e) => {
       state.teams[i] = e.target.value.trim();
@@ -341,7 +346,7 @@ function renderTeamInputs() {
       pInput.className = "player-name-input";
       pInput.placeholder = `Player ${pIdx + 1}`;
       pInput.value = currentRoster[pIdx] || "";
-      pInput.maxLength = 20;
+      pInput.maxLength = 50;
 
       pInput.addEventListener("input", (e) => {
         if (!state.teamRosters) state.teamRosters = {};
@@ -495,13 +500,19 @@ function parseSlotList(rawText) {
   const slots = {};
   let currentSlot = null;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  // Detect whether the input uses explicit "Slot X" / "SX" tokens
+  const hasExplicitSlotTokens = lines.some((l) => /^(?:slot|s)\s*\d+[\s.:\-–—]*/i.test(l));
 
-    // Check for explicit "Slot X" or "S X" (e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1")
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Remove WhatsApp formatting bold stars e.g. *Slot 1: Team* or *1) Team*
+    line = line.replace(/^\*+|\*+$/g, "").trim();
+
+    // 1. Explicit "Slot X" or "S X" e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1"
     const explicitSlotMatch = line.match(/^(?:slot|s)\s*(\d+)[\s.:\-–—]*(.*)$/i);
-    // Check for "1. Team Name" or "1 - Team Name"
-    const numberedSlotMatch = !explicitSlotMatch && line.match(/^(\d+)[\s.:\-–—]+(.*)$/);
+    // 2. Numbered "1. Team Name" or "1) Team Name" (only if text doesn't use explicit Slot tokens)
+    const numberedSlotMatch = !explicitSlotMatch && !hasExplicitSlotTokens && line.match(/^(\d+)[\s.:)\]\-–—]+(.*)$/);
 
     let detectedSlotNum = null;
     let rawTeamName = "";
@@ -511,7 +522,7 @@ function parseSlotList(rawText) {
       rawTeamName = explicitSlotMatch[2] || "";
     } else if (numberedSlotMatch) {
       const num = parseInt(numberedSlotMatch[1], 10);
-      if (num >= 1 && num <= 12 && (currentSlot === null || num === currentSlot + 1 || (currentSlot !== null && slots[currentSlot] && slots[currentSlot].players.length >= 2))) {
+      if (num >= 1 && num <= 12) {
         detectedSlotNum = num;
         rawTeamName = numberedSlotMatch[2] || "";
       }
@@ -522,7 +533,7 @@ function parseSlotList(rawText) {
       // Remove trailing player count e.g. "(3 Players)", "(4 Players)", "[4P]", etc.
       teamName = teamName.replace(/[\(\[\{]\s*\d+\s*(?:players?|p)?\s*[\)\]\}]/gi, "").trim();
       // Remove leading punctuation
-      teamName = teamName.replace(/^[:\-–—\s]+/, "").trim();
+      teamName = teamName.replace(/^[:\-–—.)\]\s]+/, "").trim();
 
       currentSlot = detectedSlotNum;
       slots[currentSlot] = {
@@ -532,17 +543,21 @@ function parseSlotList(rawText) {
       continue;
     }
 
-    // Otherwise, if we have an active slot, this line is a player name
+    // Otherwise, if we have an active slot, this line is a player name (or multiple comma-separated players)
     if (currentSlot !== null && slots[currentSlot]) {
-      let playerName = line;
-      // If line is formatted as "P1: Name" or "Player 1: Name"
-      const pMatch = playerName.match(/^(?:p[1-4]|player\s*[1-4])\s*[:.\-–—]\s*(.*)$/i);
-      if (pMatch) {
-        playerName = pMatch[1].trim();
-      }
+      // Clean player line: remove leading "1.", "1)", "P1:", "Player 1:", "-", "•"
+      let cleanedPlayerLine = line.replace(/^(?:(?:p[1-4]|player\s*[1-4]|[1-4])\s*[:.\-–—)\]]\s*|[-•*]\s*)/i, "").trim();
 
-      if (slots[currentSlot].players.length < 4 && playerName.length > 0) {
-        slots[currentSlot].players.push(playerName);
+      // Check if players are comma-separated on a single line e.g. "PlayerA, PlayerB, PlayerC, PlayerD"
+      if (cleanedPlayerLine.includes(",") && slots[currentSlot].players.length === 0) {
+        const parts = cleanedPlayerLine.split(",").map((p) => p.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (slots[currentSlot].players.length < 4) {
+            slots[currentSlot].players.push(p);
+          }
+        }
+      } else if (cleanedPlayerLine.length > 0 && slots[currentSlot].players.length < 4) {
+        slots[currentSlot].players.push(cleanedPlayerLine);
       }
     }
   }
@@ -573,7 +588,23 @@ function applyParsedSlots(parsedSlots) {
         pList[3] || ""
       ];
       count++;
+    } else {
+      state.teams[i] = "";
+      state.teamRosters[i] = ["", "", "", ""];
     }
+  }
+
+  // Sync team names into existing match data if initialized
+  if (state.matches && state.matches.length > 0) {
+    state.matches.forEach((m) => {
+      if (m && m.teamData) {
+        m.teamData.forEach((td, idx) => {
+          if (state.teams[idx] !== undefined) {
+            td.teamName = state.teams[idx];
+          }
+        });
+      }
+    });
   }
 
   saveState();
@@ -757,6 +788,7 @@ function bindEvents() {
         state.teams = Array(12).fill("");
         state.teamRosters = {};
         for (let i = 0; i < 12; i++) state.teamRosters[i] = ["", "", "", ""];
+        if (messySlotTextarea) messySlotTextarea.value = "";
         saveState();
         renderTeamInputs();
         updateFilledCount();
@@ -765,11 +797,51 @@ function bindEvents() {
     });
   }
 
+  // Dedicated MESSY SLOT LIST RAW IMPORTER panel bindings
+  if (btnPasteSampleMessy && messySlotTextarea) {
+    btnPasteSampleMessy.addEventListener("click", () => {
+      messySlotTextarea.value = SAMPLE_LINEUP_TEXT;
+      const parsed = parseSlotList(SAMPLE_LINEUP_TEXT);
+      applyParsedSlots(parsed);
+      messySlotTextarea.focus();
+    });
+  }
+
+  if (btnCleanParseSlots && messySlotTextarea) {
+    btnCleanParseSlots.addEventListener("click", () => {
+      const text = messySlotTextarea.value.trim();
+      if (!text) {
+        showRosterImportBanner("⚠️ Please paste your slot list text into the box first!");
+        messySlotTextarea.focus();
+        return;
+      }
+      const parsed = parseSlotList(text);
+      const count = applyParsedSlots(parsed);
+      if (count === 0) {
+        showRosterImportBanner("⚠️ No slots detected. Please check format (e.g. 'Slot 1: Team Name') and try again.");
+      }
+    });
+  }
+
+  if (messySlotTextarea) {
+    messySlotTextarea.addEventListener("paste", () => {
+      setTimeout(() => {
+        const text = messySlotTextarea.value.trim();
+        if (text) {
+          const parsed = parseSlotList(text);
+          if (Object.keys(parsed).length > 0) {
+            applyParsedSlots(parsed);
+          }
+        }
+      }, 50);
+    });
+  }
+
   // Global Paste Interceptor on Setup Screen:
   // When user pastes a WhatsApp/Discord slot list anywhere on the setup screen, auto-parse and fill!
   document.addEventListener("paste", (e) => {
     if (state.activeScreen !== "setup") return;
-    if (e.target && e.target.id === "paste-lineup-textarea") return; // Allow normal typing in modal textarea
+    if (e.target && (e.target.id === "paste-lineup-textarea" || e.target.id === "messy-slot-textarea")) return;
 
     const clipboardData = e.clipboardData || window.clipboardData;
     if (!clipboardData) return;
