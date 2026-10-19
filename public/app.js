@@ -167,6 +167,11 @@ const btnDownloadPoster = document.getElementById("btn-download-poster");
 const headerPositionLabel = document.getElementById("header-position-label");
 const btnThemeRed = document.getElementById("btn-theme-red");
 const btnThemeCyan = document.getElementById("btn-theme-cyan");
+const btnThemeGreen = document.getElementById("btn-theme-green");
+const btnThemeOrange = document.getElementById("btn-theme-orange");
+const btnThemePink = document.getElementById("btn-theme-pink");
+const btnThemeCyanPurple = document.getElementById("btn-theme-cyan-purple");
+const btnThemePurpleBlue = document.getElementById("btn-theme-purple-blue");
 const scrimsPosterCapture = document.getElementById("scrims-poster-capture");
 const posterTemplateBg = document.getElementById("poster-template-bg");
 
@@ -953,13 +958,20 @@ function bindEvents() {
     });
   }
 
-  // Poster Template Theme Switcher (Red Crimson vs Cyan Storm)
-  if (btnThemeRed) {
-    btnThemeRed.addEventListener("click", () => setPosterTheme("red"));
-  }
-  if (btnThemeCyan) {
-    btnThemeCyan.addEventListener("click", () => setPosterTheme("cyan"));
-  }
+  // Poster Template Theme Switcher (All 7 Themes)
+  document.querySelectorAll(".theme-pill-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const theme = btn.dataset.theme;
+      if (theme) setPosterTheme(theme);
+    });
+  });
+  if (btnThemeRed) btnThemeRed.addEventListener("click", () => setPosterTheme("red"));
+  if (btnThemeCyan) btnThemeCyan.addEventListener("click", () => setPosterTheme("cyan"));
+  if (btnThemeGreen) btnThemeGreen.addEventListener("click", () => setPosterTheme("green"));
+  if (btnThemeOrange) btnThemeOrange.addEventListener("click", () => setPosterTheme("orange"));
+  if (btnThemePink) btnThemePink.addEventListener("click", () => setPosterTheme("pink"));
+  if (btnThemeCyanPurple) btnThemeCyanPurple.addEventListener("click", () => setPosterTheme("cyan-purple"));
+  if (btnThemePurpleBlue) btnThemePurpleBlue.addEventListener("click", () => setPosterTheme("purple-blue"));
 
   // Download Results & Poster as Image (Prompt 5)
   if (btnDownloadResultsBottom) {
@@ -1839,28 +1851,119 @@ function animateCountUp(element, target, duration = 800) {
 }
 
 /**
- * Switch Poster Template Theme ('red' | 'cyan')
+ * Full Multi-Poster Template Registry (7 Themes)
+ */
+const POSTER_THEMES = {
+  red: {
+    id: "red",
+    name: "RED CRIMSON",
+    src: "assets/jack_sparrow_template.png",
+    layout: "legacy_red",
+    glowColor: "rgba(255, 23, 68, 0.9)",
+    baseWidth: 847,
+    baseHeight: 1024
+  },
+  cyan: {
+    id: "cyan",
+    name: "CYAN STORM",
+    src: "assets/jack_sparrow_cyan_template.jpg",
+    layout: "cyan_725",
+    glowColor: "rgba(6, 182, 212, 0.95)",
+    baseWidth: 725,
+    baseHeight: 1024
+  },
+  green: {
+    id: "green",
+    name: "TOXIC GREEN",
+    src: "assets/jack_sparrow_green_template.jpg",
+    layout: "modern_847",
+    glowColor: "rgba(34, 197, 94, 0.95)",
+    posColor: "#4ade80",
+    elimColor: "#fb923c",
+    booyahColor: "#fef08a",
+    baseWidth: 847,
+    baseHeight: 1024
+  },
+  orange: {
+    id: "orange",
+    name: "FLAME ORANGE",
+    src: "assets/jack_sparrow_orange_template.jpg",
+    layout: "modern_847",
+    glowColor: "rgba(249, 115, 22, 0.95)",
+    posColor: "#fdba74",
+    elimColor: "#f87171",
+    booyahColor: "#fef08a",
+    baseWidth: 847,
+    baseHeight: 1024
+  },
+  pink: {
+    id: "pink",
+    name: "NEON MAGENTA",
+    src: "assets/jack_sparrow_pink_template.jpg",
+    layout: "modern_847",
+    glowColor: "rgba(236, 72, 153, 0.95)",
+    posColor: "#f472b6",
+    elimColor: "#fb923c",
+    booyahColor: "#fef08a",
+    baseWidth: 847,
+    baseHeight: 1024
+  },
+  "cyan-purple": {
+    id: "cyan-purple",
+    name: "CYBER VIOLET",
+    src: "assets/jack_sparrow_cyan_purple_template.jpg",
+    layout: "modern_847",
+    glowColor: "rgba(168, 85, 247, 0.95)",
+    posColor: "#38bdf8",
+    elimColor: "#c084fc",
+    booyahColor: "#fef08a",
+    baseWidth: 847,
+    baseHeight: 1024
+  },
+  "purple-blue": {
+    id: "purple-blue",
+    name: "ROYAL INDIGO",
+    src: "assets/jack_sparrow_purple_blue_template.jpg",
+    layout: "modern_847",
+    glowColor: "rgba(139, 92, 246, 0.95)",
+    posColor: "#a78bfa",
+    elimColor: "#60a5fa",
+    booyahColor: "#fef08a",
+    baseWidth: 847,
+    baseHeight: 1024
+  }
+};
+
+/**
+ * Switch Poster Template Theme ('red' | 'cyan' | 'green' | 'orange' | 'pink' | 'cyan-purple' | 'purple-blue')
  */
 function setPosterTheme(theme) {
-  state.selectedPosterTheme = theme === "cyan" ? "cyan" : "red";
+  if (!POSTER_THEMES[theme]) {
+    theme = "red";
+  }
+  state.selectedPosterTheme = theme;
+  const themeConfig = POSTER_THEMES[theme];
+
   if (scrimsPosterCapture) {
-    scrimsPosterCapture.classList.remove("theme-red", "theme-cyan");
-    scrimsPosterCapture.classList.add(`theme-${state.selectedPosterTheme}`);
+    Object.keys(POSTER_THEMES).forEach((tKey) => {
+      scrimsPosterCapture.classList.remove(`theme-${tKey}`);
+    });
+    scrimsPosterCapture.classList.add(`theme-${theme}`);
   }
+
   if (posterTemplateBg) {
-    posterTemplateBg.src = state.selectedPosterTheme === "cyan"
-      ? "assets/jack_sparrow_cyan_template.jpg"
-      : "assets/jack_sparrow_template.png";
+    posterTemplateBg.src = themeConfig.src;
   }
-  if (btnThemeRed && btnThemeCyan) {
-    if (state.selectedPosterTheme === "cyan") {
-      btnThemeCyan.classList.add("active");
-      btnThemeRed.classList.remove("active");
+
+  const buttons = document.querySelectorAll(".theme-pill-btn");
+  buttons.forEach((btn) => {
+    if (btn.dataset.theme === theme) {
+      btn.classList.add("active");
     } else {
-      btnThemeRed.classList.add("active");
-      btnThemeCyan.classList.remove("active");
+      btn.classList.remove("active");
     }
-  }
+  });
+
   saveState();
   renderLeaderboardRows(false);
 }
@@ -2101,17 +2204,103 @@ function triggerFileDownload(dataUrl, filename) {
 
 /**
  * Built-in Canvas Renderer: Renders pixel-perfect text onto the exact active template graphic
- * Supports both Red Crimson (847x1024) and Cyan Storm (725x1024)
+ * Supports all 7 Themes: Red Crimson, Cyan Storm, Toxic Green, Flame Orange, Neon Magenta, Cyber Violet, Royal Indigo
  */
 function drawPosterCanvas(canvas, ctx, img, theme = "red") {
-  const isCyan = theme === "cyan";
+  const themeConfig = POSTER_THEMES[theme] || POSTER_THEMES.red;
+  const isCyan = themeConfig.layout === "cyan_725";
+  const isModern = themeConfig.layout === "modern_847";
   const cumulativeStats = calculateCumulativeStats();
 
-  canvas.width = (img.naturalWidth || (isCyan ? 725 : 847)) * 2;
-  canvas.height = (img.naturalHeight || 1024) * 2;
+  canvas.width = (img.naturalWidth || themeConfig.baseWidth) * 2;
+  canvas.height = (img.naturalHeight || themeConfig.baseHeight) * 2;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  if (isCyan) {
+  if (isModern) {
+    // Modern 847x1024 Templates (1694 x 2048 at 2x Retina): Green, Orange, Pink, Cyber Violet, Royal Indigo
+    const modernSlotCenters = [369, 413.5, 458, 502.5, 547, 591.5, 636, 680.5, 725, 769.5, 814, 858.5];
+    const rowHeight = (canvas.height * (534 / 1024)) / 12;
+
+    const crownFontSize = Math.round(canvas.width * 0.021);
+    const teamFontSize = Math.round(canvas.width * 0.022);
+    const numFontSize = Math.round(canvas.width * 0.023);
+    const totalFontSize = Math.round(canvas.width * 0.027);
+
+    const posColor = themeConfig.posColor || "#4ade80";
+    const elimColor = themeConfig.elimColor || "#fb923c";
+    const booyahColor = themeConfig.booyahColor || "#fef08a";
+    const totalGlow = themeConfig.glowColor || "rgba(255, 255, 255, 0.9)";
+
+    cumulativeStats.forEach((t, i) => {
+      if (i >= 12) return;
+      const rowCenterY = canvas.height * (modernSlotCenters[i] / 1024);
+      const rank = i + 1;
+
+      // Crown on Rank 1 (#01)
+      if (rank === 1) {
+        ctx.font = `bold ${crownFontSize}px sans-serif`;
+        ctx.fillStyle = "#ffeb3b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("👑", canvas.width * 0.112, rowCenterY - rowHeight * 0.40);
+      }
+
+      // 1. Team Name (Slot: 19.8% to 43.5%)
+      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0,0,0,0.95)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      let displayName = t.teamName.toUpperCase();
+      const maxTextWidth = canvas.width * 0.235;
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, canvas.width * 0.198, rowCenterY);
+
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // In Modern 847: Column order is POS -> ELIM -> BOOYAH -> TOTAL
+      // 2. Position Column (under POS header: center 50.53%)
+      ctx.font = `bold ${numFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = posColor;
+      ctx.shadowColor = posColor;
+      ctx.shadowBlur = 6;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : String(t.placementPoints);
+      ctx.fillText(posText, canvas.width * 0.5053, rowCenterY);
+
+      // 3. Elimination Column (under ELIM header: center 62.93%)
+      ctx.fillStyle = elimColor;
+      ctx.shadowColor = elimColor;
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.eliminationPoints), canvas.width * 0.6293, rowCenterY);
+
+      // 4. Booyah Column (under BOOYAH header: center 74.38%)
+      ctx.fillStyle = booyahColor;
+      ctx.shadowColor = booyahColor;
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(t.booyahs || 0), canvas.width * 0.7438, rowCenterY);
+
+      // 5. Total Column (under colored trapezoids: center 88.08%)
+      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = totalGlow;
+      ctx.shadowBlur = 10;
+      ctx.fillText(String(t.totalPoints), canvas.width * 0.8808, rowCenterY);
+
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+    });
+  } else if (isCyan) {
     // Cyan Template (725 x 1024 base -> 1450 x 2048 at 2x Retina)
     const cyanSlotCenters = [406.75, 443, 479, 514.75, 550.75, 587.25, 623.75, 660.25, 696.5, 732.5, 768.5, 804.5];
     const rowHeight = (canvas.height * (434 / 1024)) / 12;
@@ -2276,13 +2465,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
  */
 function getPosterImageAndDraw(callback) {
   const currentTheme = state.selectedPosterTheme || "red";
+  const themeConfig = POSTER_THEMES[currentTheme] || POSTER_THEMES.red;
   const templateImg = document.getElementById("poster-template-bg");
-  const expectedSrc = currentTheme === "cyan"
-    ? "assets/jack_sparrow_cyan_template.jpg"
-    : "assets/jack_sparrow_template.png";
-  const expectedFilename = currentTheme === "cyan"
-    ? "jack_sparrow_cyan_template.jpg"
-    : "jack_sparrow_template.png";
+  const expectedSrc = themeConfig.src;
+  const expectedFilename = themeConfig.src.split("/").pop();
 
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
