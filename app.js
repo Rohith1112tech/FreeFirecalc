@@ -220,9 +220,39 @@ const btnOAuthSignout = document.getElementById("btn-oauth-signout");
 const btnSyncSheets = document.getElementById("btn-sync-sheets");
 const btnModalSyncSheets = document.getElementById("btn-modal-sync-sheets");
 
+// Share Results Link & Shared Viewer Elements
+const btnShareResultsTop = document.getElementById("btn-share-results-top");
+const btnShareResultsBottom = document.getElementById("btn-share-results-bottom");
+const shareResultsModal = document.getElementById("share-results-modal-backdrop");
+const btnCloseShareModal = document.getElementById("btn-close-share-modal");
+const btnDoneShareModal = document.getElementById("btn-done-share-modal");
+const shareLinkInput = document.getElementById("share-link-input");
+const btnCopyShareLink = document.getElementById("btn-copy-share-link");
+const copyShareText = document.getElementById("copy-share-text");
+const copyShareIcon = document.getElementById("copy-share-icon");
+const btnShareWhatsapp = document.getElementById("btn-share-whatsapp");
+const btnShareTelegram = document.getElementById("btn-share-telegram");
+const btnShareDiscord = document.getElementById("btn-share-discord");
+const discordShareText = document.getElementById("discord-share-text");
+const shareOverviewTitle = document.getElementById("share-overview-title");
+const shareOverviewStatus = document.getElementById("share-overview-status");
+const shareOverviewLeader = document.getElementById("share-overview-leader");
+const shareOverviewMvp = document.getElementById("share-overview-mvp");
+const shareOverviewTheme = document.getElementById("share-overview-theme");
+const shareCompressionNote = document.getElementById("share-compression-note");
+
+const sharedViewerBanner = document.getElementById("shared-viewer-banner");
+const sharedBannerTourneyTitle = document.getElementById("shared-banner-tourney-title");
+const btnSharedCopyLink = document.getElementById("btn-shared-copy-link");
+const btnSharedClone = document.getElementById("btn-shared-clone");
+const btnSharedExit = document.getElementById("btn-shared-exit");
+
 // Initialize application
-document.addEventListener("DOMContentLoaded", () => {
-  loadSavedState();
+document.addEventListener("DOMContentLoaded", async () => {
+  const hasShared = await checkForSharedResultsUrl();
+  if (!hasShared) {
+    loadSavedState();
+  }
   setPosterTheme(state.selectedPosterTheme || "red");
   initMatchesState();
   renderTeamInputs();
@@ -231,8 +261,11 @@ document.addEventListener("DOMContentLoaded", () => {
   handleOAuthCallbackFromUrl();
   checkOAuthStatusUI();
 
-  if (state.activeScreen === "tournament") {
+  if (state.activeScreen === "tournament" || hasShared) {
     showTournamentScreen();
+    if (hasShared) {
+      switchSubView("view-leaderboard");
+    }
   }
 });
 
@@ -1049,6 +1082,28 @@ function bindEvents() {
   }
   if (btnModalSyncSheets) {
     btnModalSyncSheets.addEventListener("click", handleSyncAllMatchesToSheets);
+  }
+
+  // Share Results Link Modal Bindings
+  if (btnShareResultsTop) {
+    btnShareResultsTop.addEventListener("click", openShareResultsModal);
+  }
+  if (btnShareResultsBottom) {
+    btnShareResultsBottom.addEventListener("click", openShareResultsModal);
+  }
+  if (btnCloseShareModal) {
+    btnCloseShareModal.addEventListener("click", closeShareResultsModal);
+  }
+  if (btnDoneShareModal) {
+    btnDoneShareModal.addEventListener("click", closeShareResultsModal);
+  }
+  if (shareResultsModal) {
+    shareResultsModal.addEventListener("click", (e) => {
+      if (e.target === shareResultsModal) closeShareResultsModal();
+    });
+  }
+  if (btnCopyShareLink) {
+    btnCopyShareLink.addEventListener("click", copyShareResultsLink);
   }
 }
 
@@ -3009,6 +3064,7 @@ function flashAutoSaveIndicator() {
  * Automatically saves full tournament state to localStorage
  */
 function saveState() {
+  if (state.isSharedView) return; // Do not overwrite user's local tournament while in shared read-only view
   try {
     const dataToSave = {
       tournamentTitle: state.tournamentTitle,
@@ -3067,6 +3123,446 @@ function loadSavedState() {
     }
   } catch (err) {
     console.warn("Could not load tournament state from localStorage:", err);
+  }
+}
+
+/**
+ * =====================================================================
+ * SHARE RESULTS LINK & ENCODING/DECODING SYSTEM
+ * =====================================================================
+ */
+
+/**
+ * URL-Safe Base64 helpers
+ */
+function uint8ArrayToBase64Url(uint8Array) {
+  let binary = "";
+  const len = uint8Array.length;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+  }
+  const base64 = btoa(binary);
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlToUint8Array(base64url) {
+  let base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4 !== 0) {
+    base64 += "=";
+  }
+  const binary = atob(base64);
+  const len = binary.length;
+  const uint8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    uint8[i] = binary.charCodeAt(i);
+  }
+  return uint8;
+}
+
+/**
+ * Serialize tournament state into compact schema
+ */
+function serializeTournamentState(tourneyState) {
+  const matchesData = (tourneyState.matches || []).map((m) => {
+    return [
+      m.matchNumber || 0,
+      m.isSaved ? 1 : 0,
+      (m.teamData || []).map((t) => [
+        t.placement !== "" && t.placement !== undefined ? t.placement : "",
+        t.kills || 0,
+        t.minus || 0,
+        t.playerKills || {}
+      ])
+    ];
+  });
+
+  return {
+    v: 1,
+    t: tourneyState.tournamentTitle || "FREE FIRE TOURNAMENT",
+    m: tourneyState.totalMatches || 6,
+    th: tourneyState.selectedPosterTheme || "red",
+    tm: tourneyState.teams || [],
+    r: tourneyState.teamRosters || {},
+    d: matchesData
+  };
+}
+
+/**
+ * Deserialize compact schema back to tournament state
+ */
+function deserializeTournamentState(compact) {
+  if (!compact || compact.v !== 1) return null;
+
+  const matches = (compact.d || []).map((mArr) => {
+    const matchNumber = mArr[0];
+    const isSaved = mArr[1] === 1;
+    const rawTeamData = mArr[2] || [];
+
+    const teamData = (compact.tm || []).map((teamName, idx) => {
+      const t = rawTeamData[idx] || ["", 0, 0, {}];
+      return {
+        teamName,
+        placement: t[0],
+        kills: typeof t[1] === "number" ? t[1] : 0,
+        minus: typeof t[2] === "number" ? t[2] : 0,
+        playerKills: typeof t[3] === "object" && t[3] !== null ? t[3] : {}
+      };
+    });
+
+    return {
+      matchNumber,
+      isSaved,
+      teamData
+    };
+  });
+
+  return {
+    tournamentTitle: compact.t,
+    totalMatches: compact.m,
+    selectedPosterTheme: compact.th || "red",
+    teams: compact.tm,
+    teamRosters: compact.r || {},
+    matches
+  };
+}
+
+/**
+ * Compress string using CompressionStream with fallback
+ */
+async function compressTournamentState(tourneyState) {
+  const compact = serializeTournamentState(tourneyState);
+  const jsonStr = JSON.stringify(compact);
+
+  if (typeof CompressionStream !== "undefined") {
+    try {
+      const byteArray = new TextEncoder().encode(jsonStr);
+      const cs = new CompressionStream("deflate-raw");
+      const writer = cs.writable.getWriter();
+      writer.write(byteArray);
+      writer.close();
+      const compressedBuffer = await new Response(cs.readable).arrayBuffer();
+      const uint8 = new Uint8Array(compressedBuffer);
+      return "z:" + uint8ArrayToBase64Url(uint8);
+    } catch (e) {
+      console.warn("CompressionStream compression failed, falling back to base64:", e);
+    }
+  }
+
+  // Fallback to UTF-8 URI + Base64
+  const utf8 = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode("0x" + p1));
+  const b64 = btoa(utf8).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return "r:" + b64;
+}
+
+/**
+ * Decompress encoded string back to state
+ */
+async function decompressTournamentState(param) {
+  if (!param || typeof param !== "string") return null;
+
+  try {
+    let jsonStr = "";
+    if (param.startsWith("z:")) {
+      const rawB64 = param.slice(2);
+      const uint8 = base64UrlToUint8Array(rawB64);
+      if (typeof DecompressionStream !== "undefined") {
+        const ds = new DecompressionStream("deflate-raw");
+        const writer = ds.writable.getWriter();
+        writer.write(uint8);
+        writer.close();
+        const buffer = await new Response(ds.readable).arrayBuffer();
+        jsonStr = new TextDecoder().decode(buffer);
+      } else {
+        console.warn("DecompressionStream unsupported");
+        return null;
+      }
+    } else {
+      const rawB64 = param.startsWith("r:") ? param.slice(2) : param;
+      let b64 = rawB64.replace(/-/g, "+").replace(/_/g, "/");
+      while (b64.length % 4 !== 0) b64 += "=";
+      const binary = atob(b64);
+      const escaped = Array.from(binary).map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("");
+      jsonStr = decodeURIComponent(escaped);
+    }
+
+    const compact = JSON.parse(jsonStr);
+    return deserializeTournamentState(compact);
+  } catch (err) {
+    console.warn("Failed to decompress tournament parameter:", err);
+    return null;
+  }
+}
+
+/**
+ * Generate full shareable URL
+ */
+async function generateShareableResultsUrl() {
+  const param = await compressTournamentState(state);
+  const origin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "";
+  const pathname = window.location.pathname || "";
+  return `${origin}${pathname}#share=${param}`;
+}
+
+/**
+ * Build formatted tournament summary strings
+ */
+function buildTournamentSummaryText(shareUrl) {
+  const cumulative = calculateCumulativeStats();
+  const leader = cumulative.length > 0 ? cumulative[0] : null;
+  const mvp = calculateTournamentMVP().topFragger;
+  const savedMatchesCount = (state.matches || []).filter((m) => m && m.isSaved).length;
+
+  const title = state.tournamentTitle || "FREE FIRE TOURNAMENT";
+  const winnerLine = leader ? `🥇 1st: ${leader.teamName} (${leader.totalPoints} PTS, ${leader.booyahs} Booyah)` : "";
+  const runnerLine = cumulative.length > 1 ? `🥈 2nd: ${cumulative[1].teamName} (${cumulative[1].totalPoints} PTS)` : "";
+  const mvpLine = mvp && mvp.totalKills > 0 ? `👑 MVP: ${mvp.playerName} [${mvp.teamName}] - ${mvp.totalKills} KILLS` : "";
+
+  // WhatsApp formatted
+  const whatsappLines = [
+    `🏆 *${title.toUpperCase()} - TOURNAMENT STANDINGS* 🏆`,
+    `⚔️ Matches Played: ${savedMatchesCount} / ${state.totalMatches}`,
+    ""
+  ];
+  if (winnerLine) whatsappLines.push(winnerLine);
+  if (runnerLine) whatsappLines.push(runnerLine);
+  if (mvpLine) whatsappLines.push(mvpLine);
+  whatsappLines.push("");
+  whatsappLines.push("📊 *View Live Standings Poster & Cumulative Matrix:*");
+  whatsappLines.push(shareUrl);
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappLines.join("\n"))}`;
+  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(`🏆 ${title} Results are live!`)}`;
+
+  // Discord markdown block
+  const discordLines = [
+    `🏆 **${title.toUpperCase()} - OFFICIAL RESULTS** 🏆`,
+    `> **Matches Played:** ${savedMatchesCount}/${state.totalMatches}`,
+    leader ? `> 🥇 **1st Place:** ${leader.teamName} - **${leader.totalPoints} PTS**` : "",
+    cumulative.length > 1 ? `> 🥈 **2nd Place:** ${cumulative[1].teamName} - **${cumulative[1].totalPoints} PTS**` : "",
+    cumulative.length > 2 ? `> 🥉 **3rd Place:** ${cumulative[2].teamName} - **${cumulative[2].totalPoints} PTS**` : "",
+    mvp && mvp.totalKills > 0 ? `> 👑 **Tournament MVP:** ${mvp.playerName} (${mvp.teamName}) with **${mvp.totalKills} kills**` : "",
+    "",
+    `📊 **Live Standings Poster & Points Matrix:**`,
+    shareUrl
+  ].filter(Boolean);
+
+  const discordMarkdown = discordLines.join("\n");
+
+  return {
+    title,
+    leader,
+    mvp,
+    savedMatchesCount,
+    whatsappUrl,
+    telegramUrl,
+    discordMarkdown
+  };
+}
+
+/**
+ * Open Share Results Link Modal
+ */
+async function openShareResultsModal() {
+  if (!shareResultsModal) return;
+
+  if (shareOverviewTitle) shareOverviewTitle.textContent = state.tournamentTitle.toUpperCase();
+  const savedCount = (state.matches || []).filter((m) => m && m.isSaved).length;
+  if (shareOverviewStatus) shareOverviewStatus.textContent = `${savedCount} / ${state.totalMatches} MATCHES SAVED`;
+
+  const cumulative = calculateCumulativeStats();
+  if (shareOverviewLeader) {
+    if (cumulative.length > 0 && cumulative[0].totalPoints > 0) {
+      shareOverviewLeader.textContent = `${cumulative[0].teamName} (${cumulative[0].totalPoints} pts)`;
+    } else {
+      shareOverviewLeader.textContent = "--";
+    }
+  }
+
+  const mvp = calculateTournamentMVP().topFragger;
+  if (shareOverviewMvp) {
+    if (mvp && mvp.totalKills > 0) {
+      shareOverviewMvp.textContent = `${mvp.playerName} (${mvp.totalKills}k)`;
+    } else {
+      shareOverviewMvp.textContent = "None yet";
+    }
+  }
+
+  if (shareOverviewTheme) {
+    shareOverviewTheme.textContent = (state.selectedPosterTheme || "red").toUpperCase();
+  }
+
+  if (shareLinkInput) {
+    shareLinkInput.value = "Generating share link...";
+  }
+
+  shareResultsModal.style.display = "flex";
+
+  try {
+    const shareUrl = await generateShareableResultsUrl();
+    if (shareLinkInput) {
+      shareLinkInput.value = shareUrl;
+    }
+
+    const summary = buildTournamentSummaryText(shareUrl);
+    if (btnShareWhatsapp) btnShareWhatsapp.href = summary.whatsappUrl;
+    if (btnShareTelegram) btnShareTelegram.href = summary.telegramUrl;
+
+    if (btnShareDiscord) {
+      btnShareDiscord.onclick = () => {
+        copyTextToClipboard(summary.discordMarkdown);
+        if (discordShareText) {
+          discordShareText.textContent = "✓ Copied Discord Text!";
+          setTimeout(() => {
+            discordShareText.textContent = "Copy for Discord";
+          }, 2500);
+        }
+      };
+    }
+
+    if (shareCompressionNote) {
+      shareCompressionNote.textContent = `✓ URL: ${shareUrl.length} chars • Compressed & safe for WhatsApp / Discord`;
+    }
+  } catch (err) {
+    console.error("Error generating share link:", err);
+    if (shareLinkInput) shareLinkInput.value = window.location.href;
+  }
+}
+
+/**
+ * Close Share Results Link Modal
+ */
+function closeShareResultsModal() {
+  if (shareResultsModal) shareResultsModal.style.display = "none";
+}
+
+/**
+ * Copy Share Link to Clipboard
+ */
+function copyShareResultsLink() {
+  if (!shareLinkInput) return;
+  const url = shareLinkInput.value;
+  if (!url || url.startsWith("Generating")) return;
+
+  copyTextToClipboard(url);
+
+  if (copyShareText) copyShareText.textContent = "✓ COPIED!";
+  if (copyShareIcon) copyShareIcon.textContent = "✅";
+
+  setTimeout(() => {
+    if (copyShareText) copyShareText.textContent = "COPY LINK";
+    if (copyShareIcon) copyShareIcon.textContent = "📋";
+  }, 2500);
+}
+
+/**
+ * Cross-platform clipboard writer
+ */
+function copyTextToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopyText(text);
+    });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } catch (e) {
+    console.warn("fallback copy failed:", e);
+  }
+  document.body.removeChild(ta);
+}
+
+/**
+ * Check for incoming share link on startup
+ */
+async function checkForSharedResultsUrl() {
+  if (typeof window === "undefined" || !window.location) return false;
+
+  let param = "";
+  if (window.location.hash) {
+    const hash = window.location.hash.slice(1);
+    const match = hash.match(/(?:share|data)=([^&]+)/);
+    if (match) param = match[1];
+  }
+  if (!param && window.location.search) {
+    const params = new URLSearchParams(window.location.search);
+    param = params.get("share") || params.get("data") || "";
+  }
+
+  if (!param) return false;
+
+  try {
+    const restored = await decompressTournamentState(param);
+    if (!restored) return false;
+
+    // Apply restored tournament to state
+    state.tournamentTitle = restored.tournamentTitle || "SHARED TOURNAMENT";
+    state.totalMatches = restored.totalMatches || 6;
+    state.selectedPosterTheme = restored.selectedPosterTheme || "red";
+    state.teams = restored.teams || [];
+    state.teamRosters = restored.teamRosters || {};
+    state.matches = restored.matches || [];
+    state.activeScreen = "tournament";
+    state.activeSubView = "view-leaderboard";
+    state.isSharedView = true;
+
+    // Show Read-Only Shared View Banner
+    if (sharedViewerBanner) {
+      sharedViewerBanner.style.display = "flex";
+      if (sharedBannerTourneyTitle) {
+        sharedBannerTourneyTitle.textContent = state.tournamentTitle.toUpperCase();
+      }
+    }
+
+    // Configure Clone Button
+    if (btnSharedClone) {
+      btnSharedClone.onclick = () => {
+        state.isSharedView = false;
+        saveState();
+        if (sharedViewerBanner) sharedViewerBanner.style.display = "none";
+        if (history.replaceState) {
+          history.replaceState(null, "", window.location.pathname);
+        }
+        alert("✓ Tournament cloned to your local dashboard! You can now edit and manage all matches.");
+      };
+    }
+
+    // Configure Exit Button
+    if (btnSharedExit) {
+      btnSharedExit.onclick = () => {
+        if (history.replaceState) {
+          history.replaceState(null, "", window.location.pathname);
+        }
+        window.location.reload();
+      };
+    }
+
+    // Configure Copy Shared Link Button in banner
+    if (btnSharedCopyLink) {
+      btnSharedCopyLink.onclick = () => {
+        copyTextToClipboard(window.location.href);
+        const originalText = btnSharedCopyLink.innerHTML;
+        btnSharedCopyLink.innerHTML = "<span>✅ COPIED!</span>";
+        setTimeout(() => {
+          btnSharedCopyLink.innerHTML = originalText;
+        }, 2000);
+      };
+    }
+
+    return true;
+  } catch (err) {
+    console.warn("Could not load shared tournament:", err);
+    return false;
   }
 }
 

@@ -193,6 +193,34 @@
 
       <!-- SCREEN 2: ACTIVE TOURNAMENT DASHBOARD (NEXT SCREEN) -->
       <section id="tournament-screen" class="screen-view">
+        <!-- Shared Read-Only Player View Alert Banner -->
+        <div id="shared-viewer-banner" class="shared-viewer-banner" style="display: none;">
+          <div class="shared-banner-left">
+            <span class="shared-banner-icon">👀</span>
+            <div class="shared-banner-text">
+              <div class="shared-banner-title">
+                <span>VIEWING SHARED RESULTS:</span>
+                <b id="shared-banner-tourney-title">--</b>
+                <span class="shared-badge">PLAYER VIEW (READ-ONLY)</span>
+              </div>
+              <div class="shared-banner-sub">
+                Official tournament results shared by host. Standings poster, cumulative points matrix, and MVP fraggers are live.
+              </div>
+            </div>
+          </div>
+          <div class="shared-banner-actions">
+            <button type="button" id="btn-shared-copy-link" class="cyber-btn secondary-btn" title="Copy shareable link">
+              <span>📋 COPY LINK</span>
+            </button>
+            <button type="button" id="btn-shared-clone" class="cyber-btn primary-action-btn" title="Import this tournament into your local calculator">
+              <span>💾 CLONE TO MY DASHBOARD</span>
+            </button>
+            <button type="button" id="btn-shared-exit" class="cyber-btn danger-btn" title="Exit shared view and return to your tournament">
+              <span>✕ EXIT</span>
+            </button>
+          </div>
+        </div>
+
         <div class="tournament-top-bar">
           <div class="active-tourney-meta">
             <div class="meta-pills-row">
@@ -212,6 +240,9 @@
           </div>
 
           <div class="tourney-controls">
+            <button type="button" id="btn-share-results-top" class="cyber-btn primary-action-btn" title="Generate shareable URL for players without screenshots">
+              <span>🔗 SHARE LINK</span>
+            </button>
             <button type="button" id="btn-google-account" class="cyber-btn" title="Connect or manage your Google Drive 5TB Account">
               <span>👤 GOOGLE ACCOUNT</span>
             </button>
@@ -461,6 +492,13 @@
                   <span>SAVE TO DRIVE</span>
                 </span>
               </button>
+
+              <button type="button" id="btn-share-results-bottom" class="cyber-btn share-results-prominent-btn" title="Generate shareable results link for players">
+                <span class="btn-content">
+                  <span class="btn-flame-icon">🔗</span>
+                  <span>SHARE RESULTS LINK</span>
+                </span>
+              </button>
             </div>
             <div id="export-status-message" class="export-status-note"></div>
           </div>
@@ -663,6 +701,86 @@
                   </button>
                 </div>
               </details>
+            </div>
+        <!-- Share Results Link Modal -->
+        <div id="share-results-modal-backdrop" class="modal-backdrop" style="display: none;">
+          <div class="modal-card share-results-modal-card">
+            <div class="modal-header">
+              <div class="modal-title-group">
+                <span class="modal-crown">🔗</span>
+                <div>
+                  <h3 id="modal-share-title">SHARE TOURNAMENT RESULTS</h3>
+                  <span class="modal-subtitle">Generate a direct shareable link for players & teams (no screenshots needed)</span>
+                </div>
+              </div>
+              <button type="button" class="modal-close-btn" id="btn-close-share-modal">✕</button>
+            </div>
+
+            <div class="modal-body share-modal-body">
+              <!-- Tournament Quick Overview Card -->
+              <div class="share-overview-card" id="share-overview-card">
+                <div class="share-overview-header">
+                  <span class="share-overview-title" id="share-overview-title">NZ PAID SCRIMS</span>
+                  <span class="share-overview-badge" id="share-overview-status">6 MATCHES SAVED</span>
+                </div>
+                <div class="share-overview-stats">
+                  <div class="share-stat-pill">
+                    <span class="stat-lbl">🥇 LEADER</span>
+                    <b class="stat-val" id="share-overview-leader">--</b>
+                  </div>
+                  <div class="share-stat-pill">
+                    <span class="stat-lbl">👑 MVP</span>
+                    <b class="stat-val" id="share-overview-mvp">--</b>
+                  </div>
+                  <div class="share-stat-pill">
+                    <span class="stat-lbl">🎨 THEME</span>
+                    <b class="stat-val" id="share-overview-theme">RED</b>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Share Link Box -->
+              <div class="share-link-section">
+                <label class="share-link-label">SHAREABLE RESULTS URL (ENCODED TOURNAMENT DATA):</label>
+                <div class="share-input-row">
+                  <input type="text" id="share-link-input" class="cyber-input share-url-input" readonly>
+                  <button type="button" id="btn-copy-share-link" class="cyber-btn primary-start-btn copy-share-btn">
+                    <span class="btn-cutout-left"></span>
+                    <span class="btn-content">
+                      <span id="copy-share-icon">📋</span>
+                      <span id="copy-share-text">COPY LINK</span>
+                    </span>
+                    <span class="btn-cutout-right"></span>
+                  </button>
+                </div>
+                <div class="share-link-hint">
+                  <span>💡 Recipients opening this link instantly see live standings, cumulative points matrix, and player MVP stats in read-only player mode without installing anything.</span>
+                </div>
+              </div>
+
+              <!-- One-Click Instant Share Buttons -->
+              <div class="social-share-section">
+                <div class="social-share-title">INSTANT ONE-CLICK SHARING:</div>
+                <div class="social-share-grid">
+                  <a href="#" id="btn-share-whatsapp" target="_blank" rel="noopener noreferrer" class="social-share-btn whatsapp-btn">
+                    <span class="social-icon">💬</span>
+                    <span class="social-label">WhatsApp</span>
+                  </a>
+                  <a href="#" id="btn-share-telegram" target="_blank" rel="noopener noreferrer" class="social-share-btn telegram-btn">
+                    <span class="social-icon">✈️</span>
+                    <span class="social-label">Telegram</span>
+                  </a>
+                  <button type="button" id="btn-share-discord" class="social-share-btn discord-btn">
+                    <span class="social-icon">🎮</span>
+                    <span class="social-label" id="discord-share-text">Copy for Discord</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-summary-footer share-modal-footer">
+              <span class="share-compression-note" id="share-compression-note">✓ Compressed & Encoded for high reliability</span>
+              <button type="button" id="btn-done-share-modal" class="cyber-btn secondary-btn">CLOSE</button>
             </div>
           </div>
         </div>
