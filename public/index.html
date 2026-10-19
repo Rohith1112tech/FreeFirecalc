@@ -380,6 +380,44 @@
             </div>
           </div>
 
+          <!-- TOURNAMENT MVP & TOP FRAGGERS SHOWCASE PANEL (Prompt Feature 2) -->
+          <div class="mvp-showcase-panel" id="mvp-showcase-panel" style="display: none;">
+            <div class="mvp-showcase-header">
+              <div class="mvp-title-wrap">
+                <span class="mvp-crown-icon">👑</span>
+                <h3>TOURNAMENT MVP &amp; TOP FRAGGERS</h3>
+              </div>
+              <span class="mvp-live-tag">🔥 LIVE FRAG TRACKER</span>
+            </div>
+            <div class="mvp-showcase-body">
+              <!-- #1 Top Fragger Hero Card -->
+              <div class="mvp-hero-card" id="mvp-hero-card">
+                <div class="mvp-hero-left">
+                  <div class="mvp-badge-avatar">🏆</div>
+                  <div class="mvp-hero-info">
+                    <span class="mvp-hero-label">MOST VALUABLE PLAYER</span>
+                    <h4 class="mvp-hero-name" id="mvp-hero-name">--</h4>
+                    <span class="mvp-hero-team" id="mvp-hero-team">--</span>
+                  </div>
+                </div>
+                <div class="mvp-hero-stats">
+                  <div class="mvp-stat-box">
+                    <span class="mvp-stat-val" id="mvp-hero-kills">0</span>
+                    <span class="mvp-stat-lbl">TOTAL KILLS 💀</span>
+                  </div>
+                  <div class="mvp-stat-box">
+                    <span class="mvp-stat-val" id="mvp-hero-peak">0</span>
+                    <span class="mvp-stat-lbl">PEAK MATCH 🔥</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Top Fraggers Podium Strip -->
+              <div class="mvp-top-fraggers-strip" id="mvp-top-fraggers-strip">
+                <!-- Dynamically filled with top fraggers -->
+              </div>
+            </div>
+          </div>
+
           <!-- The Complete Final Poster Container -->
           <div class="scrims-exact-poster-container theme-red" id="scrims-poster-capture">
             <!-- Background Template Image -->
@@ -388,6 +426,17 @@
             <!-- Dynamic Leaderboard Data Overlay (precisely mapped to the 12 template slots) -->
             <div class="poster-overlay-slots" id="scrims-leaderboard-rows">
               <!-- Dynamically populated 12 overlay rows directly aligned over the image slots -->
+            </div>
+
+            <!-- Auto-Highlighted Tournament MVP Banner on Poster -->
+            <div class="poster-mvp-strip" id="poster-mvp-strip" style="display: none;">
+              <div class="poster-mvp-content">
+                <span class="poster-mvp-trophy">🏆</span>
+                <span class="poster-mvp-tag">TOURNAMENT MVP</span>
+                <span class="poster-mvp-name" id="poster-mvp-name">--</span>
+                <span class="poster-mvp-team" id="poster-mvp-team"></span>
+                <span class="poster-mvp-kills" id="poster-mvp-kills">0 KILLS</span>
+              </div>
             </div>
           </div>
 

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "build": "node scripts/build.js",
-    "test": "node test_scoring.js && node test_tiebreaker.js && node test_persistence.js && node test_editing.js && node test_prompt8_tiebreaker.js && node test_poster_theme.js && node test_slot_parser.js && node test_minus_points.js"
+    "test": "node test_scoring.js && node test_tiebreaker.js && node test_persistence.js && node test_editing.js && node test_prompt8_tiebreaker.js && node test_poster_theme.js && node test_slot_parser.js && node test_minus_points.js && node test_mvp_tracker.js"
   },
   "keywords": [
     "freefire",

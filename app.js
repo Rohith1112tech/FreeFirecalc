@@ -1485,6 +1485,114 @@ function renderMatchTeamForms() {
 
     card.appendChild(minusRow);
 
+    // Individual Player Kills Section (for MVP Tracking)
+    if (roster.length > 0) {
+      if (!currentMatch.teamData[teamIdx]) {
+        currentMatch.teamData[teamIdx] = { teamName, placement: "", kills: existing.kills || 0, minus: existing.minus || 0 };
+      }
+      if (!currentMatch.teamData[teamIdx].playerKills) {
+        currentMatch.teamData[teamIdx].playerKills = existing.playerKills ? { ...existing.playerKills } : {};
+      }
+
+      const playerKillsSection = document.createElement("div");
+      playerKillsSection.className = "card-player-kills-section";
+
+      const pkTitle = document.createElement("div");
+      pkTitle.className = "player-kills-title";
+      pkTitle.innerHTML = `
+        <span>🎯 SQUAD PLAYER KILLS (MVP)</span>
+        <span style="font-size:0.65rem;opacity:0.8;font-weight:600;">Auto-sums kills</span>
+      `;
+      playerKillsSection.appendChild(pkTitle);
+
+      const pkGrid = document.createElement("div");
+      pkGrid.className = "player-kills-grid";
+
+      roster.forEach((playerName) => {
+        const pItem = document.createElement("div");
+        pItem.className = "player-kill-item";
+
+        const pName = document.createElement("span");
+        pName.className = "player-kill-name";
+        pName.title = playerName;
+        pName.textContent = playerName;
+
+        const counterDiv = document.createElement("div");
+        counterDiv.className = "player-kill-counter";
+
+        const minusBtn = document.createElement("button");
+        minusBtn.type = "button";
+        minusBtn.className = "btn-kill-step";
+        minusBtn.textContent = "-";
+        minusBtn.title = "Decrease kill";
+
+        const killInput = document.createElement("input");
+        killInput.type = "number";
+        killInput.min = "0";
+        killInput.max = "99";
+        killInput.className = "player-kill-input";
+        const currentVal = (currentMatch.teamData[teamIdx].playerKills && currentMatch.teamData[teamIdx].playerKills[playerName] !== undefined)
+          ? currentMatch.teamData[teamIdx].playerKills[playerName]
+          : 0;
+        killInput.value = currentVal;
+
+        const plusBtn = document.createElement("button");
+        plusBtn.type = "button";
+        plusBtn.className = "btn-kill-step";
+        plusBtn.textContent = "+";
+        plusBtn.title = "Increase kill";
+
+        const updatePlayerKillsAndSum = (newVal) => {
+          if (newVal < 0) newVal = 0;
+          killInput.value = newVal;
+          if (!currentMatch.teamData[teamIdx]) {
+            currentMatch.teamData[teamIdx] = { teamName, placement: "", kills: 0, minus: 0 };
+          }
+          if (!currentMatch.teamData[teamIdx].playerKills) {
+            currentMatch.teamData[teamIdx].playerKills = {};
+          }
+          currentMatch.teamData[teamIdx].playerKills[playerName] = newVal;
+
+          // Auto-sum squad kills and update total team kills input
+          const sumKills = roster.reduce((sum, p) => {
+            const pk = currentMatch.teamData[teamIdx].playerKills[p];
+            return sum + (typeof pk === "number" ? pk : (parseInt(pk, 10) || 0));
+          }, 0);
+
+          currentMatch.teamData[teamIdx].kills = sumKills;
+          killsInput.value = sumKills;
+          updateCardPointsPreview(teamIdx);
+        };
+
+        minusBtn.addEventListener("click", () => {
+          let curr = parseInt(killInput.value, 10) || 0;
+          if (curr > 0) updatePlayerKillsAndSum(curr - 1);
+        });
+
+        plusBtn.addEventListener("click", () => {
+          let curr = parseInt(killInput.value, 10) || 0;
+          updatePlayerKillsAndSum(curr + 1);
+        });
+
+        killInput.addEventListener("input", (e) => {
+          let val = parseInt(e.target.value, 10);
+          if (isNaN(val) || val < 0) val = 0;
+          updatePlayerKillsAndSum(val);
+        });
+
+        counterDiv.appendChild(minusBtn);
+        counterDiv.appendChild(killInput);
+        counterDiv.appendChild(plusBtn);
+
+        pItem.appendChild(pName);
+        pItem.appendChild(counterDiv);
+        pkGrid.appendChild(pItem);
+      });
+
+      playerKillsSection.appendChild(pkGrid);
+      card.appendChild(playerKillsSection);
+    }
+
     matchTeamsGridContainer.appendChild(card);
   });
 
@@ -1597,12 +1705,21 @@ function handleSaveMatchData() {
     return;
   }
 
-  // 3. Normalize kills and minus
+  // 3. Normalize kills, minus, and playerKills
   currentMatch.teamData.forEach((t) => {
     const k = parseInt(t.kills, 10);
     t.kills = isNaN(k) || k < 0 ? 0 : k;
     const m = parseInt(t.minus, 10);
     t.minus = isNaN(m) || m < 0 ? 0 : m;
+
+    if (t.playerKills && typeof t.playerKills === "object") {
+      const normalizedPK = {};
+      Object.entries(t.playerKills).forEach(([pName, pKills]) => {
+        const pk = parseInt(pKills, 10);
+        normalizedPK[pName] = isNaN(pk) || pk < 0 ? 0 : pk;
+      });
+      t.playerKills = normalizedPK;
+    }
   });
 
   // Determine if this was an edit correction
@@ -1810,6 +1927,127 @@ function calculateCumulativeStats() {
   });
 
   return stats;
+}
+
+/**
+ * Calculate Tournament MVP (Top Fragger) Across All Saved Matches
+ * Tracks individual player kills across all matches and ranks the top fraggers
+ */
+function calculateTournamentMVP() {
+  const playerStats = {};
+
+  state.matches.forEach((match) => {
+    if (!match || !match.isSaved || !match.teamData) return;
+
+    match.teamData.forEach((tData) => {
+      if (!tData || !tData.playerKills) return;
+      const teamName = tData.teamName || "UNKNOWN";
+
+      Object.entries(tData.playerKills).forEach(([playerName, kVal]) => {
+        const cleanName = playerName ? playerName.trim() : "";
+        if (!cleanName) return;
+        const kills = parseInt(kVal, 10) || 0;
+
+        if (!playerStats[cleanName]) {
+          playerStats[cleanName] = {
+            playerName: cleanName,
+            teamName: teamName,
+            totalKills: 0,
+            matchesWithKills: 0,
+            maxSingleMatchKills: 0
+          };
+        }
+
+        playerStats[cleanName].totalKills += kills;
+        if (kills > 0) {
+          playerStats[cleanName].matchesWithKills += 1;
+        }
+        if (kills > playerStats[cleanName].maxSingleMatchKills) {
+          playerStats[cleanName].maxSingleMatchKills = kills;
+        }
+      });
+    });
+  });
+
+  const sortedPlayers = Object.values(playerStats).sort((a, b) => {
+    if (b.totalKills !== a.totalKills) {
+      return b.totalKills - a.totalKills;
+    }
+    if (b.maxSingleMatchKills !== a.maxSingleMatchKills) {
+      return b.maxSingleMatchKills - a.maxSingleMatchKills;
+    }
+    return a.playerName.localeCompare(b.playerName);
+  });
+
+  const topFragger = sortedPlayers.length > 0 && sortedPlayers[0].totalKills > 0 ? sortedPlayers[0] : null;
+
+  return {
+    topFragger,
+    leaderboard: sortedPlayers.slice(0, 5),
+    totalFraggers: sortedPlayers.length
+  };
+}
+
+/**
+ * Update MVP Display across the Live Poster Overlay and Showcase Widget
+ */
+function updateMVPDisplay() {
+  const mvpData = calculateTournamentMVP();
+  const top = mvpData.topFragger;
+
+  // 1. Live Poster Overlay (#poster-mvp-strip)
+  const posterMvpStrip = document.getElementById("poster-mvp-strip");
+  const posterMvpName = document.getElementById("poster-mvp-name");
+  const posterMvpTeam = document.getElementById("poster-mvp-team");
+  const posterMvpKills = document.getElementById("poster-mvp-kills");
+
+  if (posterMvpStrip) {
+    if (top && top.totalKills > 0) {
+      posterMvpStrip.style.display = "flex";
+      if (posterMvpName) posterMvpName.textContent = top.playerName;
+      if (posterMvpTeam) posterMvpTeam.textContent = `[${top.teamName}]`;
+      if (posterMvpKills) posterMvpKills.textContent = `🔥 ${top.totalKills} KILLS`;
+    } else {
+      posterMvpStrip.style.display = "none";
+    }
+  }
+
+  // 2. Showcase Panel above poster (#mvp-showcase-panel)
+  const mvpShowcasePanel = document.getElementById("mvp-showcase-panel");
+  const mvpHeroName = document.getElementById("mvp-hero-name");
+  const mvpHeroTeam = document.getElementById("mvp-hero-team");
+  const mvpHeroKills = document.getElementById("mvp-hero-kills");
+  const mvpHeroPeak = document.getElementById("mvp-hero-peak");
+  const mvpTopStrip = document.getElementById("mvp-top-fraggers-strip");
+
+  if (mvpShowcasePanel) {
+    if (top && top.totalKills > 0) {
+      mvpShowcasePanel.style.display = "block";
+      if (mvpHeroName) mvpHeroName.textContent = top.playerName;
+      if (mvpHeroTeam) mvpHeroTeam.textContent = `TEAM: ${top.teamName}`;
+      if (mvpHeroKills) mvpHeroKills.textContent = `${top.totalKills} KILLS`;
+      if (mvpHeroPeak) mvpHeroPeak.textContent = `${top.maxSingleMatchKills} KILLS (PEAK)`;
+
+      if (mvpTopStrip) {
+        mvpTopStrip.innerHTML = "";
+        mvpData.leaderboard.forEach((fragger, idx) => {
+          const rankNum = idx + 1;
+          const medal = rankNum === 1 ? "🥇 MVP" : rankNum === 2 ? "🥈 #2" : rankNum === 3 ? "🥉 #3" : `#${rankNum}`;
+          const pill = document.createElement("div");
+          pill.className = `mvp-podium-pill ${rankNum === 1 ? "rank-1" : ""}`;
+          pill.innerHTML = `
+            <span class="fragger-rank">${medal}</span>
+            <span class="fragger-name">${escapeHtml(fragger.playerName)}</span>
+            <span class="fragger-team">(${escapeHtml(fragger.teamName)})</span>
+            <span class="fragger-kills">💀 ${fragger.totalKills}</span>
+          `;
+          mvpTopStrip.appendChild(pill);
+        });
+      }
+    } else {
+      mvpShowcasePanel.style.display = "none";
+    }
+  }
 }
 
 /**
@@ -2055,6 +2293,9 @@ function renderLeaderboardRows(animate = true) {
 
     scrimsLeaderboardRowsEl.appendChild(row);
   });
+
+  // Keep MVP Showcase & On-Poster Banner in sync with current scores
+  updateMVPDisplay();
 }
 
 /**
@@ -2458,6 +2699,64 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowBlur = 0;
     });
   }
+
+  // Draw MVP Overlay Banner onto Canvas Export if an MVP exists
+  drawPosterMVPOverlay(canvas, ctx, theme);
+}
+
+/**
+ * Draws the high-resolution MVP Banner onto the exported canvas
+ */
+function drawPosterMVPOverlay(canvas, ctx, theme) {
+  const mvpData = calculateTournamentMVP();
+  const top = mvpData.topFragger;
+  if (!top || top.totalKills <= 0) return;
+
+  const themeConfig = POSTER_THEMES[theme] || POSTER_THEMES.red;
+  const isCyan = themeConfig.layout === "cyan_725";
+
+  // Position: Cyan footer has special layout (86.5%), Red and Modern are at 92.5%
+  const barY = isCyan ? canvas.height * 0.865 : canvas.height * 0.925;
+  const barHeight = canvas.height * 0.038;
+  const barWidth = canvas.width * 0.88;
+  const barX = (canvas.width - barWidth) / 2;
+  const cornerRadius = 6;
+
+  ctx.save();
+
+  // Background box with dark frosted tint
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(barX, barY, barWidth, barHeight, cornerRadius);
+  } else {
+    ctx.rect(barX, barY, barWidth, barHeight);
+  }
+  ctx.fillStyle = "rgba(10, 14, 22, 0.92)";
+  ctx.fill();
+
+  // Glowing border matching theme
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = themeConfig.posColor || "#e50914";
+  ctx.shadowColor = themeConfig.posColor || "#e50914";
+  ctx.shadowBlur = 10;
+  ctx.stroke();
+
+  // Render MVP text
+  const fontSize = Math.round(canvas.width * 0.021);
+  ctx.font = `bold ${fontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const centerY = barY + barHeight / 2;
+
+  ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+  ctx.shadowBlur = 6;
+  ctx.fillStyle = "#ffffff";
+
+  const mvpText = `🏆 TOURNAMENT MVP: ${top.playerName.toUpperCase()} (${top.teamName.toUpperCase()})  ★  ${top.totalKills} TOTAL KILLS`;
+  ctx.fillText(mvpText, canvas.width / 2, centerY);
+
+  ctx.restore();
 }
 
 /**
