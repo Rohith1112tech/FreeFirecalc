@@ -2245,10 +2245,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillText("👑", canvas.width * 0.112, rowCenterY - rowHeight * 0.42);
       }
 
-      // 1. Team Name (Slot: 19.8% to 43.5%)
+      // 1. Team Name (Slot: centered at 31.9%)
       ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(0,0,0,0.95)";
       ctx.shadowBlur = 4;
@@ -2256,11 +2256,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.235;
+      const maxTextWidth = canvas.width * 0.238;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.198, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.319, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
@@ -2302,8 +2302,8 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     });
   } else if (isCyan) {
     // Cyan Template (725 x 1024 base -> 1450 x 2048 at 2x Retina)
-    const cyanSlotCenters = [406.75, 443, 479, 514.75, 550.75, 587.25, 623.75, 660.25, 696.5, 732.5, 768.5, 804.5];
-    const rowHeight = (canvas.height * (434 / 1024)) / 12;
+    const cyanSlotCenters = [406.5, 443, 479.5, 516, 552.5, 589, 625.5, 662, 698.5, 735, 771.5, 808];
+    const rowHeight = (canvas.height * (438 / 1024)) / 12;
 
     const crownFontSize = Math.round(canvas.width * 0.022);
     const teamFontSize = Math.round(canvas.width * 0.022);
@@ -2321,13 +2321,13 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillStyle = "#ffeb3b";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("👑", canvas.width * 0.128, rowCenterY - rowHeight * 0.45);
+        ctx.fillText("👑", canvas.width * 0.128, rowCenterY - rowHeight * 0.42);
       }
 
-      // 1. Team Name (Slot: 19.0% to 47.5%)
+      // 1. Team Name (Slot: centered at 34.25%)
       ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(0,0,0,0.95)";
       ctx.shadowBlur = 4;
@@ -2335,11 +2335,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.28;
+      const maxTextWidth = canvas.width * 0.255;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.190, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.3425, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
@@ -2381,8 +2381,8 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     });
   } else {
     // Red Template (847 x 1024 base -> 1694 x 2048 at 2x Retina)
-    const redSlotCenters = [378, 423, 467, 510.5, 554.5, 599, 642.5, 686, 730.5, 775.5, 821, 869];
-    const rowHeight = (canvas.height * (539 / 1024)) / 12;
+    const redSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
+    const rowHeight = (canvas.height * (535 / 1024)) / 12;
 
     const crownFontSize = Math.round(canvas.width * 0.021);
     const teamFontSize = Math.round(canvas.width * 0.022);
@@ -2399,13 +2399,13 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillStyle = "#ffeb3b";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.40);
+        ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.42);
       }
 
-      // 1. Team Name (Slot: 17.5% to 45.0%)
+      // 1. Team Name (Slot: centered at 31.9%)
       ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "left";
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = 4;
@@ -2413,11 +2413,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.27;
+      const maxTextWidth = canvas.width * 0.238;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.178, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.319, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;

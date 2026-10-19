@@ -2851,9 +2851,9 @@ body {
 /* Dynamic Leaderboard Data Overlay (Directly positioned over the image slots) */
 .poster-overlay-slots {
   position: absolute !important;
-  /* Precisely spans the 12 slot rows in the template (y: 177px to 449px out of 512px) */
-  top: 34.57% !important;
-  bottom: 12.30% !important;
+  /* Spans the 12 slot rows with equal top and bottom spacing */
+  top: 34.7% !important;
+  bottom: 13.05% !important;
   left: 0 !important;
   right: 0 !important;
   display: flex !important;
@@ -2914,8 +2914,8 @@ body {
 /* Rank 01 Crown Badge placed above #01 */
 .overlay-crown-icon {
   position: absolute !important;
-  left: 9.8% !important;
-  top: -3px !important;
+  left: 10.8% !important;
+  top: -1px !important;
   font-size: clamp(7px, 1.1vw, 11px) !important;
   color: #ffeb3b !important;
   filter: drop-shadow(0 0 4px #ff1744) !important;
@@ -2923,11 +2923,14 @@ body {
   z-index: 15 !important;
 }
 
-/* 1. Team Name Text Slot (Inside metal slot: x=17.5% to 45.0%) */
+/* 1. Team Name Text Slot (Centered inside metal slot away from rank badges) */
 .overlay-team-name {
   position: absolute !important;
-  left: 17.5% !important;
-  width: 27.5% !important;
+  left: 20.0% !important;
+  width: 23.8% !important;
+  text-align: center !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   font-family: var(--font-tech), sans-serif !important;
   font-weight: 800 !important;
   font-size: clamp(7.5px, 1.35vw, 12px) !important;
@@ -3171,20 +3174,21 @@ body {
 }
 
 .scrims-exact-poster-container.theme-cyan .poster-overlay-slots {
-  top: 37.94% !important;
-  bottom: 19.68% !important;
+  top: 37.95% !important;
+  bottom: 19.35% !important;
 }
 
 .scrims-exact-poster-container.theme-cyan .overlay-crown-icon {
   left: 12.8% !important;
   transform: translateX(-50%) !important;
-  top: -4px !important;
+  top: -2px !important;
   font-size: clamp(8px, 1.2vw, 12px) !important;
 }
 
 .scrims-exact-poster-container.theme-cyan .overlay-team-name {
-  left: 19.0% !important;
-  width: 28.5% !important;
+  left: 21.5% !important;
+  width: 25.5% !important;
+  text-align: center !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   font-size: clamp(7.5px, 1.3vw, 12px) !important;
@@ -3277,8 +3281,9 @@ body {
 .scrims-exact-poster-container.theme-pink .overlay-team-name,
 .scrims-exact-poster-container.theme-cyan-purple .overlay-team-name,
 .scrims-exact-poster-container.theme-purple-blue .overlay-team-name {
-  left: 19.8% !important;
-  width: 23.5% !important;
+  left: 20.0% !important;
+  width: 23.8% !important;
+  text-align: center !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   font-size: clamp(7.5px, 1.3vw, 12px) !important;
