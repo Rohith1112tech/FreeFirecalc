@@ -4110,23 +4110,114 @@ body {
 
 /* Extra Small Phones (iPhone SE, Galaxy Mini, < 480px) */
 @media (max-width: 480px) {
+  .app-container {
+    padding: 0.5rem 0.35rem 2rem;
+  }
+
   .logo-title-group h1 {
     font-size: 1.2rem;
   }
 
+  /* Header banner full-bleed */
+  .scrims-header-img-wrap {
+    margin-left: -0.35rem;
+    margin-right: -0.35rem;
+    border-radius: 0;
+  }
+
+  /* Section badge bar */
+  .section-badge-bar {
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .badge-tag {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.45rem;
+  }
+  .badge-code {
+    font-size: 0.65rem;
+  }
+
+  /* Card headers */
+  .card-header {
+    padding: 0.75rem 0.85rem;
+    gap: 0.5rem;
+  }
+  .card-header h2 {
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+  }
+  .card-body {
+    padding: 0.85rem 0.65rem;
+  }
+  .card-header-split {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .scoring-formula-tag {
+    font-size: 0.68rem;
+    padding: 0.25rem 0.55rem;
+  }
+
+  /* Scoring rules box */
+  .scoring-preset-box {
+    padding: 0.65rem;
+  }
+  .preset-summary {
+    gap: 0.3rem 0.5rem;
+  }
+  .rule-chip {
+    font-size: 0.72rem;
+    padding: 0.15rem 0.35rem;
+  }
+
+  /* Match form card inputs */
   .card-inputs-row {
     grid-template-columns: 1fr 95px;
     gap: 0.4rem;
   }
 
-  .minus-input-wrap {
-    width: 95px;
-  }
-
-  .minus-label {
+  .field-block label {
     font-size: 0.68rem;
   }
 
+  .placement-select, .kills-input {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+    min-height: 44px;
+  }
+
+  .minus-input-wrap {
+    width: 95px;
+  }
+  .minus-label {
+    font-size: 0.68rem;
+  }
+  .minus-input {
+    font-size: 0.85rem;
+    min-height: 40px;
+  }
+
+  /* Team header in match form */
+  .team-meta-group {
+    gap: 0.4rem;
+  }
+  .team-mini-badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    padding-right: 0.5rem;
+  }
+  .team-label-name {
+    font-size: 0.82rem;
+    letter-spacing: 0.5px;
+  }
+  .team-pts-preview {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  /* Leaderboard rows */
   .scrims-table-header {
     grid-template-columns: 42px 1fr 55px 65px 55px;
     font-size: 0.62rem;
@@ -4158,8 +4249,258 @@ body {
     font-size: 0.95rem;
   }
 
+  /* Tournament nav */
   .tourney-controls {
     grid-template-columns: 1fr;
+  }
+
+  .tourney-nav-btn {
+    min-width: 100px;
+    padding: 0.5rem 0.55rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Poster theme selector - horizontal scroll on small screens */
+  .poster-theme-selector {
+    padding: 0.5rem 0.65rem;
+  }
+  .theme-select-label {
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+  }
+  .theme-select-buttons {
+    gap: 0.3rem;
+  }
+  .theme-pill-btn {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.45rem;
+    letter-spacing: 0.5px;
+  }
+  .theme-circle {
+    width: 7px;
+    height: 7px;
+  }
+
+  /* Poster container scale down */
+  .scrims-exact-poster-container {
+    max-width: 100% !important;
+  }
+
+  /* Match save footer stacked on mobile */
+  .match-save-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .save-match-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Export panel */
+  .export-panel-inner {
+    gap: 0.75rem;
+  }
+  .export-meta-info h3 {
+    font-size: 1rem;
+  }
+  .download-results-prominent-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  /* Matrix table scroll */
+  .matrix-rules-grid {
+    gap: 0.3rem 0.75rem;
+    font-size: 0.72rem;
+  }
+  .matrix-rules-title {
+    font-size: 0.75rem;
+  }
+
+  /* Messy Slot Importer */
+  .paste-lineup-modal-card {
+    max-height: 90vh;
+  }
+  .cyber-textarea {
+    font-size: 0.85rem !important;
+    min-height: 160px;
+  }
+  .preview-count-badge {
+    font-size: 0.7rem;
+  }
+
+  /* Modal dialogs */
+  .modal-backdrop {
+    padding: 0.5rem;
+  }
+  .modal-header h3 {
+    font-size: 0.92rem;
+  }
+  .modal-body {
+    padding: 0.75rem;
+  }
+
+  /* Match tabs horizontal scroll */
+  .match-tabs-strip {
+    gap: 0.3rem;
+  }
+  .match-tab-btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.7rem;
+  }
+
+  /* Active match banner */
+  .active-match-banner {
+    padding: 0.6rem 0.65rem;
+  }
+  #active-match-title-text {
+    font-size: 0.85rem;
+  }
+  .match-tools {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+}
+
+/* Very Small Phones (Galaxy Fold, small screens < 400px) */
+@media (max-width: 400px) {
+  .card-inputs-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .minus-field-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+  .minus-input-wrap {
+    width: 100%;
+  }
+
+  /* Full-width placement and kills on very small screens */
+  .placement-select, .kills-input, .minus-input {
+    min-height: 48px;
+    font-size: 1rem;
+    padding: 0.6rem 0.65rem;
+  }
+  .kills-input {
+    padding-left: 2.2rem;
+  }
+  .minus-input {
+    padding-left: 2.2rem;
+  }
+
+  /* Stack team header vertically */
+  .card-team-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  /* Poster theme pills - 2-row grid */
+  .theme-select-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+    width: 100%;
+  }
+  .theme-pill-btn {
+    justify-content: center;
+    text-align: center;
+    padding: 0.3rem 0.25rem;
+    font-size: 0.6rem;
+  }
+
+  /* Leaderboard even more compact */
+  .scrims-table-header {
+    grid-template-columns: 36px 1fr 48px 58px 48px;
+    font-size: 0.58rem;
+    padding: 0.35rem 0.25rem;
+    letter-spacing: 0.5px;
+  }
+  .scrims-row {
+    grid-template-columns: 36px 1fr 48px 58px 48px;
+    height: 36px;
+  }
+  .row-rank-badge {
+    height: 32px;
+    font-size: 0.78rem;
+  }
+  .row-team-panel {
+    height: 32px;
+    font-size: 0.68rem;
+    padding-left: 0.35rem;
+    letter-spacing: 0.3px;
+  }
+  .row-pos-val, .row-elim-val {
+    height: 32px;
+    font-size: 0.75rem;
+  }
+  .row-total-badge {
+    height: 32px;
+    font-size: 0.85rem;
+  }
+
+  /* Tournament title */
+  #active-tournament-title {
+    font-size: 1.05rem;
+    letter-spacing: 1px;
+  }
+  .meta-stats {
+    font-size: 0.65rem;
+  }
+
+  /* Poster overlay text scale */
+  .overlay-team-name {
+    font-size: clamp(6px, 1.1vw, 10px) !important;
+  }
+
+  /* Hero title */
+  .hero-scrims-title {
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+  }
+  .hero-motto {
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+  }
+}
+
+/* Tiny Fold Screens (Galaxy Fold closed, < 320px) */
+@media (max-width: 320px) {
+  .app-container {
+    padding: 0.35rem 0.25rem 1.5rem;
+  }
+
+  .card-header h2 {
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+
+  .tourney-nav-btn {
+    min-width: 85px;
+    padding: 0.4rem 0.4rem;
+    font-size: 0.62rem;
+    clip-path: none;
+  }
+
+  .theme-select-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scrims-table-header {
+    grid-template-columns: 32px 1fr 42px 50px 42px;
+    font-size: 0.55rem;
+  }
+  .scrims-row {
+    grid-template-columns: 32px 1fr 42px 50px 42px;
+    height: 34px;
+  }
+  .row-team-panel {
+    font-size: 0.62rem;
   }
 }
 
