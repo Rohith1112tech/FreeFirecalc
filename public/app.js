@@ -2218,8 +2218,8 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
 
   if (isModern) {
     // Modern 847x1024 Templates (1694 x 2048 at 2x Retina): Green, Orange, Pink, Cyber Violet, Royal Indigo
-    const modernSlotCenters = [369, 413.5, 458, 502.5, 547, 591.5, 636, 680.5, 725, 769.5, 814, 858.5];
-    const rowHeight = (canvas.height * (534 / 1024)) / 12;
+    const modernSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
+    const rowHeight = (canvas.height * (535 / 1024)) / 12;
 
     const crownFontSize = Math.round(canvas.width * 0.021);
     const teamFontSize = Math.round(canvas.width * 0.022);
@@ -2242,7 +2242,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillStyle = "#ffeb3b";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("👑", canvas.width * 0.112, rowCenterY - rowHeight * 0.40);
+        ctx.fillText("👑", canvas.width * 0.112, rowCenterY - rowHeight * 0.42);
       }
 
       // 1. Team Name (Slot: 19.8% to 43.5%)

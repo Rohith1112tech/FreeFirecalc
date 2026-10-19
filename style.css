@@ -3256,8 +3256,8 @@ body {
 .scrims-exact-poster-container.theme-pink .poster-overlay-slots,
 .scrims-exact-poster-container.theme-cyan-purple .poster-overlay-slots,
 .scrims-exact-poster-container.theme-purple-blue .poster-overlay-slots {
-  top: 33.87% !important;
-  bottom: 14.0% !important;
+  top: 34.7% !important;
+  bottom: 13.05% !important;
 }
 
 .scrims-exact-poster-container.theme-green .overlay-crown-icon,
@@ -3267,7 +3267,7 @@ body {
 .scrims-exact-poster-container.theme-purple-blue .overlay-crown-icon {
   left: 11.2% !important;
   transform: translateX(-50%) !important;
-  top: -4px !important;
+  top: -1px !important;
   font-size: clamp(8px, 1.2vw, 12px) !important;
 }
 
