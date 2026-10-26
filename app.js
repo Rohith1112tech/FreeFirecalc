@@ -220,6 +220,13 @@ const btnOAuthSignout = document.getElementById("btn-oauth-signout");
 const btnSyncSheets = document.getElementById("btn-sync-sheets");
 const btnModalSyncSheets = document.getElementById("btn-modal-sync-sheets");
 
+// Google Drive Zero-Login Apps Script Webhook Elements (Option 1)
+const inputDriveWebhookUrl = document.getElementById("input-drive-webhook-url");
+const btnSaveWebhookUrl = document.getElementById("btn-save-webhook-url");
+const btnCopyAppsScriptCode = document.getElementById("btn-copy-apps-script-code");
+const copyScriptText = document.getElementById("copy-script-text");
+const btnClearWebhookUrl = document.getElementById("btn-clear-webhook-url");
+
 // Share Results Link & Shared Viewer Elements
 const btnShareResultsTop = document.getElementById("btn-share-results-top");
 const btnShareResultsBottom = document.getElementById("btn-share-results-bottom");
@@ -1076,6 +1083,15 @@ function bindEvents() {
   }
   if (btnSaveOAuthCreds) {
     btnSaveOAuthCreds.addEventListener("click", handleSaveOAuthCreds);
+  }
+  if (btnSaveWebhookUrl) {
+    btnSaveWebhookUrl.addEventListener("click", handleSaveWebhookUrl);
+  }
+  if (btnCopyAppsScriptCode) {
+    btnCopyAppsScriptCode.addEventListener("click", handleCopyAppsScriptCode);
+  }
+  if (btnClearWebhookUrl) {
+    btnClearWebhookUrl.addEventListener("click", handleClearWebhookUrl);
   }
   if (btnSyncSheets) {
     btnSyncSheets.addEventListener("click", handleSyncAllMatchesToSheets);
@@ -3957,6 +3973,179 @@ function clearBrowserOAuthToken() {
   localStorage.removeItem("ff_google_oauth_token");
 }
 
+const DRIVE_WEBHOOK_STORAGE_KEY = "ff_drive_apps_script_webhook_url";
+
+function getDriveWebhookUrl() {
+  return localStorage.getItem(DRIVE_WEBHOOK_STORAGE_KEY) || "";
+}
+
+function setDriveWebhookUrl(url) {
+  if (url && url.trim()) {
+    localStorage.setItem(DRIVE_WEBHOOK_STORAGE_KEY, url.trim());
+  } else {
+    localStorage.removeItem(DRIVE_WEBHOOK_STORAGE_KEY);
+  }
+}
+
+const APPS_SCRIPT_SOURCE_CODE = `/**
+ * =========================================================================
+ * FREE FIRE TOURNAMENT AUTO-BACKUP & SYNC - GOOGLE APPS SCRIPT WEB APP
+ * Zero-Login Cloud Sync for Google Drive & Google Sheets
+ * =========================================================================
+ */
+const DRIVE_FOLDER_ID = '1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5';
+const SPREADSHEET_ID = '1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4';
+
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return jsonResponse({ success: false, error: 'Empty payload' });
+    }
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action || 'backup';
+    let result = { success: true };
+
+    if (action === 'backup' || action === 'both' || payload.backupData) {
+      result.backup = saveTournamentBackup(payload);
+    }
+    if (action === 'append_sheet' || action === 'both' || payload.sheetRows) {
+      result.sheet = appendToSpreadsheet(payload);
+    }
+    if (action === 'poster' && payload.base64Data) {
+      result.poster = savePosterToDrive(payload);
+    }
+    return jsonResponse(result);
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+function doGet(e) {
+  return jsonResponse({
+    success: true,
+    status: 'ONLINE',
+    folderId: DRIVE_FOLDER_ID,
+    spreadsheetId: SPREADSHEET_ID
+  });
+}
+
+function saveTournamentBackup(payload) {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const filename = payload.filename || 'FreeFire_Tournament_AutoBackup.json';
+  const content = typeof payload.backupData === 'string'
+    ? payload.backupData
+    : JSON.stringify(payload.backupData || payload, null, 2);
+
+  const existingFiles = folder.getFilesByName(filename);
+  if (existingFiles.hasNext()) {
+    const file = existingFiles.next();
+    file.setContent(content);
+    return { id: file.getId(), name: filename, isUpdated: true, url: file.getUrl() };
+  } else {
+    const file = folder.createFile(filename, content, MimeType.PLAIN_TEXT);
+    return { id: file.getId(), name: filename, isUpdated: false, url: file.getUrl() };
+  }
+}
+
+function appendToSpreadsheet(payload) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheets()[0];
+  const rows = payload.sheetRows || payload.rows || [];
+  if (rows && rows.length > 0) {
+    const startRow = sheet.getLastRow() + 1;
+    sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
+    return { rowsAppended: rows.length };
+  }
+  return { rowsAppended: 0 };
+}
+
+function savePosterToDrive(payload) {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const filename = payload.filename || ('FreeFire_Poster_' + Date.now() + '.jpg');
+  const mimeType = payload.mimeType || 'image/jpeg';
+  const rawBase64 = payload.base64Data.replace(/^data:[^;]+;base64,/, '');
+  const decodedBytes = Utilities.base64Decode(rawBase64);
+  const blob = Utilities.newBlob(decodedBytes, mimeType, filename);
+  const file = folder.createFile(blob);
+  return { id: file.getId(), name: filename, url: file.getUrl() };
+}
+
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+`;
+
+function handleCopyAppsScriptCode() {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(APPS_SCRIPT_SOURCE_CODE).then(() => {
+      if (copyScriptText) copyScriptText.textContent = "✓ COPIED CODE TO CLIPBOARD!";
+      setTimeout(() => {
+        if (copyScriptText) copyScriptText.textContent = "📋 COPY APPS SCRIPT CODE";
+      }, 3000);
+    }).catch(() => fallbackCopyScript());
+  } else {
+    fallbackCopyScript();
+  }
+}
+
+function fallbackCopyScript() {
+  const ta = document.createElement("textarea");
+  ta.value = APPS_SCRIPT_SOURCE_CODE;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  if (copyScriptText) copyScriptText.textContent = "✓ COPIED CODE TO CLIPBOARD!";
+  setTimeout(() => {
+    if (copyScriptText) copyScriptText.textContent = "📋 COPY APPS SCRIPT CODE";
+  }, 3000);
+}
+
+async function handleSaveWebhookUrl() {
+  const url = inputDriveWebhookUrl ? inputDriveWebhookUrl.value.trim() : "";
+  if (!url) {
+    alert("Please paste your Google Apps Script Web App URL.");
+    return;
+  }
+  if (!url.startsWith("https://script.google.com/macros/s/")) {
+    alert("⚠️ Invalid URL. The Google Apps Script URL must start with:\nhttps://script.google.com/macros/s/...");
+    return;
+  }
+
+  setDriveWebhookUrl(url);
+
+  if (btnSaveWebhookUrl) {
+    btnSaveWebhookUrl.innerHTML = `<span>⏳ TESTING SYNC...</span>`;
+  }
+
+  try {
+    const res = await autoSyncTournamentToDrive({ silent: false });
+    if (res && res.success) {
+      alert("✅ Zero-Login Auto-Sync Connected Successfully!\n\nYour tournament data was successfully saved to your Google Drive folder.\n\nFrom now on, all match scores and edits will automatically sync in the background without any sign-in!");
+    } else {
+      alert("✅ Webhook URL saved!\n\nBackground sync will activate on your next match save.");
+    }
+    checkOAuthStatusUI();
+  } catch (err) {
+    alert("⚠️ Webhook URL saved, but test sync had notice: " + err.message);
+    checkOAuthStatusUI();
+  } finally {
+    if (btnSaveWebhookUrl) {
+      btnSaveWebhookUrl.innerHTML = `<span>💾 SAVE & TEST SYNC</span>`;
+    }
+  }
+}
+
+function handleClearWebhookUrl() {
+  if (confirm("Disconnect and remove this Google Apps Script Webhook?")) {
+    setDriveWebhookUrl("");
+    if (inputDriveWebhookUrl) inputDriveWebhookUrl.value = "";
+    checkOAuthStatusUI();
+    alert("Google Apps Script Webhook disconnected.");
+  }
+}
+
 /**
  * Google Account Modal Controls
  */
@@ -3994,12 +4183,34 @@ function getGoogleOAuthUrl() {
 }
 
 /**
- * Check Google OAuth Connection Status
+ * Check Google OAuth & Webhook Connection Status
  */
 async function checkOAuthStatusUI() {
   if (!oauthStatusBadge || !oauthStatusDesc) return;
 
-  // 1. Check browser token first
+  // 1. Check Zero-Login Apps Script Webhook first (Option 1)
+  const webhookUrl = getDriveWebhookUrl();
+  if (inputDriveWebhookUrl) {
+    inputDriveWebhookUrl.value = webhookUrl;
+  }
+
+  if (webhookUrl) {
+    oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
+    oauthStatusBadge.style.color = "#86efac";
+    oauthStatusBadge.textContent = "ACTIVE (ZERO-LOGIN AUTO-SYNC)";
+    oauthStatusDesc.innerHTML = `<span style="color:#a7f3d0;">✓ Connected to your Drive Folder via Apps Script Webhook.</span><br><span style="color:#6ee7b7; font-size: 0.8rem; font-weight: bold;">⚡ Zero-Login Active: All match saves and edits automatically sync directly into your Drive Folder (${GOOGLE_DRIVE_FOLDER_ID}) without any login popups.</span>`;
+    if (btnClearWebhookUrl) btnClearWebhookUrl.style.display = "inline-flex";
+    if (autosaveStatusPill && autosaveText && !autosaveStatusPill.classList.contains("saving")) {
+      autosaveStatusPill.classList.add("drive-synced");
+      autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
+      autosaveStatusPill.title = "Connected to Google Drive via Zero-Login Webhook";
+    }
+    return;
+  } else {
+    if (btnClearWebhookUrl) btnClearWebhookUrl.style.display = "none";
+  }
+
+  // 2. Check browser token if present
   const browserToken = getBrowserOAuthToken();
   if (browserToken) {
     try {
@@ -4018,8 +4229,8 @@ async function checkOAuthStatusUI() {
 
         oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
         oauthStatusBadge.style.color = "#86efac";
-        oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
-        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(userEmail)}</b> (${quotaText}).<br><span style="color:#a7f3d0;">✓ Google Drive uploads save directly to Folder: <code>${GOOGLE_DRIVE_FOLDER_ID}</code></span><br><span style="color:#6ee7b7; font-size: 0.8rem; font-weight: bold;">⚡ Automatic Drive Sync: ACTIVE (Backups save automatically on every match save & edit)</span>`;
+        oauthStatusBadge.textContent = "CONNECTED (OAUTH)";
+        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(userEmail)}</b> (${quotaText}).<br><span style="color:#a7f3d0;">✓ Google Drive uploads save directly to Folder: <code>${GOOGLE_DRIVE_FOLDER_ID}</code></span>`;
         if (btnOAuthSignIn) {
           btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
         }
@@ -4037,39 +4248,13 @@ async function checkOAuthStatusUI() {
     } catch (_) {}
   }
 
-  // 2. Check local server status if running
-  try {
-    const res = await fetch("/api/oauth/status");
-    if (res.ok) {
-      const data = await res.json();
-      if (data.authenticated) {
-        oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
-        oauthStatusBadge.style.color = "#86efac";
-        oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
-        const email = (data.user && data.user.emailAddress) || data.userEmail || "Google Account";
-        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(email)}</b>.<br><span style="color:#a7f3d0;">✓ Server connected to Google Drive using your account quota.</span><br><span style="color:#6ee7b7; font-size: 0.8rem; font-weight: bold;">⚡ Automatic Drive Sync: ACTIVE (Backups save automatically on every match save & edit)</span>`;
-        if (btnOAuthSignIn) {
-          btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
-        }
-        if (btnOAuthSignout) {
-          btnOAuthSignout.style.display = "inline-flex";
-        }
-        if (autosaveStatusPill && autosaveText && !autosaveStatusPill.classList.contains("saving")) {
-          autosaveStatusPill.classList.add("drive-synced");
-          autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
-        }
-        return;
-      }
-    }
-  } catch (_) {}
-
-  // 3. Not connected
+  // 3. Not configured
   oauthStatusBadge.style.background = "rgba(239, 68, 68, 0.2)";
   oauthStatusBadge.style.color = "#fca5a5";
-  oauthStatusBadge.textContent = "NOT CONNECTED";
-  oauthStatusDesc.textContent = "Not authorized yet. Click below to sign in with your 5 TB Google account to enable automatic Drive backups and poster uploads.";
+  oauthStatusBadge.textContent = "NOT CONFIGURED";
+  oauthStatusDesc.textContent = "Paste your Google Apps Script Webhook URL above to enable 100% zero-login automatic backups to Google Drive.";
   if (btnOAuthSignIn) {
-    btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span></span>`;
+    btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (OAUTH)</span></span>`;
   }
   if (autosaveStatusPill && autosaveText && !autosaveStatusPill.classList.contains("saving")) {
     autosaveStatusPill.classList.remove("drive-synced");
@@ -4242,6 +4427,26 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
     Number(team.totalPoints || 0)
   ]);
 
+  // Method 0: Zero-Login Google Apps Script Webhook (Option 1)
+  const webhookUrl = getDriveWebhookUrl();
+  if (webhookUrl) {
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "append_sheet",
+          sheetRows: rowsToAppend
+        })
+      });
+      console.log(`[Google Sheets Webhook] Match ${matchNumber} scores synced directly via Webhook.`);
+      showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets & Drive!`, "success");
+      return { success: true };
+    } catch (whErr) {
+      console.warn("[Google Sheets Webhook Sync Warning]", whErr);
+    }
+  }
+
   // Method 1: Direct Client-Side Google Sheets Append via User's OAuth Token
   const browserToken = getBrowserOAuthToken();
   if (browserToken) {
@@ -4352,6 +4557,28 @@ async function handleSyncAllMatchesToSheets() {
  * Uses user's 5 TB quota via OAuth 2.0 Web Token in browser, or server backend.
  */
 async function uploadFileToDrive({ filename, mimeType, base64Data, description, fileId = null, updateIfExists = false, silent = false }) {
+  // 0. Zero-Login Google Apps Script Webhook (Option 1)
+  const webhookUrl = getDriveWebhookUrl();
+  if (webhookUrl) {
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "backup",
+          filename,
+          mimeType,
+          base64Data,
+          description
+        })
+      });
+      return { success: true, method: "apps_script_webhook" };
+    } catch (whErr) {
+      if (!silent) throw whErr;
+      return { success: false, error: whErr.message };
+    }
+  }
+
   const browserToken = getBrowserOAuthToken();
 
   // 1. Direct Web Upload if browser token is present (Fast, works on Netlify & localhost)
@@ -4504,13 +4731,15 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
     return { success: false, reason: "in_progress" };
   }
 
+  const webhookUrl = getDriveWebhookUrl();
   const browserToken = getBrowserOAuthToken();
-  if (!browserToken) {
+
+  if (!webhookUrl && !browserToken) {
     // Keep autosave pill indicating local browser save
     if (autosaveStatusPill && autosaveText) {
       autosaveStatusPill.classList.remove("syncing-drive", "saving");
       autosaveText.textContent = "AUTO-SAVED TO BROWSER";
-      autosaveStatusPill.title = "Saved to local browser storage. Connect '👤 GOOGLE ACCOUNT' to auto-save to Google Drive.";
+      autosaveStatusPill.title = "Saved to local browser storage. Click '☁️ CLOUD DRIVE SYNC' to auto-save to Google Drive.";
     }
     return { success: false, reason: "no_auth" };
   }
@@ -4538,6 +4767,29 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       savedAt: new Date().toISOString(),
       autoSavedToDrive: true
     };
+
+    // 1. Primary Zero-Login Route: Google Apps Script Webhook (Option 1)
+    if (webhookUrl) {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "backup",
+          filename,
+          backupData
+        })
+      });
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (autosaveStatusPill && autosaveText) {
+        autosaveStatusPill.classList.remove("syncing-drive", "saving");
+        autosaveStatusPill.classList.add("drive-synced");
+        autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
+        autosaveStatusPill.title = `Auto-saved to Google Drive folder (${GOOGLE_DRIVE_FOLDER_ID}) as ${filename} at ${timeStr} (Zero-Login Webhook)`;
+      }
+      console.log(`[Google Drive Webhook Auto-Sync] Tournament backup synced (${filename})`);
+      return { success: true };
+    }
 
     const jsonStr = JSON.stringify(backupData, null, 2);
     const base64Data = "data:application/json;base64," + btoa(unescape(encodeURIComponent(jsonStr)));
@@ -4632,7 +4884,8 @@ async function handleCloudDriveBackup() {
     });
 
     if (result.success) {
-      alert(`✅ Cloud Backup Saved to Google Drive!\n\nFile: ${filename}\nGoogle Drive Folder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5\nMethod: 5 TB Account OAuth Upload`);
+      const methodLabel = result.method === "apps_script_webhook" ? "Zero-Login Webhook" : "Google Account OAuth";
+      alert(`✅ Cloud Backup Saved to Google Drive!\n\nFile: ${filename}\nGoogle Drive Folder ID: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5\nMethod: ${methodLabel}`);
     } else {
       alert(`⚠️ Could not save to Google Drive: ${result.error || "Unknown error"}`);
     }

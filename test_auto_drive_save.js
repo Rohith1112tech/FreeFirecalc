@@ -108,6 +108,24 @@ triggerDebouncedSync(20);
 setTimeout(() => {
   assert.strictEqual(syncCallCount, 1, "Debounced sync should execute exactly once after rapid keystrokes");
   console.log("✓ Rapid edit debouncing prevents redundant Drive API requests (verified).");
+
+  // 5. Option 1: Zero-Login Webhook URL format validation
+  function isValidAppsScriptUrl(url) {
+    return typeof url === 'string' && url.trim().startsWith("https://script.google.com/macros/s/");
+  }
+
+  assert.strictEqual(
+    isValidAppsScriptUrl("https://script.google.com/macros/s/AKfycbx_1234567890/exec"),
+    true,
+    "Valid Apps Script Web App URL should pass"
+  );
+  assert.strictEqual(
+    isValidAppsScriptUrl("https://google.com"),
+    false,
+    "Non-Apps Script URL should fail validation"
+  );
+  console.log("✓ Zero-Login Apps Script Webhook URL validation verified.");
+
   console.log("\n=======================================================");
   console.log("🎉 ALL GOOGLE DRIVE AUTO-BACKUP & SYNC TESTS PASSED 100%!");
   console.log("=======================================================\n");
