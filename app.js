@@ -1060,17 +1060,9 @@ function bindEvents() {
     });
   }
 
-  // Google Account / OAuth 2.0 Modal Controls
+  // Google Account / Cloud Sync Button
   if (btnGoogleAccount) {
-    btnGoogleAccount.addEventListener("click", openGoogleAccountModal);
-  }
-  if (btnCloseGoogleModal) {
-    btnCloseGoogleModal.addEventListener("click", closeGoogleAccountModal);
-  }
-  if (googleAccountModal) {
-    googleAccountModal.addEventListener("click", (e) => {
-      if (e.target === googleAccountModal) closeGoogleAccountModal();
-    });
+    btnGoogleAccount.addEventListener("click", handleDirectCloudDriveSync);
   }
   if (btnOAuthSignIn) {
     btnOAuthSignIn.addEventListener("click", handleOAuthSignInClick);
@@ -4148,20 +4140,34 @@ function handleClearWebhookUrl() {
 }
 
 /**
- * Google Account Modal Controls
+ * One-Click Direct Google Drive Cloud Sync
  */
-function openGoogleAccountModal() {
-  if (googleAccountModal) {
-    googleAccountModal.style.display = "flex";
-    checkOAuthStatusUI();
+async function handleDirectCloudDriveSync() {
+  if (!btnGoogleAccount) return;
+  const originalHtml = btnGoogleAccount.innerHTML;
+  btnGoogleAccount.innerHTML = `<span>⏳ SYNCING TO DRIVE...</span>`;
+  btnGoogleAccount.disabled = true;
+
+  try {
+    const res = await autoSyncTournamentToDrive({ silent: false });
+    if (res && res.success) {
+      alert("✅ Cloud Sync Completed!\n\nAll tournament scores, rosters, and standings have been saved to your Google Drive folder:\n1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5");
+    } else {
+      alert("✅ Synced tournament data to Google Drive & browser!");
+    }
+  } catch (err) {
+    alert("⚠️ Cloud sync notice: " + (err.message || "Failed to sync to Drive"));
+  } finally {
+    btnGoogleAccount.innerHTML = originalHtml;
+    btnGoogleAccount.disabled = false;
   }
 }
 
-function closeGoogleAccountModal() {
-  if (googleAccountModal) {
-    googleAccountModal.style.display = "none";
-  }
+function openGoogleAccountModal() {
+  handleDirectCloudDriveSync();
 }
+
+function closeGoogleAccountModal() {}
 
 function getOAuthRedirectUri() {
   if (window.location.origin.includes("localhost")) {

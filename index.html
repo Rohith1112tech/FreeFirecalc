@@ -639,63 +639,6 @@
           </div>
         </div>
 
-        <!-- Google Drive & Cloud Auto-Sync Modal (Zero Login Option 1) -->
-        <div id="google-account-modal-backdrop" class="modal-backdrop" style="display: none;">
-          <div class="modal-card" style="max-width: 600px;">
-            <div class="modal-header">
-              <div class="modal-title-group">
-                <span class="modal-crown">☁️</span>
-                <h3>ZERO-LOGIN GOOGLE DRIVE & SHEETS SYNC</h3>
-              </div>
-              <button type="button" class="modal-close-btn" id="btn-close-google-modal">✕</button>
-            </div>
-            <div class="modal-body" style="padding: 1.5rem;">
-              <div id="oauth-status-container" style="background: rgba(13, 16, 22, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                  <strong style="color: #93c5fd; font-family: var(--font-tech); font-size: 0.9rem;">CONNECTION STATUS:</strong>
-                  <span id="oauth-status-badge" style="background: rgba(34, 197, 94, 0.25); color: #86efac; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">ACTIVE (ZERO-LOGIN AUTO-SYNC)</span>
-                </div>
-                <p id="oauth-status-desc" style="font-size: 0.85rem; color: #a7f3d0; margin: 0;">✓ Connected to your Drive Folder (1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5). Scores &amp; backups auto-save to Drive with zero login!</p>
-              </div>
-
-              <!-- Option 1: Webhook URL Input & Actions -->
-              <div class="webhook-config-box" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
-                <label style="font-size: 0.8rem; font-weight: bold; color: #60a5fa; display: block; margin-bottom: 0.4rem;">
-                  🔗 GOOGLE APPS SCRIPT WEBHOOK URL:
-                </label>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                  <input type="url" id="input-drive-webhook-url" class="cyber-input" value="https://script.google.com/macros/s/AKfycbwv8ivPcj2-ikMGqILRlZ2O6JCPN4AEghlszokgIQlZr_JOM4TfPgqNRM1e3xewl0T1/exec" placeholder="https://script.google.com/macros/s/.../exec" style="font-size: 0.82rem; padding: 0.5rem 0.75rem; flex: 1;">
-                </div>
-                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                  <button type="button" id="btn-save-webhook-url" class="cyber-btn primary-start-btn" style="flex: 1; min-width: 160px; font-size: 0.82rem; padding: 0.5rem 0.85rem; justify-content: center;">
-                    <span>💾 SAVE & TEST SYNC</span>
-                  </button>
-                  <button type="button" id="btn-copy-apps-script-code" class="cyber-btn secondary-btn" style="font-size: 0.82rem; padding: 0.5rem 0.85rem; justify-content: center;">
-                    <span id="copy-script-text">📋 COPY APPS SCRIPT CODE</span>
-                  </button>
-                  <button type="button" id="btn-clear-webhook-url" class="cyber-btn danger-btn" style="font-size: 0.82rem; padding: 0.5rem 0.85rem; display: none;">
-                    <span>🗑️ REMOVE</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Quick 60-Second Setup Instructions -->
-              <div style="background: rgba(16, 185, 129, 0.08); border: 1px dashed rgba(16, 185, 129, 0.35); border-radius: 6px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: #d1d5db; line-height: 1.45;">
-                <strong style="color: #6ee7b7; display: block; margin-bottom: 0.35rem;">⚡ 3-STEP SETUP (Takes 60 seconds, no login ever needed again):</strong>
-                <ol style="margin: 0; padding-left: 1.25rem;">
-                  <li>Click <b style="color: #60a5fa;">"📋 COPY APPS SCRIPT CODE"</b> above.</li>
-                  <li>Open <a href="https://script.google.com/home/start" target="_blank" rel="noopener noreferrer" style="color: #93c5fd; text-decoration: underline;">script.google.com</a> &gt; click <b>"New project"</b> &gt; paste the code &gt; click <b>Deploy</b> &gt; <b>New deployment</b> &gt; select <b>Web app</b> &gt; set <i>Who has access: <b>Anyone</b></i> &gt; click <b>Deploy</b>.</li>
-                  <li>Copy the resulting Web App URL, paste it into the box above, and click <b>SAVE &amp; TEST SYNC</b>.</li>
-                </ol>
-                <div style="margin-top: 0.5rem; font-size: 0.72rem; color: #9ca3af;">
-                  ✓ Target Drive Folder: <code>1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5</code><br>
-                  ✓ Target Spreadsheet: <code>1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4</code>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- Share Results Link Modal -->
         <div id="share-results-modal-backdrop" class="modal-backdrop" style="display: none;">
           <div class="modal-card share-results-modal-card">
