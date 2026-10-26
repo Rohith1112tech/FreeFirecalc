@@ -653,9 +653,9 @@
               <div id="oauth-status-container" style="background: rgba(13, 16, 22, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
                   <strong style="color: #93c5fd; font-family: var(--font-tech); font-size: 0.9rem;">CONNECTION STATUS:</strong>
-                  <span id="oauth-status-badge" style="background: rgba(239,68,68,0.2); color: #fca5a5; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">NOT CONFIGURED</span>
+                  <span id="oauth-status-badge" style="background: rgba(34, 197, 94, 0.25); color: #86efac; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">ACTIVE (ZERO-LOGIN AUTO-SYNC)</span>
                 </div>
-                <p id="oauth-status-desc" style="font-size: 0.85rem; color: #9ca3af; margin: 0;">Configure your Apps Script Webhook below for 100% zero-login background Drive saves.</p>
+                <p id="oauth-status-desc" style="font-size: 0.85rem; color: #a7f3d0; margin: 0;">✓ Connected to your Drive Folder (1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5). Scores &amp; backups auto-save to Drive with zero login!</p>
               </div>
 
               <!-- Option 1: Webhook URL Input & Actions -->
@@ -664,7 +664,7 @@
                   🔗 GOOGLE APPS SCRIPT WEBHOOK URL:
                 </label>
                 <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                  <input type="url" id="input-drive-webhook-url" class="cyber-input" placeholder="https://script.google.com/macros/s/.../exec" style="font-size: 0.82rem; padding: 0.5rem 0.75rem; flex: 1;">
+                  <input type="url" id="input-drive-webhook-url" class="cyber-input" value="https://script.google.com/macros/s/AKfycbwv8ivPcj2-ikMGqILRlZ2O6JCPN4AEghlszokgIQlZr_JOM4TfPgqNRM1e3xewl0T1/exec" placeholder="https://script.google.com/macros/s/.../exec" style="font-size: 0.82rem; padding: 0.5rem 0.75rem; flex: 1;">
                 </div>
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                   <button type="button" id="btn-save-webhook-url" class="cyber-btn primary-start-btn" style="flex: 1; min-width: 160px; font-size: 0.82rem; padding: 0.5rem 0.85rem; justify-content: center;">
@@ -692,19 +692,6 @@
                   ✓ Target Spreadsheet: <code>1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4</code>
                 </div>
               </div>
-
-              <!-- Collapsible OAuth Client ID fallback -->
-              <details style="background: rgba(0,0,0,0.3); border: 1px dashed rgba(255,255,255,0.15); border-radius: 4px; padding: 0.65rem;">
-                <summary style="cursor: pointer; font-size: 0.75rem; color: #9ca3af;">⚙️ Advanced: Alternative Google Sign-In (OAuth)</summary>
-                <div style="margin-top: 0.65rem;">
-                  <button type="button" id="btn-oauth-signin" class="cyber-btn secondary-btn" style="width: 100%; font-size: 0.75rem; justify-content: center; margin-bottom: 0.4rem;">
-                    <span>🚀 SIGN IN WITH GOOGLE (OAUTH)</span>
-                  </button>
-                  <button type="button" id="btn-oauth-signout" class="cyber-btn danger-btn" style="width: 100%; font-size: 0.75rem; justify-content: center; display: none;">
-                    <span>🚪 SIGN OUT OAUTH</span>
-                  </button>
-                </div>
-              </details>
             </div>
           </div>
         </div>
