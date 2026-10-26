@@ -248,8 +248,8 @@ const btnSharedClone = document.getElementById("btn-shared-clone");
 const btnSharedExit = document.getElementById("btn-shared-exit");
 
 // Initialize application
-document.addEventListener("DOMContentLoaded", async () => {
-  const hasShared = await checkForSharedResultsUrl();
+document.addEventListener("DOMContentLoaded", () => {
+  const hasShared = checkForSharedResultsUrl();
   if (!hasShared) {
     loadSavedState();
   }
@@ -1793,14 +1793,19 @@ function handleSaveMatchData() {
 
   const matchNum = state.selectedMatchIndex + 1;
   if (wasPreviouslySaved) {
-    showMatchAlert(`Match ${matchNum} corrected! Updating local data and syncing to Google Sheets...`, "success");
+    showMatchAlert(`Match ${matchNum} corrected! Updating local data, syncing to Google Sheets & Drive...`, "success");
   } else {
-    showMatchAlert(`Match ${matchNum} saved! Syncing scores to Google Sheets...`, "success");
+    showMatchAlert(`Match ${matchNum} saved! Syncing scores to Google Sheets & Drive...`, "success");
   }
 
   // Automatic Google Sheets Synchronization (Scenario B)
   syncMatchScoresToGoogleSheets(matchNum, currentMatch.teamData).catch((err) => {
     console.warn("Google Sheets background sync notice:", err);
+  });
+
+  // Automatic Google Drive Tournament Backup (Scenario A)
+  autoSyncTournamentToDrive({ silent: true }).catch((err) => {
+    console.warn("Google Drive background sync notice:", err);
   });
 }
 
@@ -3048,20 +3053,27 @@ function flashAutoSaveIndicator() {
   if (!autosaveStatusPill || !autosaveText) return;
 
   autosaveStatusPill.classList.add("saving");
+  autosaveStatusPill.classList.remove("syncing-drive");
   autosaveText.textContent = "SAVED JUST NOW";
 
   clearTimeout(autoSaveTimeout);
   autoSaveTimeout = setTimeout(() => {
     if (autosaveStatusPill && autosaveText) {
       autosaveStatusPill.classList.remove("saving");
-      autosaveText.textContent = "AUTO-SAVED TO BROWSER";
+      if (getBrowserOAuthToken()) {
+        autosaveStatusPill.classList.add("drive-synced");
+        autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
+      } else {
+        autosaveStatusPill.classList.remove("drive-synced");
+        autosaveText.textContent = "AUTO-SAVED TO BROWSER";
+      }
     }
   }, 1200);
 }
 
 /**
  * Local Storage Persistence (Prompt 6)
- * Automatically saves full tournament state to localStorage
+ * Automatically saves full tournament state to localStorage and queues Google Drive background sync
  */
 function saveState() {
   if (state.isSharedView) return; // Do not overwrite user's local tournament while in shared read-only view
@@ -3082,6 +3094,9 @@ function saveState() {
 
     localStorage.setItem("ff_tournament_calculator_state", JSON.stringify(dataToSave));
     flashAutoSaveIndicator();
+
+    // Trigger debounced auto-sync to Google Drive (Prompt: Automatic Drive Save)
+    scheduleDebouncedDriveAutoSync(3500);
   } catch (err) {
     console.warn("Could not save tournament state to localStorage:", err);
   }
@@ -3133,31 +3148,389 @@ function loadSavedState() {
  */
 
 /**
- * URL-Safe Base64 helpers
+ * Compact LZ-String URI-Safe Compressor (100% synchronous, instant, rock-solid across all browsers)
  */
-function uint8ArrayToBase64Url(uint8Array) {
-  let binary = "";
-  const len = uint8Array.length;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(uint8Array[i]);
-  }
-  const base64 = btoa(binary);
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+const LZString = (function() {
+  const keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
 
-function base64UrlToUint8Array(base64url) {
-  let base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  while (base64.length % 4 !== 0) {
-    base64 += "=";
+  function compress(uncompressed) {
+    if (uncompressed == null) return "";
+    let i, value,
+        context_dictionary = {},
+        context_dictionaryToCreate = {},
+        context_c = "",
+        context_wc = "",
+        context_w = "",
+        context_enlargeIn = 2,
+        context_dictSize = 3,
+        context_numBits = 2,
+        context_data = [],
+        context_data_val = 0,
+        context_data_position = 0,
+        ii;
+
+    for (ii = 0; ii < uncompressed.length; ii += 1) {
+      context_c = uncompressed.charAt(ii);
+      if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+        context_dictionary[context_c] = context_dictSize++;
+        context_dictionaryToCreate[context_c] = true;
+      }
+
+      context_wc = context_w + context_c;
+      if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+        context_w = context_wc;
+      } else {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+          if (context_w.charCodeAt(0) < 256) {
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1);
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+            }
+            value = context_w.charCodeAt(0);
+            for (i = 0; i < 8; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          } else {
+            value = 1;
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1) | value;
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = 0;
+            }
+            value = context_w.charCodeAt(0);
+            for (i = 0; i < 16; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          }
+          context_enlargeIn--;
+          if (context_enlargeIn === 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+          delete context_dictionaryToCreate[context_w];
+        } else {
+          value = context_dictionary[context_w];
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn === 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        context_dictionary[context_wc] = context_dictSize++;
+        context_w = String(context_c);
+      }
+    }
+
+    if (context_w !== "") {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+        if (context_w.charCodeAt(0) < 256) {
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+          }
+          value = context_w.charCodeAt(0);
+          for (i = 0; i < 8; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        } else {
+          value = 1;
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1) | value;
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = 0;
+          }
+          value = context_w.charCodeAt(0);
+          for (i = 0; i < 16; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn === 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        delete context_dictionaryToCreate[context_w];
+      } else {
+        value = context_dictionary[context_w];
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = (context_data_val << 1) | (value & 1);
+          if (context_data_position === 5) {
+            context_data_position = 0;
+            context_data.push(keyStrUriSafe.charAt(context_data_val));
+            context_data_val = 0;
+          } else {
+            context_data_position++;
+          }
+          value = value >> 1;
+        }
+      }
+      context_enlargeIn--;
+      if (context_enlargeIn === 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+    }
+
+    value = 2;
+    for (i = 0; i < context_numBits; i++) {
+      context_data_val = (context_data_val << 1) | (value & 1);
+      if (context_data_position === 5) {
+        context_data_position = 0;
+        context_data.push(keyStrUriSafe.charAt(context_data_val));
+        context_data_val = 0;
+      } else {
+        context_data_position++;
+      }
+      value = value >> 1;
+    }
+
+    while (true) {
+      context_data_val = (context_data_val << 1);
+      if (context_data_position === 5) {
+        context_data.push(keyStrUriSafe.charAt(context_data_val));
+        break;
+      } else {
+        context_data_position++;
+      }
+    }
+    return context_data.join("");
   }
-  const binary = atob(base64);
-  const len = binary.length;
-  const uint8 = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    uint8[i] = binary.charCodeAt(i);
+
+  function getBaseValue(char) {
+    const idx = keyStrUriSafe.indexOf(char);
+    return idx === -1 ? 0 : idx;
   }
-  return uint8;
-}
+
+  function decompress(input) {
+    if (input == null) return "";
+    if (input === "") return null;
+    let dictionary = [],
+        next,
+        enlargeIn = 4,
+        dictSize = 4,
+        numBits = 3,
+        entry = "",
+        result = [],
+        i,
+        w,
+        bits, resb, maxpower, power,
+        c,
+        data = { val: getBaseValue(input.charAt(0)), position: 32, index: 1 };
+
+    for (i = 0; i < 3; i += 1) {
+      dictionary[i] = i;
+    }
+
+    bits = 0;
+    maxpower = Math.pow(2, 2);
+    power = 1;
+    while (power !== maxpower) {
+      resb = data.val & data.position;
+      data.position >>= 1;
+      if (data.position === 0) {
+        data.position = 32;
+        data.val = getBaseValue(input.charAt(data.index++));
+      }
+      bits |= (resb > 0 ? 1 : 0) * power;
+      power <<= 1;
+    }
+
+    switch (next = bits) {
+      case 0:
+        bits = 0;
+        maxpower = Math.pow(2, 8);
+        power = 1;
+        while (power !== maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position === 0) {
+            data.position = 32;
+            data.val = getBaseValue(input.charAt(data.index++));
+          }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+        c = String.fromCharCode(bits);
+        break;
+      case 1:
+        bits = 0;
+        maxpower = Math.pow(2, 16);
+        power = 1;
+        while (power !== maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position === 0) {
+            data.position = 32;
+            data.val = getBaseValue(input.charAt(data.index++));
+          }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+        c = String.fromCharCode(bits);
+        break;
+      case 2:
+        return "";
+    }
+    dictionary[3] = c;
+    w = c;
+    result.push(c);
+
+    while (true) {
+      if (data.index > input.length) {
+        return "";
+      }
+
+      bits = 0;
+      maxpower = Math.pow(2, numBits);
+      power = 1;
+      while (power !== maxpower) {
+        resb = data.val & data.position;
+        data.position >>= 1;
+        if (data.position === 0) {
+          data.position = 32;
+          data.val = getBaseValue(input.charAt(data.index++));
+        }
+        bits |= (resb > 0 ? 1 : 0) * power;
+        power <<= 1;
+      }
+
+      switch (c = bits) {
+        case 0:
+          bits = 0;
+          maxpower = Math.pow(2, 8);
+          power = 1;
+          while (power !== maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position === 0) {
+              data.position = 32;
+              data.val = getBaseValue(input.charAt(data.index++));
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+        case 1:
+          bits = 0;
+          maxpower = Math.pow(2, 16);
+          power = 1;
+          while (power !== maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position === 0) {
+              data.position = 32;
+              data.val = getBaseValue(input.charAt(data.index++));
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+        case 2:
+          return result.join("");
+      }
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+
+      if (dictionary[c]) {
+        entry = dictionary[c];
+      } else {
+        if (c === dictSize) {
+          entry = w + w.charAt(0);
+        } else {
+          return null;
+        }
+      }
+      result.push(entry);
+
+      dictionary[dictSize++] = w + entry.charAt(0);
+      enlargeIn--;
+      w = entry;
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+    }
+  }
+
+  return { compressToEncodedURIComponent: compress, decompressFromEncodedURIComponent: decompress };
+})();
 
 /**
  * Serialize tournament state into compact schema
@@ -3227,64 +3600,37 @@ function deserializeTournamentState(compact) {
 }
 
 /**
- * Compress string using CompressionStream with fallback
+ * Synchronous tournament compression
  */
-async function compressTournamentState(tourneyState) {
+function compressTournamentState(tourneyState) {
   const compact = serializeTournamentState(tourneyState);
   const jsonStr = JSON.stringify(compact);
-
-  if (typeof CompressionStream !== "undefined") {
-    try {
-      const byteArray = new TextEncoder().encode(jsonStr);
-      const cs = new CompressionStream("deflate-raw");
-      const writer = cs.writable.getWriter();
-      writer.write(byteArray);
-      writer.close();
-      const compressedBuffer = await new Response(cs.readable).arrayBuffer();
-      const uint8 = new Uint8Array(compressedBuffer);
-      return "z:" + uint8ArrayToBase64Url(uint8);
-    } catch (e) {
-      console.warn("CompressionStream compression failed, falling back to base64:", e);
-    }
-  }
-
-  // Fallback to UTF-8 URI + Base64
-  const utf8 = encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode("0x" + p1));
-  const b64 = btoa(utf8).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  return "r:" + b64;
+  return "l:" + LZString.compressToEncodedURIComponent(jsonStr);
 }
 
 /**
- * Decompress encoded string back to state
+ * Synchronous tournament decompression
  */
-async function decompressTournamentState(param) {
+function decompressTournamentState(param) {
   if (!param || typeof param !== "string") return null;
 
   try {
     let jsonStr = "";
-    if (param.startsWith("z:")) {
-      const rawB64 = param.slice(2);
-      const uint8 = base64UrlToUint8Array(rawB64);
-      if (typeof DecompressionStream !== "undefined") {
-        const ds = new DecompressionStream("deflate-raw");
-        const writer = ds.writable.getWriter();
-        writer.write(uint8);
-        writer.close();
-        const buffer = await new Response(ds.readable).arrayBuffer();
-        jsonStr = new TextDecoder().decode(buffer);
-      } else {
-        console.warn("DecompressionStream unsupported");
-        return null;
-      }
+    if (param.startsWith("l:")) {
+      jsonStr = LZString.decompressFromEncodedURIComponent(param.slice(2));
     } else {
-      const rawB64 = param.startsWith("r:") ? param.slice(2) : param;
-      let b64 = rawB64.replace(/-/g, "+").replace(/_/g, "/");
-      while (b64.length % 4 !== 0) b64 += "=";
-      const binary = atob(b64);
-      const escaped = Array.from(binary).map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("");
-      jsonStr = decodeURIComponent(escaped);
+      jsonStr = LZString.decompressFromEncodedURIComponent(param);
+      if (!jsonStr) {
+        const raw = param.startsWith("r:") ? param.slice(2) : param;
+        let b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+        while (b64.length % 4 !== 0) b64 += "=";
+        const binary = atob(b64);
+        const escaped = Array.from(binary).map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join("");
+        jsonStr = decodeURIComponent(escaped);
+      }
     }
 
+    if (!jsonStr) return null;
     const compact = JSON.parse(jsonStr);
     return deserializeTournamentState(compact);
   } catch (err) {
@@ -3294,13 +3640,15 @@ async function decompressTournamentState(param) {
 }
 
 /**
- * Generate full shareable URL
+ * Generate full shareable URL reliably across http, https, and file protocols
  */
-async function generateShareableResultsUrl() {
-  const param = await compressTournamentState(state);
-  const origin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "";
-  const pathname = window.location.pathname || "";
-  return `${origin}${pathname}#share=${param}`;
+function generateShareableResultsUrl() {
+  const param = compressTournamentState(state);
+  let baseUrl = window.location.href.split("#")[0].split("?")[0];
+  if (!baseUrl || baseUrl === "about:blank") {
+    baseUrl = (window.location.origin && window.location.origin !== "null" ? window.location.origin : "") + (window.location.pathname || "");
+  }
+  return `${baseUrl}#share=${param}`;
 }
 
 /**
@@ -3362,7 +3710,7 @@ function buildTournamentSummaryText(shareUrl) {
 /**
  * Open Share Results Link Modal
  */
-async function openShareResultsModal() {
+function openShareResultsModal() {
   if (!shareResultsModal) return;
 
   if (shareOverviewTitle) shareOverviewTitle.textContent = state.tournamentTitle.toUpperCase();
@@ -3391,14 +3739,8 @@ async function openShareResultsModal() {
     shareOverviewTheme.textContent = (state.selectedPosterTheme || "red").toUpperCase();
   }
 
-  if (shareLinkInput) {
-    shareLinkInput.value = "Generating share link...";
-  }
-
-  shareResultsModal.style.display = "flex";
-
   try {
-    const shareUrl = await generateShareableResultsUrl();
+    const shareUrl = generateShareableResultsUrl();
     if (shareLinkInput) {
       shareLinkInput.value = shareUrl;
     }
@@ -3426,6 +3768,8 @@ async function openShareResultsModal() {
     console.error("Error generating share link:", err);
     if (shareLinkInput) shareLinkInput.value = window.location.href;
   }
+
+  shareResultsModal.style.display = "flex";
 }
 
 /**
@@ -3485,7 +3829,7 @@ function fallbackCopyText(text) {
 /**
  * Check for incoming share link on startup
  */
-async function checkForSharedResultsUrl() {
+function checkForSharedResultsUrl() {
   if (typeof window === "undefined" || !window.location) return false;
 
   let param = "";
@@ -3502,7 +3846,7 @@ async function checkForSharedResultsUrl() {
   if (!param) return false;
 
   try {
-    const restored = await decompressTournamentState(param);
+    const restored = decompressTournamentState(param);
     if (!restored) return false;
 
     // Apply restored tournament to state
@@ -3675,12 +4019,16 @@ async function checkOAuthStatusUI() {
         oauthStatusBadge.style.background = "rgba(34, 197, 94, 0.25)";
         oauthStatusBadge.style.color = "#86efac";
         oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
-        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(userEmail)}</b> (${quotaText}).<br><span style="color:#a7f3d0;">✓ Google Drive uploads will save directly into Folder: <code>${GOOGLE_DRIVE_FOLDER_ID}</code></span>`;
+        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(userEmail)}</b> (${quotaText}).<br><span style="color:#a7f3d0;">✓ Google Drive uploads save directly to Folder: <code>${GOOGLE_DRIVE_FOLDER_ID}</code></span><br><span style="color:#6ee7b7; font-size: 0.8rem; font-weight: bold;">⚡ Automatic Drive Sync: ACTIVE (Backups save automatically on every match save & edit)</span>`;
         if (btnOAuthSignIn) {
           btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
         }
         if (btnOAuthSignout) {
           btnOAuthSignout.style.display = "inline-flex";
+        }
+        if (autosaveStatusPill && autosaveText && !autosaveStatusPill.classList.contains("saving")) {
+          autosaveStatusPill.classList.add("drive-synced");
+          autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
         }
         return;
       } else if (res.status === 401) {
@@ -3699,12 +4047,16 @@ async function checkOAuthStatusUI() {
         oauthStatusBadge.style.color = "#86efac";
         oauthStatusBadge.textContent = "CONNECTED (5 TB ACCOUNT)";
         const email = (data.user && data.user.emailAddress) || data.userEmail || "Google Account";
-        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(email)}</b>.<br><span style="color:#a7f3d0;">✓ Server connected to Google Drive using your account quota.</span>`;
+        oauthStatusDesc.innerHTML = `Connected as: <b style="color:#ffffff;">${escapeHtml(email)}</b>.<br><span style="color:#a7f3d0;">✓ Server connected to Google Drive using your account quota.</span><br><span style="color:#6ee7b7; font-size: 0.8rem; font-weight: bold;">⚡ Automatic Drive Sync: ACTIVE (Backups save automatically on every match save & edit)</span>`;
         if (btnOAuthSignIn) {
           btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🔄 RE-AUTHENTICATE / SWITCH ACCOUNT</span></span>`;
         }
         if (btnOAuthSignout) {
           btnOAuthSignout.style.display = "inline-flex";
+        }
+        if (autosaveStatusPill && autosaveText && !autosaveStatusPill.classList.contains("saving")) {
+          autosaveStatusPill.classList.add("drive-synced");
+          autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
         }
         return;
       }
@@ -3715,9 +4067,13 @@ async function checkOAuthStatusUI() {
   oauthStatusBadge.style.background = "rgba(239, 68, 68, 0.2)";
   oauthStatusBadge.style.color = "#fca5a5";
   oauthStatusBadge.textContent = "NOT CONNECTED";
-  oauthStatusDesc.textContent = "Not authorized yet. Click below to sign in with your 5 TB Google account to enable Drive backups and poster uploads.";
+  oauthStatusDesc.textContent = "Not authorized yet. Click below to sign in with your 5 TB Google account to enable automatic Drive backups and poster uploads.";
   if (btnOAuthSignIn) {
     btnOAuthSignIn.innerHTML = `<span class="btn-content"><span>🚀 SIGN IN WITH GOOGLE (5 TB ACCOUNT)</span></span>`;
+  }
+  if (autosaveStatusPill && autosaveText && !autosaveStatusPill.classList.contains("saving")) {
+    autosaveStatusPill.classList.remove("drive-synced");
+    autosaveText.textContent = "AUTO-SAVED TO BROWSER";
   }
   if (btnOAuthSignout) {
     btnOAuthSignout.style.display = "none";
@@ -3798,7 +4154,8 @@ function handleOAuthCallbackFromUrl() {
         window.history.replaceState({}, document.title, cleanPath);
         setTimeout(() => {
           checkOAuthStatusUI();
-          alert("✅ Google Account (5 TB) successfully connected!\n\nBackups and Posters will now upload directly to your Drive.");
+          autoSyncTournamentToDrive({ silent: true });
+          alert("✅ Google Account (5 TB) successfully connected!\n\nBackups will now automatically sync to your Google Drive.");
         }, 300);
         return;
       }
@@ -3817,6 +4174,7 @@ function handleOAuthCallbackFromUrl() {
           const cleanPath = window.location.pathname.replace(/\/oauth2callback\/?$/, "/") || "/";
           window.history.replaceState({}, document.title, cleanPath);
           checkOAuthStatusUI();
+          autoSyncTournamentToDrive({ silent: true });
         })
         .catch(() => {});
     }
@@ -3990,14 +4348,69 @@ async function handleSyncAllMatchesToSheets() {
 
 /**
  * Unified Google Drive Upload Function (Scenario A)
- * Directly uploads to Google Drive Folder: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5
+ * Directly uploads or updates files in Google Drive Folder: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5
  * Uses user's 5 TB quota via OAuth 2.0 Web Token in browser, or server backend.
  */
-async function uploadFileToDrive({ filename, mimeType, base64Data, description }) {
+async function uploadFileToDrive({ filename, mimeType, base64Data, description, fileId = null, updateIfExists = false, silent = false }) {
   const browserToken = getBrowserOAuthToken();
 
   // 1. Direct Web Upload if browser token is present (Fast, works on Netlify & localhost)
   if (browserToken) {
+    let targetFileId = fileId;
+
+    // Search for existing file if requested and fileId not yet known
+    if (!targetFileId && updateIfExists) {
+      try {
+        const query = encodeURIComponent(`'${GOOGLE_DRIVE_FOLDER_ID}' in parents and name = '${filename.replace(/'/g, "\\'")}' and trashed = false`);
+        const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+          headers: { "Authorization": `Bearer ${browserToken}` }
+        });
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          if (searchData.files && searchData.files.length > 0) {
+            targetFileId = searchData.files[0].id;
+          }
+        }
+      } catch (searchErr) {
+        console.warn("Drive search query warning:", searchErr);
+      }
+    }
+
+    // Attempt PATCH update if existing file is identified
+    if (targetFileId) {
+      try {
+        const rawBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+        const binaryString = atob(rawBase64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const patchRes = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${targetFileId}?uploadType=media&fields=id,name,webViewLink`, {
+          method: "PATCH",
+          headers: {
+            "Authorization": `Bearer ${browserToken}`,
+            "Content-Type": mimeType
+          },
+          body: bytes
+        });
+
+        if (patchRes.ok) {
+          const data = await patchRes.json();
+          return { success: true, ...data, isUpdated: true, method: "direct_oauth_web" };
+        }
+        if (patchRes.status === 401) {
+          clearBrowserOAuthToken();
+          checkOAuthStatusUI();
+          if (silent) return { success: false, error: "expired_token" };
+          throw new Error("Your Google sign-in session expired. Please click 'GOOGLE ACCOUNT' and sign in again.");
+        }
+      } catch (patchErr) {
+        console.warn("Drive patch update fallback to create:", patchErr);
+      }
+    }
+
+    // Otherwise create new file via multipart upload
     const boundary = "-------ff_drive_boundary_" + Date.now();
     const delimiter = `\r\n--${boundary}\r\n`;
     const closeDelimiter = `\r\n--${boundary}--`;
@@ -4031,25 +4444,29 @@ async function uploadFileToDrive({ filename, mimeType, base64Data, description }
 
     if (res.ok) {
       const data = await res.json();
-      return { success: true, ...data, method: "direct_oauth_web" };
+      return { success: true, ...data, isUpdated: false, method: "direct_oauth_web" };
     }
 
     if (res.status === 401) {
       clearBrowserOAuthToken();
       checkOAuthStatusUI();
+      if (silent) return { success: false, error: "expired_token" };
       throw new Error("Your Google sign-in session expired. Please click 'GOOGLE ACCOUNT' and sign in again.");
     }
 
     const errJson = await res.json().catch(() => ({}));
+    if (silent) {
+      return { success: false, error: errJson.error ? errJson.error.message : `HTTP ${res.status}` };
+    }
     throw new Error(errJson.error ? errJson.error.message : `Drive upload failed with HTTP status ${res.status}`);
   }
 
-  // 2. Try server-side upload endpoint
+  // 2. Try server-side upload endpoint (fallback to service account / server OAuth)
   try {
     const serverRes = await fetch("/api/upload-drive-file", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename, mimeType, base64Data, description })
+      body: JSON.stringify({ filename, mimeType, base64Data, description, fileId, updateIfExists })
     });
     if (serverRes.ok) {
       const sData = await serverRes.json();
@@ -4057,9 +4474,132 @@ async function uploadFileToDrive({ filename, mimeType, base64Data, description }
     }
   } catch (_) {}
 
-  // If not signed in yet, open the modal and alert the user
+  // If not signed in yet and silent background sync is requested
+  if (silent) {
+    return { success: false, reason: "not_signed_in" };
+  }
+
+  // If user explicitly initiated action, prompt sign-in
   openGoogleAccountModal();
   throw new Error("Google Account not connected yet. Please click 'SIGN IN WITH GOOGLE' to authorize uploads to your 5 TB Drive.");
+}
+
+/**
+ * State variable for Google Drive Auto-Sync
+ */
+let isDriveAutoSyncing = false;
+let pendingDriveAutoSync = false;
+let debouncedDriveAutoSyncTimer = null;
+
+/**
+ * Automatic Google Drive Tournament Data Backup
+ * Seamlessly saves tournament state directly to Google Drive in the background.
+ */
+async function autoSyncTournamentToDrive({ silent = true } = {}) {
+  // Prevent sync in shared read-only view
+  if (state.isSharedView) return { success: false, reason: "shared_view" };
+
+  if (isDriveAutoSyncing) {
+    pendingDriveAutoSync = true;
+    return { success: false, reason: "in_progress" };
+  }
+
+  const browserToken = getBrowserOAuthToken();
+  if (!browserToken) {
+    // Keep autosave pill indicating local browser save
+    if (autosaveStatusPill && autosaveText) {
+      autosaveStatusPill.classList.remove("syncing-drive", "saving");
+      autosaveText.textContent = "AUTO-SAVED TO BROWSER";
+      autosaveStatusPill.title = "Saved to local browser storage. Connect '👤 GOOGLE ACCOUNT' to auto-save to Google Drive.";
+    }
+    return { success: false, reason: "no_auth" };
+  }
+
+  isDriveAutoSyncing = true;
+  if (autosaveStatusPill && autosaveText) {
+    autosaveStatusPill.classList.add("syncing-drive");
+    autosaveStatusPill.classList.remove("saving", "drive-synced");
+    autosaveText.textContent = "☁️ SYNCING TO DRIVE...";
+  }
+
+  try {
+    const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filename = `FreeFire_${safeTitle}_AutoBackup.json`;
+
+    const backupData = {
+      tournamentTitle: state.tournamentTitle,
+      totalMatches: state.totalMatches,
+      teams: state.teams,
+      teamRosters: state.teamRosters || {},
+      matches: state.matches,
+      selectedPosterTheme: state.selectedPosterTheme || "red",
+      exportFormat: state.exportFormat,
+      positionDisplayMode: state.positionDisplayMode,
+      savedAt: new Date().toISOString(),
+      autoSavedToDrive: true
+    };
+
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const base64Data = "data:application/json;base64," + btoa(unescape(encodeURIComponent(jsonStr)));
+
+    const storageKey = `ff_drive_autobackup_id_${safeTitle}`;
+    const cachedFileId = localStorage.getItem(storageKey) || null;
+
+    const result = await uploadFileToDrive({
+      filename,
+      mimeType: "application/json",
+      base64Data,
+      description: `Auto-saved tournament state for ${state.tournamentTitle || "Free Fire Scrims"}`,
+      fileId: cachedFileId,
+      updateIfExists: true,
+      silent: true
+    });
+
+    if (result && result.success) {
+      if (result.id) {
+        try { localStorage.setItem(storageKey, result.id); } catch (_) {}
+      }
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      if (autosaveStatusPill && autosaveText) {
+        autosaveStatusPill.classList.remove("syncing-drive", "saving");
+        autosaveStatusPill.classList.add("drive-synced");
+        autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
+        autosaveStatusPill.title = `Auto-saved to Google Drive folder (1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5) as ${filename} at ${timeStr}`;
+      }
+      console.log(`[Google Drive Auto-Sync] Tournament backup synced (${filename})`);
+      return { success: true, file: result };
+    } else {
+      if (autosaveStatusPill && autosaveText) {
+        autosaveStatusPill.classList.remove("syncing-drive");
+        autosaveText.textContent = "AUTO-SAVED TO BROWSER";
+      }
+      return { success: false, error: result ? result.error : "Unknown error" };
+    }
+  } catch (err) {
+    console.warn("[Google Drive Auto-Sync Notice]:", err.message);
+    if (autosaveStatusPill && autosaveText) {
+      autosaveStatusPill.classList.remove("syncing-drive");
+      autosaveText.textContent = "AUTO-SAVED TO BROWSER";
+      autosaveStatusPill.title = `Saved locally. Google Drive notice: ${err.message}`;
+    }
+    return { success: false, error: err.message };
+  } finally {
+    isDriveAutoSyncing = false;
+    if (pendingDriveAutoSync) {
+      pendingDriveAutoSync = false;
+      setTimeout(() => autoSyncTournamentToDrive({ silent: true }), 1500);
+    }
+  }
+}
+
+/**
+ * Schedule debounced auto-sync to Google Drive
+ */
+function scheduleDebouncedDriveAutoSync(delayMs = 3500) {
+  clearTimeout(debouncedDriveAutoSyncTimer);
+  debouncedDriveAutoSyncTimer = setTimeout(() => {
+    autoSyncTournamentToDrive({ silent: true });
+  }, delayMs);
 }
 
 /**

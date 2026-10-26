@@ -4271,6 +4271,20 @@ body {
   color: #fca5a5;
 }
 
+.autosave-pill.syncing-drive {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: #3b82f6;
+  color: #93c5fd;
+  animation: pulse-border 1.2s infinite ease-in-out;
+}
+
+.autosave-pill.drive-synced {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  color: #6ee7b7;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
 .autosave-pill .save-icon {
   font-size: 0.8rem;
 }

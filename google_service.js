@@ -198,7 +198,7 @@ async function checkDriveAuthStatus() {
  * Upload to Google Drive using either OAuth User Tokens (Primary, 5TB quota)
  * or Fallback to Service Account
  */
-async function uploadToDrive({ filename, mimeType, buffer, description }) {
+async function uploadToDrive({ filename, mimeType, buffer, description, fileId = null, updateIfExists = false }) {
   const tokens = getSavedUserTokens();
 
   let driveAuth = null;
@@ -224,15 +224,51 @@ async function uploadToDrive({ filename, mimeType, buffer, description }) {
   stream.push(buffer);
   stream.push(null);
 
+  const media = {
+    mimeType: mimeType || 'application/octet-stream',
+    body: stream
+  };
+
+  // If specific fileId or updateIfExists is specified, check if existing file should be updated
+  let targetFileId = fileId;
+  if (!targetFileId && updateIfExists) {
+    try {
+      const existing = await drive.files.list({
+        q: `'${DRIVE_FOLDER_ID}' in parents and name = '${filename.replace(/'/g, "\\'")}' and trashed = false`,
+        fields: 'files(id, name)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
+      });
+      if (existing.data.files && existing.data.files.length > 0) {
+        targetFileId = existing.data.files[0].id;
+      }
+    } catch (listErr) {
+      console.warn('Notice: Could not query existing file for update:', listErr.message);
+    }
+  }
+
+  if (targetFileId) {
+    try {
+      const updateResponse = await drive.files.update({
+        fileId: targetFileId,
+        media: media,
+        fields: 'id, name, webViewLink, size, modifiedTime',
+        supportsAllDrives: true
+      });
+      return {
+        ...updateResponse.data,
+        isUpdated: true,
+        uploadMethod
+      };
+    } catch (updateErr) {
+      console.warn(`Could not update file ${targetFileId}, falling back to create:`, updateErr.message);
+    }
+  }
+
   const fileMetadata = {
     name: filename,
     parents: [DRIVE_FOLDER_ID],
     description: description || 'Uploaded via Free Fire Scrims Calculator'
-  };
-
-  const media = {
-    mimeType: mimeType || 'application/octet-stream',
-    body: stream
   };
 
   const response = await drive.files.create({
@@ -244,6 +280,7 @@ async function uploadToDrive({ filename, mimeType, buffer, description }) {
 
   return {
     ...response.data,
+    isUpdated: false,
     uploadMethod
   };
 }

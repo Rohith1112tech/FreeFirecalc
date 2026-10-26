@@ -1,33 +1,396 @@
 /**
  * Free Fire Tournament Share Results Link Test Suite
- * Validates encoding, decoding, data fidelity, compression, and link generation.
+ * Validates synchronous LZ encoding, decoding, data fidelity, compression, and link generation.
  */
 
 const assert = require("assert");
-const zlib = require("zlib");
 
 console.log("Running Share Results Link Encoding & Decoding Tests...\n");
 
 /**
- * URL-Safe Base64 helpers
+ * Compact LZ-String URI-Safe Compressor
  */
-function uint8ArrayToBase64Url(uint8Array) {
-  let binary = "";
-  for (let i = 0; i < uint8Array.length; i++) {
-    binary += String.fromCharCode(uint8Array[i]);
-  }
-  const base64 = Buffer.from(binary, "binary").toString("base64");
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+const LZString = (function() {
+  const keyStrUriSafe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
 
-function base64UrlToUint8Array(base64url) {
-  let base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  while (base64.length % 4 !== 0) {
-    base64 += "=";
+  function compress(uncompressed) {
+    if (uncompressed == null) return "";
+    let i, value,
+        context_dictionary = {},
+        context_dictionaryToCreate = {},
+        context_c = "",
+        context_wc = "",
+        context_w = "",
+        context_enlargeIn = 2,
+        context_dictSize = 3,
+        context_numBits = 2,
+        context_data = [],
+        context_data_val = 0,
+        context_data_position = 0,
+        ii;
+
+    for (ii = 0; ii < uncompressed.length; ii += 1) {
+      context_c = uncompressed.charAt(ii);
+      if (!Object.prototype.hasOwnProperty.call(context_dictionary, context_c)) {
+        context_dictionary[context_c] = context_dictSize++;
+        context_dictionaryToCreate[context_c] = true;
+      }
+
+      context_wc = context_w + context_c;
+      if (Object.prototype.hasOwnProperty.call(context_dictionary, context_wc)) {
+        context_w = context_wc;
+      } else {
+        if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+          if (context_w.charCodeAt(0) < 256) {
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1);
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+            }
+            value = context_w.charCodeAt(0);
+            for (i = 0; i < 8; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          } else {
+            value = 1;
+            for (i = 0; i < context_numBits; i++) {
+              context_data_val = (context_data_val << 1) | value;
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = 0;
+            }
+            value = context_w.charCodeAt(0);
+            for (i = 0; i < 16; i++) {
+              context_data_val = (context_data_val << 1) | (value & 1);
+              if (context_data_position === 5) {
+                context_data_position = 0;
+                context_data.push(keyStrUriSafe.charAt(context_data_val));
+                context_data_val = 0;
+              } else {
+                context_data_position++;
+              }
+              value = value >> 1;
+            }
+          }
+          context_enlargeIn--;
+          if (context_enlargeIn === 0) {
+            context_enlargeIn = Math.pow(2, context_numBits);
+            context_numBits++;
+          }
+          delete context_dictionaryToCreate[context_w];
+        } else {
+          value = context_dictionary[context_w];
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn === 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        context_dictionary[context_wc] = context_dictSize++;
+        context_w = String(context_c);
+      }
+    }
+
+    if (context_w !== "") {
+      if (Object.prototype.hasOwnProperty.call(context_dictionaryToCreate, context_w)) {
+        if (context_w.charCodeAt(0) < 256) {
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+          }
+          value = context_w.charCodeAt(0);
+          for (i = 0; i < 8; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        } else {
+          value = 1;
+          for (i = 0; i < context_numBits; i++) {
+            context_data_val = (context_data_val << 1) | value;
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = 0;
+          }
+          value = context_w.charCodeAt(0);
+          for (i = 0; i < 16; i++) {
+            context_data_val = (context_data_val << 1) | (value & 1);
+            if (context_data_position === 5) {
+              context_data_position = 0;
+              context_data.push(keyStrUriSafe.charAt(context_data_val));
+              context_data_val = 0;
+            } else {
+              context_data_position++;
+            }
+            value = value >> 1;
+          }
+        }
+        context_enlargeIn--;
+        if (context_enlargeIn === 0) {
+          context_enlargeIn = Math.pow(2, context_numBits);
+          context_numBits++;
+        }
+        delete context_dictionaryToCreate[context_w];
+      } else {
+        value = context_dictionary[context_w];
+        for (i = 0; i < context_numBits; i++) {
+          context_data_val = (context_data_val << 1) | (value & 1);
+          if (context_data_position === 5) {
+            context_data_position = 0;
+            context_data.push(keyStrUriSafe.charAt(context_data_val));
+            context_data_val = 0;
+          } else {
+            context_data_position++;
+          }
+          value = value >> 1;
+        }
+      }
+      context_enlargeIn--;
+      if (context_enlargeIn === 0) {
+        context_enlargeIn = Math.pow(2, context_numBits);
+        context_numBits++;
+      }
+    }
+
+    value = 2;
+    for (i = 0; i < context_numBits; i++) {
+      context_data_val = (context_data_val << 1) | (value & 1);
+      if (context_data_position === 5) {
+        context_data_position = 0;
+        context_data.push(keyStrUriSafe.charAt(context_data_val));
+        context_data_val = 0;
+      } else {
+        context_data_position++;
+      }
+      value = value >> 1;
+    }
+
+    while (true) {
+      context_data_val = (context_data_val << 1);
+      if (context_data_position === 5) {
+        context_data.push(keyStrUriSafe.charAt(context_data_val));
+        break;
+      } else {
+        context_data_position++;
+      }
+    }
+    return context_data.join("");
   }
-  const buf = Buffer.from(base64, "base64");
-  return new Uint8Array(buf);
-}
+
+  function getBaseValue(char) {
+    const idx = keyStrUriSafe.indexOf(char);
+    return idx === -1 ? 0 : idx;
+  }
+
+  function decompress(input) {
+    if (input == null) return "";
+    if (input === "") return null;
+    let dictionary = [],
+        next,
+        enlargeIn = 4,
+        dictSize = 4,
+        numBits = 3,
+        entry = "",
+        result = [],
+        i,
+        w,
+        bits, resb, maxpower, power,
+        c,
+        data = { val: getBaseValue(input.charAt(0)), position: 32, index: 1 };
+
+    for (i = 0; i < 3; i += 1) {
+      dictionary[i] = i;
+    }
+
+    bits = 0;
+    maxpower = Math.pow(2, 2);
+    power = 1;
+    while (power !== maxpower) {
+      resb = data.val & data.position;
+      data.position >>= 1;
+      if (data.position === 0) {
+        data.position = 32;
+        data.val = getBaseValue(input.charAt(data.index++));
+      }
+      bits |= (resb > 0 ? 1 : 0) * power;
+      power <<= 1;
+    }
+
+    switch (next = bits) {
+      case 0:
+        bits = 0;
+        maxpower = Math.pow(2, 8);
+        power = 1;
+        while (power !== maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position === 0) {
+            data.position = 32;
+            data.val = getBaseValue(input.charAt(data.index++));
+          }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+        c = String.fromCharCode(bits);
+        break;
+      case 1:
+        bits = 0;
+        maxpower = Math.pow(2, 16);
+        power = 1;
+        while (power !== maxpower) {
+          resb = data.val & data.position;
+          data.position >>= 1;
+          if (data.position === 0) {
+            data.position = 32;
+            data.val = getBaseValue(input.charAt(data.index++));
+          }
+          bits |= (resb > 0 ? 1 : 0) * power;
+          power <<= 1;
+        }
+        c = String.fromCharCode(bits);
+        break;
+      case 2:
+        return "";
+    }
+    dictionary[3] = c;
+    w = c;
+    result.push(c);
+
+    while (true) {
+      if (data.index > input.length) {
+        return "";
+      }
+
+      bits = 0;
+      maxpower = Math.pow(2, numBits);
+      power = 1;
+      while (power !== maxpower) {
+        resb = data.val & data.position;
+        data.position >>= 1;
+        if (data.position === 0) {
+          data.position = 32;
+          data.val = getBaseValue(input.charAt(data.index++));
+        }
+        bits |= (resb > 0 ? 1 : 0) * power;
+        power <<= 1;
+      }
+
+      switch (c = bits) {
+        case 0:
+          bits = 0;
+          maxpower = Math.pow(2, 8);
+          power = 1;
+          while (power !== maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position === 0) {
+              data.position = 32;
+              data.val = getBaseValue(input.charAt(data.index++));
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+        case 1:
+          bits = 0;
+          maxpower = Math.pow(2, 16);
+          power = 1;
+          while (power !== maxpower) {
+            resb = data.val & data.position;
+            data.position >>= 1;
+            if (data.position === 0) {
+              data.position = 32;
+              data.val = getBaseValue(input.charAt(data.index++));
+            }
+            bits |= (resb > 0 ? 1 : 0) * power;
+            power <<= 1;
+          }
+          dictionary[dictSize++] = String.fromCharCode(bits);
+          c = dictSize - 1;
+          enlargeIn--;
+          break;
+        case 2:
+          return result.join("");
+      }
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+
+      if (dictionary[c]) {
+        entry = dictionary[c];
+      } else {
+        if (c === dictSize) {
+          entry = w + w.charAt(0);
+        } else {
+          return null;
+        }
+      }
+      result.push(entry);
+
+      dictionary[dictSize++] = w + entry.charAt(0);
+      enlargeIn--;
+      w = entry;
+
+      if (enlargeIn === 0) {
+        enlargeIn = Math.pow(2, numBits);
+        numBits++;
+      }
+    }
+  }
+
+  return { compressToEncodedURIComponent: compress, decompressFromEncodedURIComponent: decompress };
+})();
 
 /**
  * Compact tournament serializer
@@ -47,7 +410,7 @@ function serializeTournamentState(state) {
   });
 
   return {
-    v: 1, // Schema version
+    v: 1,
     t: state.tournamentTitle || "FREE FIRE TOURNAMENT",
     m: state.totalMatches || 6,
     th: state.selectedPosterTheme || "red",
@@ -97,52 +460,46 @@ function deserializeTournamentState(compact) {
 }
 
 /**
- * Encode state to share parameter
+ * Synchronous URL Share Encoder
  */
 function encodeTournamentToShareParam(state) {
   const compact = serializeTournamentState(state);
   const jsonStr = JSON.stringify(compact);
-  const jsonBuf = Buffer.from(jsonStr, "utf-8");
-
-  // Compress using deflate raw
-  const deflated = zlib.deflateRawSync(jsonBuf);
-  const b64Url = uint8ArrayToBase64Url(deflated);
-  return "z:" + b64Url;
+  const compressed = LZString.compressToEncodedURIComponent(jsonStr);
+  return "l:" + compressed;
 }
 
 /**
- * Decode share parameter back to state
+ * Synchronous URL Share Decoder
  */
 function decodeShareParamToTournament(param) {
   if (!param || typeof param !== "string") return null;
 
   try {
     let jsonStr = "";
-    if (param.startsWith("z:")) {
-      const b64 = param.slice(2);
-      const uint8 = base64UrlToUint8Array(b64);
-      const inflated = zlib.inflateRawSync(Buffer.from(uint8));
-      jsonStr = inflated.toString("utf-8");
-    } else if (param.startsWith("r:")) {
-      const b64 = param.slice(2);
-      const uint8 = base64UrlToUint8Array(b64);
-      jsonStr = Buffer.from(uint8).toString("utf-8");
+    if (param.startsWith("l:")) {
+      jsonStr = LZString.decompressFromEncodedURIComponent(param.slice(2));
     } else {
-      // Legacy or direct raw base64
-      const uint8 = base64UrlToUint8Array(param);
-      jsonStr = Buffer.from(uint8).toString("utf-8");
+      // Direct raw LZ or base64 fallback
+      jsonStr = LZString.decompressFromEncodedURIComponent(param);
+      if (!jsonStr) {
+        const raw = param.startsWith("r:") ? param.slice(2) : param;
+        const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+        const buf = Buffer.from(b64, "base64");
+        jsonStr = buf.toString("utf-8");
+      }
     }
 
+    if (!jsonStr) return null;
     const compact = JSON.parse(jsonStr);
     return deserializeTournamentState(compact);
   } catch (err) {
-    console.error("Failed to decode tournament parameter:", err.message);
     return null;
   }
 }
 
 // =========================================================================
-// TEST 1: End-to-end Serialization & Deserialization
+// TEST 1: Synchronous Serialization & Deserialization
 // =========================================================================
 {
   const mockState = {
@@ -179,8 +536,8 @@ function decodeShareParamToTournament(param) {
   };
 
   const shareParam = encodeTournamentToShareParam(mockState);
-  assert.ok(shareParam.startsWith("z:"), "Must use compressed prefix z:");
-  console.log("✓ Encoded Share Param length:", shareParam.length, "characters (extremely compact).");
+  assert.ok(shareParam.startsWith("l:"), "Must use prefix l:");
+  console.log("✓ Encoded Share Param length:", shareParam.length, "characters (ultra compact & URI safe).");
 
   const restored = decodeShareParamToTournament(shareParam);
   assert.ok(restored, "Restored state must not be null");
@@ -205,14 +562,14 @@ function decodeShareParamToTournament(param) {
   assert.strictEqual(restored.matches[1].teamData[1].kills, 8);
   assert.strictEqual(restored.matches[1].teamData[1].playerKills["Ajjubhai"], 5);
 
-  console.log("✓ Full tournament fidelity preserved 100% across all matches, rosters, penalties & MVP kills.");
+  console.log("✓ Full tournament fidelity preserved 100% across matches, rosters, penalties & MVP kills.");
 }
 
 // =========================================================================
 // TEST 2: Graceful Error Handling on Corrupted Param
 // =========================================================================
 {
-  const invalid = decodeShareParamToTournament("z:invalid_corrupted_garbage_123");
+  const invalid = decodeShareParamToTournament("l:invalid_corrupted_garbage_123");
   assert.strictEqual(invalid, null, "Should return null on corrupted data");
 
   const empty = decodeShareParamToTournament("");
@@ -222,11 +579,11 @@ function decodeShareParamToTournament(param) {
 }
 
 // =========================================================================
-// TEST 3: Generate Social Sharing Text & URLs
+// TEST 3: Generate Social Sharing Text & Full URL Construction
 // =========================================================================
 {
   const baseUrl = "https://freefirecalc.com/";
-  const shareParam = "z:test_hash";
+  const shareParam = "l:test_hash";
   const shareUrl = `${baseUrl}#share=${shareParam}`;
 
   const summary = {
@@ -248,5 +605,5 @@ function decodeShareParamToTournament(param) {
 }
 
 console.log("\n=======================================================");
-console.log("🎉 ALL SHARE RESULTS LINK TESTS PASSED 100%!");
+console.log("🎉 ALL SYNCHRONOUS SHARE RESULTS LINK TESTS PASSED 100%!");
 console.log("=======================================================");

@@ -245,7 +245,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && reqPath === '/api/upload-drive-file') {
     try {
       const payload = await parseBody(req);
-      const { filename, mimeType, base64Data, description } = payload;
+      const { filename, mimeType, base64Data, description, fileId, updateIfExists } = payload;
 
       if (!filename || !base64Data) {
         return sendJson(res, 400, {
@@ -261,7 +261,9 @@ const server = http.createServer(async (req, res) => {
         filename,
         mimeType: mimeType || 'application/octet-stream',
         buffer,
-        description
+        description,
+        fileId,
+        updateIfExists
       });
 
       return sendJson(res, 200, {
