@@ -360,6 +360,7 @@ function renderTeamInputs() {
       state.teams[i] = e.target.value.trim();
       updateFilledCount();
       clearError();
+      saveState();
     });
 
     inputWrap.appendChild(input);
@@ -397,6 +398,7 @@ function renderTeamInputs() {
         if (!state.teamRosters) state.teamRosters = {};
         if (!state.teamRosters[i]) state.teamRosters[i] = ["", "", "", ""];
         state.teamRosters[i][pIdx] = e.target.value.trim();
+        saveState();
       });
 
       pWrap.appendChild(pPrefix);
@@ -728,6 +730,7 @@ function bindEvents() {
       totalMatchesInput.value = matches;
       state.totalMatches = matches;
       clearError();
+      saveState();
     });
   });
 
@@ -744,11 +747,13 @@ function bindEvents() {
       }
     });
     clearError();
+    saveState();
   });
 
   // Tournament title input
   tournamentNameInput.addEventListener("input", (e) => {
     state.tournamentTitle = e.target.value.trim() || "NZ PAID SCRIMS";
+    saveState();
   });
 
   // Autofill button
@@ -1374,6 +1379,37 @@ function updateActiveMatchBanner() {
 }
 
 /**
+ * Real-Time Continuous Live Auto-Save
+ * Automatically saves scores, updates standings & matrix, and schedules Drive background sync
+ * whenever any placement, kill, penalty, or player score is modified.
+ */
+function triggerLiveMatchAutoSave() {
+  const currentMatch = state.matches[state.selectedMatchIndex];
+  if (!currentMatch) return;
+
+  // Mark match as saved if at least one team has a placement, kill, or minus entered
+  const hasEntries = currentMatch.teamData && currentMatch.teamData.some(t => 
+    (t.placement !== "" && t.placement !== null && t.placement !== undefined) ||
+    (t.kills > 0) ||
+    (t.minus > 0)
+  );
+
+  if (hasEntries) {
+    currentMatch.isSaved = true;
+  }
+
+  // Update standings, progress bar, matrix, and selectors in real-time
+  renderLeaderboardRows(false);
+  renderMatrixTable();
+  updateProgressBadge();
+  updateActiveMatchBanner();
+  renderMatchSelectors();
+
+  // Save to localStorage & schedule immediate Google Drive auto-sync
+  saveState();
+}
+
+/**
  * Render Team Forms for the selected match with Player Roster hints (Prompt 2 & 3)
  */
 function renderMatchTeamForms() {
@@ -1466,6 +1502,7 @@ function renderMatchTeamForms() {
 
       updateCardPointsPreview(teamIdx);
       checkPlacementConflicts();
+      triggerLiveMatchAutoSave();
     });
 
     placementBlock.appendChild(placementLabel);
@@ -1497,6 +1534,7 @@ function renderMatchTeamForms() {
       currentMatch.teamData[teamIdx].kills = val;
 
       updateCardPointsPreview(teamIdx);
+      triggerLiveMatchAutoSave();
     });
 
     killsWrap.appendChild(killsInput);
@@ -1539,6 +1577,7 @@ function renderMatchTeamForms() {
       currentMatch.teamData[teamIdx].minus = val;
 
       updateCardPointsPreview(teamIdx);
+      triggerLiveMatchAutoSave();
     });
 
     minusWrap.appendChild(minusInput);
@@ -1625,6 +1664,7 @@ function renderMatchTeamForms() {
           currentMatch.teamData[teamIdx].kills = sumKills;
           killsInput.value = sumKills;
           updateCardPointsPreview(teamIdx);
+          triggerLiveMatchAutoSave();
         };
 
         minusBtn.addEventListener("click", () => {
@@ -1837,7 +1877,8 @@ function handleAutoAssignRanks() {
   });
 
   renderMatchTeamForms();
-  showMatchAlert(`Auto-assigned unique placements 1-12. Click 'SAVE MATCH DATA' to commit.`, "success");
+  triggerLiveMatchAutoSave();
+  showMatchAlert(`Auto-assigned unique placements 1-12 & auto-saved to Drive.`, "success");
 }
 
 /**
@@ -3068,7 +3109,7 @@ function flashAutoSaveIndicator() {
   autoSaveTimeout = setTimeout(() => {
     if (autosaveStatusPill && autosaveText) {
       autosaveStatusPill.classList.remove("saving");
-      if (getBrowserOAuthToken()) {
+      if (getDriveWebhookUrl() || getBrowserOAuthToken()) {
         autosaveStatusPill.classList.add("drive-synced");
         autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
       } else {
@@ -3103,8 +3144,8 @@ function saveState() {
     localStorage.setItem("ff_tournament_calculator_state", JSON.stringify(dataToSave));
     flashAutoSaveIndicator();
 
-    // Trigger debounced auto-sync to Google Drive (Prompt: Automatic Drive Save)
-    scheduleDebouncedDriveAutoSync(3500);
+    // Trigger debounced auto-sync to Google Drive (Continuous Live Auto-Save)
+    scheduleDebouncedDriveAutoSync(1200);
   } catch (err) {
     console.warn("Could not save tournament state to localStorage:", err);
   }
@@ -4787,6 +4828,13 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
         })
       });
 
+      // Also auto-sync scores to Google Sheet if current match has scores
+      const curr = state.matches[state.selectedMatchIndex];
+      if (curr && curr.isSaved) {
+        const matchNum = state.selectedMatchIndex + 1;
+        syncMatchScoresToGoogleSheets(matchNum, curr.teamData).catch(() => {});
+      }
+
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       if (autosaveStatusPill && autosaveText) {
         autosaveStatusPill.classList.remove("syncing-drive", "saving");
@@ -4818,6 +4866,13 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       if (result.id) {
         try { localStorage.setItem(storageKey, result.id); } catch (_) {}
       }
+      // Also auto-sync scores to Google Sheet if current match has scores
+      const curr = state.matches[state.selectedMatchIndex];
+      if (curr && curr.isSaved) {
+        const matchNum = state.selectedMatchIndex + 1;
+        syncMatchScoresToGoogleSheets(matchNum, curr.teamData).catch(() => {});
+      }
+
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       if (autosaveStatusPill && autosaveText) {
         autosaveStatusPill.classList.remove("syncing-drive", "saving");
@@ -4854,7 +4909,7 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
 /**
  * Schedule debounced auto-sync to Google Drive
  */
-function scheduleDebouncedDriveAutoSync(delayMs = 3500) {
+function scheduleDebouncedDriveAutoSync(delayMs = 1200) {
   clearTimeout(debouncedDriveAutoSyncTimer);
   debouncedDriveAutoSyncTimer = setTimeout(() => {
     autoSyncTournamentToDrive({ silent: true });
