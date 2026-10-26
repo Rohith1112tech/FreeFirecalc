@@ -3974,9 +3974,10 @@ function clearBrowserOAuthToken() {
 }
 
 const DRIVE_WEBHOOK_STORAGE_KEY = "ff_drive_apps_script_webhook_url";
+const DEFAULT_DRIVE_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwv8ivPcj2-ikMGqILRlZ2O6JCPN4AEghlszokgIQlZr_JOM4TfPgqNRM1e3xewl0T1/exec";
 
 function getDriveWebhookUrl() {
-  return localStorage.getItem(DRIVE_WEBHOOK_STORAGE_KEY) || "";
+  return localStorage.getItem(DRIVE_WEBHOOK_STORAGE_KEY) || DEFAULT_DRIVE_WEBHOOK_URL;
 }
 
 function setDriveWebhookUrl(url) {
