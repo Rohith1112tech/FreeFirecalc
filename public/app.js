@@ -186,8 +186,22 @@ function updateLobbyUI() {
 function switchLobby(newLobbyId) {
   if (!newLobbyId || newLobbyId === state.activeLobby) return;
 
+  // Clear any pending debounced Drive auto-sync timer
+  if (typeof debouncedDriveAutoSyncTimer !== "undefined" && debouncedDriveAutoSyncTimer) {
+    clearTimeout(debouncedDriveAutoSyncTimer);
+    debouncedDriveAutoSyncTimer = null;
+  }
+  // Clear any active alert banners immediately
+  if (typeof hideMatchAlerts === "function") {
+    hideMatchAlerts();
+  }
+
   // 1. Save current lobby state first to preserve everything entered
-  saveState();
+  saveState({ skipDriveDebounce: true });
+  // Queue silent background drive sync for the departing lobby
+  if (typeof autoSyncTournamentToDrive === "function") {
+    autoSyncTournamentToDrive({ silent: true }).catch(() => {});
+  }
 
   // 2. Set active lobby pointer
   state.activeLobby = newLobbyId;
@@ -2006,7 +2020,7 @@ function handleSaveMatchData() {
   }
 
   // Automatic Google Sheets Synchronization (Scenario B)
-  syncMatchScoresToGoogleSheets(matchNum, currentMatch.teamData).catch((err) => {
+  syncMatchScoresToGoogleSheets(matchNum, currentMatch.teamData, { silent: false, lobbyId: state.activeLobby }).catch((err) => {
     console.warn("Google Sheets background sync notice:", err);
   });
 
@@ -2078,21 +2092,43 @@ function updateProgressBadge() {
 /**
  * Show Match Alert (Error or Success)
  */
+let matchAlertTimeout = null;
+
 function showMatchAlert(msg, type = "error") {
+  if (matchAlertTimeout) {
+    clearTimeout(matchAlertTimeout);
+    matchAlertTimeout = null;
+  }
+  if (!matchValidationAlert || !matchSuccessAlert) return;
+
   if (type === "error") {
-    matchAlertMessage.textContent = msg;
+    if (matchAlertMessage) matchAlertMessage.textContent = msg;
     matchValidationAlert.style.display = "flex";
     matchSuccessAlert.style.display = "none";
   } else {
-    matchSuccessMessage.textContent = msg;
+    if (matchSuccessMessage) matchSuccessMessage.textContent = msg;
     matchSuccessAlert.style.display = "flex";
     matchValidationAlert.style.display = "none";
+    // Auto-hide success & info toast after 4 seconds
+    matchAlertTimeout = setTimeout(() => {
+      hideMatchAlerts();
+    }, 4000);
   }
 }
 
 function hideMatchAlerts() {
-  matchValidationAlert.style.display = "none";
-  matchSuccessAlert.style.display = "none";
+  if (matchAlertTimeout) {
+    clearTimeout(matchAlertTimeout);
+    matchAlertTimeout = null;
+  }
+  if (matchValidationAlert) {
+    matchValidationAlert.style.display = "none";
+    if (matchAlertMessage) matchAlertMessage.textContent = "";
+  }
+  if (matchSuccessAlert) {
+    matchSuccessAlert.style.display = "none";
+    if (matchSuccessMessage) matchSuccessMessage.textContent = "";
+  }
 }
 
 /**
@@ -3293,7 +3329,8 @@ function flashAutoSaveIndicator() {
  * Local Storage Persistence (Prompt 6 & Multi-Lobby Isolation)
  * Automatically saves full tournament state to localStorage for the active lobby and queues Google Drive background sync
  */
-function saveState() {
+function saveState(options = {}) {
+  const { skipDriveDebounce = false } = options;
   if (state.isSharedView) return; // Do not overwrite user's local tournament while in shared read-only view
   try {
     const dataToSave = {
@@ -3317,8 +3354,10 @@ function saveState() {
 
     flashAutoSaveIndicator();
 
-    // Trigger debounced auto-sync to Google Drive (Continuous Live Auto-Save)
-    scheduleDebouncedDriveAutoSync(1200);
+    // Trigger debounced auto-sync to Google Drive (Continuous Live Auto-Save) unless explicitly skipped
+    if (!skipDriveDebounce && typeof scheduleDebouncedDriveAutoSync === "function") {
+      scheduleDebouncedDriveAutoSync(1200);
+    }
   } catch (err) {
     console.warn("Could not save tournament state to localStorage:", err);
   }
@@ -4911,7 +4950,10 @@ async function handleSaveOAuthCreds() {
  * Scenario B: Sync Match Scores to Google Spreadsheet
  * (Direct client-side Sheets API via OAuth token or backend server fallback)
  */
-async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
+async function syncMatchScoresToGoogleSheets(matchNumber, teamData, options = {}) {
+  const { silent = false, lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1" } = options;
+  const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
+
   const teamsDataPayload = teamData.map((t, idx) => {
     const p = t.placement !== "" && t.placement !== undefined ? parseInt(t.placement, 10) : "";
     const k = parseInt(t.kills, 10) || 0;
@@ -4930,8 +4972,6 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
     };
   });
 
-  const lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
-  const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
   const now = new Date().toLocaleString();
   const rowsToAppend = teamsDataPayload.map((team) => [
     now,
@@ -4960,7 +5000,9 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
         })
       });
       console.log(`[Google Sheets Webhook] Match ${matchNumber} scores synced directly via Webhook (${lobbyInfo.label}).`);
-      showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets (${lobbyInfo.label}) & Drive!`, "success");
+      if (!silent && (!state || state.activeLobby === lobbyId)) {
+        showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets (${lobbyInfo.label}) & Drive!`, "success");
+      }
       return { success: true };
     } catch (whErr) {
       console.warn("[Google Sheets Webhook Sync Warning]", whErr);
@@ -4983,7 +5025,9 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
 
       if (sheetsRes.ok) {
         console.log(`[Google Sheets] Match ${matchNumber} scores synced directly via OAuth.`);
-        showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets!`, "success");
+        if (!silent && (!state || state.activeLobby === lobbyId)) {
+          showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets!`, "success");
+        }
         return { success: true };
       } else {
         const errJson = await sheetsRes.json().catch(() => ({}));
@@ -4991,7 +5035,9 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
         if (sheetsRes.status === 401 || sheetsRes.status === 403) {
           clearBrowserOAuthToken();
           checkOAuthStatusUI();
-          showMatchAlert(`⚠️ Match ${matchNumber} saved locally, but Google Sheets permission is needed. Click '👤 GOOGLE ACCOUNT' to connect and grant spreadsheet access.`, "error");
+          if (!silent && (!state || state.activeLobby === lobbyId)) {
+            showMatchAlert(`⚠️ Match ${matchNumber} saved locally, but Google Sheets permission is needed. Click '👤 GOOGLE ACCOUNT' to connect and grant spreadsheet access.`, "error");
+          }
           return { success: false, error: "Authentication or scope error" };
         }
       }
@@ -5016,7 +5062,9 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
       const data = await response.json();
       if (data.success) {
         console.log(`[Google Sheets] Successfully recorded Match ${matchNumber} scores via server.`);
-        showMatchAlert(`✅ Match ${matchNumber} saved and auto-synced to Google Sheets!`, "success");
+        if (!silent && (!state || state.activeLobby === lobbyId)) {
+          showMatchAlert(`✅ Match ${matchNumber} saved and auto-synced to Google Sheets!`, "success");
+        }
         return data;
       }
     }
@@ -5025,7 +5073,9 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
   }
 
   // If on static host and not signed in
-  showMatchAlert(`⚠️ Match ${matchNumber} saved in browser! To auto-sync into your Google Sheet, click '👤 GOOGLE ACCOUNT' and Sign In.`, "error");
+  if (!silent && (!state || state.activeLobby === lobbyId)) {
+    showMatchAlert(`⚠️ Match ${matchNumber} saved in browser! To auto-sync into your Google Sheet, click '👤 GOOGLE ACCOUNT' and Sign In.`, "error");
+  }
   return { success: false, message: "Scores saved in local browser. Connect Google Account to sync to Sheets." };
 }
 
@@ -5053,7 +5103,7 @@ async function handleSyncAllMatchesToSheets() {
   try {
     let syncedMatchesCount = 0;
     for (const match of savedMatches) {
-      const res = await syncMatchScoresToGoogleSheets(match.matchNumber, match.teamData);
+      const res = await syncMatchScoresToGoogleSheets(match.matchNumber, match.teamData, { silent: true, lobbyId: state.activeLobby });
       if (res && res.success) {
         syncedMatchesCount++;
       }
@@ -5310,7 +5360,7 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       const curr = state.matches[state.selectedMatchIndex];
       if (curr && curr.isSaved) {
         const matchNum = state.selectedMatchIndex + 1;
-        syncMatchScoresToGoogleSheets(matchNum, curr.teamData).catch(() => {});
+        syncMatchScoresToGoogleSheets(matchNum, curr.teamData, { silent: true, lobbyId: lobbyId }).catch(() => {});
       }
 
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -5348,7 +5398,7 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       const curr = state.matches[state.selectedMatchIndex];
       if (curr && curr.isSaved) {
         const matchNum = state.selectedMatchIndex + 1;
-        syncMatchScoresToGoogleSheets(matchNum, curr.teamData).catch(() => {});
+        syncMatchScoresToGoogleSheets(matchNum, curr.teamData, { silent: true, lobbyId: lobbyId }).catch(() => {});
       }
 
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -5493,7 +5543,10 @@ if (typeof module !== "undefined" && module.exports) {
     loadSavedState,
     handleExecuteTournamentReset,
     calculateTeamMatchScore,
-    fetchTournamentFromCloud
+    fetchTournamentFromCloud,
+    syncMatchScoresToGoogleSheets,
+    showMatchAlert,
+    hideMatchAlerts
   };
 }
 

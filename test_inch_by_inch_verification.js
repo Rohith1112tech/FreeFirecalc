@@ -356,6 +356,36 @@ async function testLiveWebhookSync() {
   assert.strictEqual(sheetRes.success, true);
   assert.strictEqual(sheetRes.sheet.rowsAppended, 1);
   console.log("  ✓ Match scores successfully appended to Google Spreadsheet under LOBBY 1 tab.");
+
+  // Step 8: Cross-Lobby Alert Isolation & Silent Background Sync
+  console.log("▶ Step 8: Verifying Cross-Lobby Alert Isolation & Silent Background Sync...");
+  const successBox = global.document.getElementById("match-success-alert");
+  const successMsg = global.document.getElementById("match-success-message");
+  
+  // Set active lobby to lobby1
+  app.state.activeLobby = "lobby1";
+  app.hideMatchAlerts();
+  assert.strictEqual(successBox.style.display, "none", "Alerts must be hidden initially");
+
+  // A silent sync for Lobby 2 must NEVER pop up an alert on screen
+  await app.syncMatchScoresToGoogleSheets(1, [{ teamName: "L2 TEAM ALPHA", placement: 1, kills: 5 }], { silent: true, lobbyId: "lobby2" });
+  assert.strictEqual(successBox.style.display, "none", "Silent sync must NEVER trigger UI toast alert");
+  console.log("  ✓ Silent background sync suppresses visual alerts 100%.");
+
+  // An alert intended for Lobby 2 must NOT show if user is currently looking at Lobby 1
+  await app.syncMatchScoresToGoogleSheets(1, [{ teamName: "L2 TEAM ALPHA", placement: 1, kills: 5 }], { silent: false, lobbyId: "lobby2" });
+  assert.strictEqual(successBox.style.display, "none", "Lobby 2 alert must not display when active lobby is Lobby 1");
+  console.log("  ✓ In-flight network completion from another lobby never leaks alerts to current lobby.");
+
+  // An alert for Lobby 1 DOES show when user is on Lobby 1
+  app.showMatchAlert("✅ Test Lobby 1 Alert", "success");
+  assert.strictEqual(successBox.style.display, "flex", "Lobby 1 alert shows when active lobby is Lobby 1");
+  
+  // Switching lobby immediately clears any leftover toast
+  app.switchLobby("lobby2");
+  // Check that the old message was replaced or cleared
+  assert.notStrictEqual(successMsg.textContent, "✅ Test Lobby 1 Alert", "Old lobby alert must be cleared on switch");
+  console.log("  ✓ Switching lobbies immediately dismisses previous lobby alerts.");
 }
 
 testLiveWebhookSync().then(() => {
