@@ -432,20 +432,30 @@ function initMatchesState() {
       }
     }
   } else {
-    // Sync team names if updated
+    // Sync team names if updated while strictly preserving existing match scores & kills
     state.matches.forEach((m) => {
-      if (!m.teamData || m.teamData.length !== 12) {
-        m.teamData = state.teams.map((teamName) => ({
+      if (!Array.isArray(m.teamData)) {
+        m.teamData = [];
+      }
+      const existingTeamData = m.teamData;
+      m.teamData = state.teams.map((teamName, idx) => {
+        const found = existingTeamData[idx] || existingTeamData.find((t) => t && t.teamName === teamName);
+        if (found) {
+          return {
+            teamName: teamName || found.teamName,
+            placement: found.placement !== undefined ? found.placement : "",
+            kills: found.kills !== undefined ? found.kills : 0,
+            minus: found.minus !== undefined ? found.minus : 0,
+            playerKills: found.playerKills || {}
+          };
+        }
+        return {
           teamName,
           placement: "",
           kills: 0,
           minus: 0
-        }));
-      } else {
-        m.teamData.forEach((td, idx) => {
-          td.teamName = state.teams[idx] || td.teamName;
-        });
-      }
+        };
+      });
     });
   }
 }
@@ -5264,9 +5274,8 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
   try {
     const lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
     const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
-    const lobbyPrefix = lobbyId.toUpperCase();
-    const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
-    const filename = `FreeFire_${lobbyPrefix}_${safeTitle}_AutoBackup.json`;
+    const lobbyPrefix = lobbyId.toUpperCase().replace(/\s+/g, "");
+    const filename = `FreeFire_${lobbyPrefix}_AutoBackup.json`;
 
     const backupData = {
       lobbyId: lobbyId,
