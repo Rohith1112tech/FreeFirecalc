@@ -3343,8 +3343,8 @@ function loadSavedState(targetLobbyId) {
       if (parsed.tournamentTitle) state.tournamentTitle = parsed.tournamentTitle;
       else state.tournamentTitle = defaultTitle;
       if (parsed.totalMatches) state.totalMatches = parseInt(parsed.totalMatches, 10) || 6;
-      if (Array.isArray(parsed.teams)) state.teams = parsed.teams;
-      else state.teams = [];
+      if (Array.isArray(parsed.teams) && parsed.teams.length > 0) state.teams = parsed.teams;
+      else state.teams = [...DEFAULT_TEAMS];
       if (parsed.teamRosters && typeof parsed.teamRosters === "object") state.teamRosters = parsed.teamRosters;
       else state.teamRosters = {};
       state.activeScreen = parsed.activeScreen || "setup";
@@ -3358,7 +3358,7 @@ function loadSavedState(targetLobbyId) {
       // Fresh clean lobby defaults
       state.tournamentTitle = defaultTitle;
       state.totalMatches = 6;
-      state.teams = []; // Fresh lobby starts with clean empty teams so it never inherits another lobby's data!
+      state.teams = [...DEFAULT_TEAMS];
       state.teamRosters = {};
       state.activeScreen = "setup"; // Fresh lobby starts on setup screen!
       state.activeSubView = "view-match-input";
@@ -4592,15 +4592,6 @@ async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = f
     if (syncSpinIcon) syncSpinIcon.classList.remove("spinning");
     if (syncBtnText) syncBtnText.textContent = "SYNC FROM CLOUD";
   }
-}
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand("copy");
-  document.body.removeChild(ta);
-  if (copyScriptText) copyScriptText.textContent = "✓ COPIED CODE TO CLIPBOARD!";
-  setTimeout(() => {
-    if (copyScriptText) copyScriptText.textContent = "📋 COPY APPS SCRIPT CODE";
-  }, 3000);
 }
 
 async function handleSaveWebhookUrl() {
