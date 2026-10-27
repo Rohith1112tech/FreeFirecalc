@@ -1,24 +1,20 @@
 /**
  * =========================================================================
  * FREE FIRE TOURNAMENT AUTO-BACKUP & SYNC - GOOGLE APPS SCRIPT WEB APP
- * Zero-Login Cloud Sync for Google Drive & Google Sheets
+ * Zero-Login Cloud Sync for Google Drive & Google Sheets (Laptop & Mobile)
  * =========================================================================
  * 
  * Target Google Drive Folder: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5
  * Target Google Spreadsheet:  1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4
  *
- * HOW TO DEPLOY IN 60 SECONDS:
- * 1. Go to https://script.google.com/home/start and click "New project"
- *    (Or in your Google Sheet: Extensions > Apps Script)
- * 2. Delete any code in the editor, paste this entire file, and click Save (💾).
- * 3. Click "Deploy" (top right) > "New deployment".
- * 4. Select type: "Web app" (gear icon ⚙️).
- * 5. Description: "Free Fire Auto-Sync"
- * 6. Execute as: "Me"
- * 7. Who has access: "Anyone" (allows zero-login saving from your calculator website).
- * 8. Click "Deploy" > "Authorize access" (log in with your Google account once).
- * 9. Copy the "Web app URL" (starts with https://script.google.com/macros/s/...)
- * 10. Paste that URL into the "☁️ DRIVE CLOUD SYNC" popup in your Free Fire app!
+ * CRITICAL STEP FOR LAPTOP & MOBILE CROSS-DEVICE SYNC:
+ * In script.google.com:
+ * 1. Click "Deploy" (top right) > "Manage deployments"
+ * 2. Click the Pencil icon ✏️ (Edit) on the active deployment
+ * 3. Make sure "Who has access" is set to "Anyone" (NOT "Only myself")
+ *    * If set to "Only myself", Mobile phones will get 403 "Access Denied" error!
+ * 4. Set Version: "New version"
+ * 5. Click "Deploy"
  * =========================================================================
  */
 
@@ -35,6 +31,14 @@ function doPost(e) {
     const action = payload.action || 'backup';
 
     let result = { success: true };
+
+    // 0. Fetch / Pull backup from Google Drive (for mobile / laptop cross-sync)
+    if (action === 'get_backup') {
+      return jsonResponse(getTournamentBackup(payload.lobbyId || payload.lobby || 'lobby1'));
+    }
+    if (action === 'get_all_lobbies') {
+      return jsonResponse(getAllLobbyBackups());
+    }
 
     // 1. Auto-save Tournament JSON Backup to Google Drive
     if (action === 'backup' || action === 'both' || payload.backupData) {
@@ -58,14 +62,103 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  return jsonResponse({
+  try {
+    const action = (e && e.parameter && e.parameter.action) || 'status';
+    const lobbyId = (e && e.parameter && (e.parameter.lobbyId || e.parameter.lobby)) || 'lobby1';
+
+    // 1. Fetch single lobby backup (e.g. for mobile startup)
+    if (action === 'get_backup') {
+      return jsonResponse(getTournamentBackup(lobbyId));
+    }
+
+    // 2. Fetch all 3 lobbies in one request
+    if (action === 'get_all_lobbies') {
+      return jsonResponse(getAllLobbyBackups());
+    }
+
+    // 3. Default status ping
+    return jsonResponse({
+      success: true,
+      status: 'ONLINE',
+      service: 'Free Fire Scrims Zero-Login Drive & Sheets Webhook',
+      folderId: DRIVE_FOLDER_ID,
+      spreadsheetId: SPREADSHEET_ID,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+/**
+ * Retrieves the most recent tournament backup for a lobby from Google Drive
+ */
+function getTournamentBackup(lobbyId) {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const targetPrefix = 'FreeFire_' + (lobbyId || 'lobby1').toUpperCase().replace(/\s+/g, '');
+
+  const files = folder.getFiles();
+  let latestFile = null;
+  let latestTime = 0;
+
+  while (files.hasNext()) {
+    const file = files.next();
+    const name = file.getName();
+    if (name.startsWith(targetPrefix) && name.endsWith('.json')) {
+      const updated = file.getLastUpdated().getTime();
+      if (updated > latestTime) {
+        latestTime = updated;
+        latestFile = file;
+      }
+    }
+  }
+
+  // Fallback: check legacy filename if lobby1 requested
+  if (!latestFile && (lobbyId === 'lobby1' || !lobbyId)) {
+    const legacyFiles = folder.getFilesByName('FreeFire_Tournament_AutoBackup.json');
+    if (legacyFiles.hasNext()) {
+      latestFile = legacyFiles.next();
+    }
+  }
+
+  if (latestFile) {
+    const content = latestFile.getBlob().getDataAsString();
+    let parsedData = null;
+    try {
+      parsedData = JSON.parse(content);
+    } catch (_) {
+      parsedData = content;
+    }
+    return {
+      success: true,
+      found: true,
+      lobbyId: lobbyId || 'lobby1',
+      filename: latestFile.getName(),
+      lastUpdated: latestFile.getLastUpdated().toISOString(),
+      backupData: parsedData
+    };
+  }
+
+  return {
     success: true,
-    status: 'ONLINE',
-    service: 'Free Fire Scrims Zero-Login Drive & Sheets Webhook',
-    folderId: DRIVE_FOLDER_ID,
-    spreadsheetId: SPREADSHEET_ID,
-    timestamp: new Date().toISOString()
-  });
+    found: false,
+    lobbyId: lobbyId || 'lobby1',
+    message: 'No cloud backup found yet for ' + (lobbyId || 'lobby1')
+  };
+}
+
+/**
+ * Retrieves backups for all 3 lobbies in one request
+ */
+function getAllLobbyBackups() {
+  return {
+    success: true,
+    lobbies: {
+      lobby1: getTournamentBackup('lobby1'),
+      lobby2: getTournamentBackup('lobby2'),
+      lobby3: getTournamentBackup('lobby3')
+    }
+  };
 }
 
 /**

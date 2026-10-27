@@ -142,6 +142,9 @@ const setupErrorMsg = document.getElementById("setup-error-msg");
 const btnLobby1 = document.getElementById("btn-lobby-1");
 const btnLobby2 = document.getElementById("btn-lobby-2");
 const btnLobby3 = document.getElementById("btn-lobby-3");
+const btnLobbyCloudPull = document.getElementById("btn-lobby-cloud-pull");
+const syncSpinIcon = document.getElementById("sync-spin-icon");
+const syncBtnText = document.getElementById("sync-btn-text");
 const lobbyActiveBadgeText = document.getElementById("lobby-active-badge-text");
 const tourneyLobbyPill = document.getElementById("tourney-lobby-pill");
 
@@ -196,12 +199,10 @@ function switchLobby(newLobbyId) {
   loadSavedState(newLobbyId);
   initMatchesState();
 
-  // 4. Update Admin Setup UI
-  renderTeamInputs();
-  updateFilledCount();
-
-  // 5. Update Tournament Scoring & Leaderboard UI if currently in tournament screen
-  if (state.activeScreen === "tournament") {
+  // 4. Update Screen Visibility and Components for target lobby
+  if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
+    setupScreen.classList.remove("active");
+    tournamentScreen.classList.add("active");
     if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
     if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
     renderMatchSelectors();
@@ -210,19 +211,33 @@ function switchLobby(newLobbyId) {
     renderLeaderboardRows();
     renderMatrixTable();
     updateActiveMatchBanner();
+  } else {
+    // Show Admin Setup Screen for target lobby
+    tournamentScreen.classList.remove("active");
+    setupScreen.classList.add("active");
+    if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
+    if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
+    renderTeamInputs();
+    updateFilledCount();
   }
 
-  // 6. Update Lobby Switcher UI indicators
+  // 5. Update Lobby Switcher UI indicators
   updateLobbyUI();
 
-  // 7. Visual user feedback
+  // 6. Visual user feedback
   const lobbyInfo = LOBBY_CONFIGS[newLobbyId] || { label: newLobbyId.toUpperCase() };
   if (typeof showMatchAlert === "function" && state.activeScreen === "tournament") {
     showMatchAlert(`⚡ Switched to ${lobbyInfo.label} Database`, "info");
+  } else {
+    showError(`⚡ Switched to ${lobbyInfo.label} (${state.tournamentTitle})`);
+    setTimeout(() => clearError(), 3000);
   }
 
-  // 8. Auto-save newly activated lobby so storage entry is confirmed
+  // 7. Auto-save newly activated lobby so storage entry is confirmed
   saveState();
+
+  // 8. Try to background pull newest cloud backup for this lobby (Laptop <-> Mobile Sync)
+  fetchTournamentFromCloud({ lobbyId: newLobbyId, silent: true }).catch(() => {});
 }
 
 // DOM Elements - Tournament Dashboard
@@ -382,6 +397,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (hasShared) {
       switchSubView("view-leaderboard");
     }
+  }
+
+  // Cross-device cloud sync: Automatically pull latest cloud backup for this lobby on load
+  if (!hasShared) {
+    setTimeout(() => {
+      fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
+    }, 600);
   }
 });
 
@@ -839,6 +861,13 @@ function bindEvents() {
   }
   if (btnLobby3) {
     btnLobby3.addEventListener("click", () => switchLobby("lobby3"));
+  }
+
+  // Cross-device manual cloud sync button
+  if (btnLobbyCloudPull) {
+    btnLobbyCloudPull.addEventListener("click", () => {
+      fetchTournamentFromCloud({ lobbyId: state.activeLobby, force: true, silent: false });
+    });
   }
 
   // Total Matches quick chips
@@ -3314,23 +3343,25 @@ function loadSavedState(targetLobbyId) {
       if (parsed.tournamentTitle) state.tournamentTitle = parsed.tournamentTitle;
       else state.tournamentTitle = defaultTitle;
       if (parsed.totalMatches) state.totalMatches = parseInt(parsed.totalMatches, 10) || 6;
-      if (Array.isArray(parsed.teams) && parsed.teams.length > 0) state.teams = parsed.teams;
+      if (Array.isArray(parsed.teams)) state.teams = parsed.teams;
+      else state.teams = [];
       if (parsed.teamRosters && typeof parsed.teamRosters === "object") state.teamRosters = parsed.teamRosters;
       else state.teamRosters = {};
-      if (parsed.activeScreen) state.activeScreen = parsed.activeScreen;
-      if (parsed.activeSubView) state.activeSubView = parsed.activeSubView;
-      if (parsed.selectedMatchIndex !== undefined) state.selectedMatchIndex = parsed.selectedMatchIndex;
-      if (parsed.positionDisplayMode) state.positionDisplayMode = parsed.positionDisplayMode;
-      if (parsed.selectedPosterTheme) state.selectedPosterTheme = parsed.selectedPosterTheme;
-      if (parsed.exportFormat) state.exportFormat = parsed.exportFormat;
-      if (Array.isArray(parsed.matches)) state.matches = parsed.matches;
-      else state.matches = [];
+      state.activeScreen = parsed.activeScreen || "setup";
+      state.activeSubView = parsed.activeSubView || "view-match-input";
+      state.selectedMatchIndex = parsed.selectedMatchIndex !== undefined ? parsed.selectedMatchIndex : 0;
+      state.positionDisplayMode = parsed.positionDisplayMode || "points";
+      state.selectedPosterTheme = parsed.selectedPosterTheme || "red";
+      state.exportFormat = parsed.exportFormat || "jpg";
+      state.matches = Array.isArray(parsed.matches) ? parsed.matches : [];
     } else {
       // Fresh clean lobby defaults
       state.tournamentTitle = defaultTitle;
       state.totalMatches = 6;
-      state.teams = [...DEFAULT_TEAMS];
+      state.teams = []; // Fresh lobby starts with clean empty teams so it never inherits another lobby's data!
       state.teamRosters = {};
+      state.activeScreen = "setup"; // Fresh lobby starts on setup screen!
+      state.activeSubView = "view-match-input";
       state.selectedMatchIndex = 0;
       state.positionDisplayMode = "points";
       state.selectedPosterTheme = "red";
@@ -4191,7 +4222,20 @@ function setDriveWebhookUrl(url) {
 const APPS_SCRIPT_SOURCE_CODE = `/**
  * =========================================================================
  * FREE FIRE TOURNAMENT AUTO-BACKUP & SYNC - GOOGLE APPS SCRIPT WEB APP
- * Zero-Login Cloud Sync for Google Drive & Google Sheets
+ * Zero-Login Cloud Sync for Google Drive & Google Sheets (Laptop & Mobile)
+ * =========================================================================
+ * 
+ * Target Google Drive Folder: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5
+ * Target Google Spreadsheet:  1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4
+ *
+ * CRITICAL STEP FOR CROSS-DEVICE SYNC (LAPTOP <-> MOBILE):
+ * In script.google.com:
+ * 1. Click "Deploy" > "Manage deployments"
+ * 2. Click the Pencil icon ✏️ (Edit)
+ * 3. Make sure "Who has access" is set to "Anyone" (NOT "Only myself")
+ *    * If set to "Only myself", Mobile phones cannot fetch/save data (403 Error)!
+ * 4. Set Version to "New version"
+ * 5. Click "Deploy"
  * =========================================================================
  */
 const DRIVE_FOLDER_ID = '1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5';
@@ -4205,6 +4249,14 @@ function doPost(e) {
     const payload = JSON.parse(e.postData.contents);
     const action = payload.action || 'backup';
     let result = { success: true };
+
+    // 0. Fetch / Pull backup for Mobile & Laptop cross-sync
+    if (action === 'get_backup') {
+      return jsonResponse(getTournamentBackup(payload.lobbyId || payload.lobby || 'lobby1'));
+    }
+    if (action === 'get_all_lobbies') {
+      return jsonResponse(getAllLobbyBackups());
+    }
 
     if (action === 'backup' || action === 'both' || payload.backupData) {
       result.backup = saveTournamentBackup(payload);
@@ -4222,12 +4274,79 @@ function doPost(e) {
 }
 
 function doGet(e) {
-  return jsonResponse({
+  try {
+    const action = (e && e.parameter && e.parameter.action) || 'status';
+    const lobbyId = (e && e.parameter && (e.parameter.lobbyId || e.parameter.lobby)) || 'lobby1';
+
+    if (action === 'get_backup') {
+      return jsonResponse(getTournamentBackup(lobbyId));
+    }
+    if (action === 'get_all_lobbies') {
+      return jsonResponse(getAllLobbyBackups());
+    }
+
+    return jsonResponse({
+      success: true,
+      status: 'ONLINE',
+      folderId: DRIVE_FOLDER_ID,
+      spreadsheetId: SPREADSHEET_ID
+    });
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+function getTournamentBackup(lobbyId) {
+  const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
+  const targetPrefix = 'FreeFire_' + (lobbyId || 'lobby1').toUpperCase().replace(/\\s+/g, '');
+
+  const files = folder.getFiles();
+  let latestFile = null;
+  let latestTime = 0;
+
+  while (files.hasNext()) {
+    const file = files.next();
+    const name = file.getName();
+    if (name.startsWith(targetPrefix) && name.endsWith('.json')) {
+      const updated = file.getLastUpdated().getTime();
+      if (updated > latestTime) {
+        latestTime = updated;
+        latestFile = file;
+      }
+    }
+  }
+
+  if (!latestFile && (lobbyId === 'lobby1' || !lobbyId)) {
+    const legacyFiles = folder.getFilesByName('FreeFire_Tournament_AutoBackup.json');
+    if (legacyFiles.hasNext()) latestFile = legacyFiles.next();
+  }
+
+  if (latestFile) {
+    const content = latestFile.getBlob().getDataAsString();
+    let parsedData = null;
+    try { parsedData = JSON.parse(content); } catch (_) { parsedData = content; }
+    return {
+      success: true,
+      found: true,
+      lobbyId: lobbyId || 'lobby1',
+      filename: latestFile.getName(),
+      lastUpdated: latestFile.getLastUpdated().toISOString(),
+      backupData: parsedData
+    };
+  }
+
+  return { success: true, found: false, lobbyId: lobbyId || 'lobby1', message: 'No backup found yet' };
+}
+
+function getAllLobbyBackups() {
+  return {
     success: true,
-    status: 'ONLINE',
-    folderId: DRIVE_FOLDER_ID,
-    spreadsheetId: SPREADSHEET_ID
-  });
+    lobbies: {
+      lobby1: getTournamentBackup('lobby1'),
+      lobby2: getTournamentBackup('lobby2'),
+      lobby3: getTournamentBackup('lobby3')
+    }
+  };
 }
 
 function saveTournamentBackup(payload) {
@@ -4250,7 +4369,18 @@ function saveTournamentBackup(payload) {
 
 function appendToSpreadsheet(payload) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheets()[0];
+  const tabName = payload.lobbyName || 'LOBBY 1';
+  let sheet = ss.getSheetByName(tabName);
+  if (!sheet) {
+    try {
+      sheet = ss.insertSheet(tabName);
+      sheet.appendRow(['TIMESTAMP', 'TOURNAMENT / SCRIMS TITLE', 'MATCH', 'RANK / PLACE', 'TEAM NAME', 'PLAYER ROSTER', 'KILLS', 'PLACEMENT POINTS', 'TOTAL MATCH POINTS']);
+      sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#222b3a').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    } catch (_) {
+      sheet = ss.getSheets()[0];
+    }
+  }
   const rows = payload.sheetRows || payload.rows || [];
   if (rows && rows.length > 0) {
     const startRow = sheet.getLastRow() + 1;
@@ -4293,6 +4423,176 @@ function handleCopyAppsScriptCode() {
 function fallbackCopyScript() {
   const ta = document.createElement("textarea");
   ta.value = APPS_SCRIPT_SOURCE_CODE;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    if (copyScriptText) copyScriptText.textContent = "✓ COPIED CODE TO CLIPBOARD!";
+    setTimeout(() => {
+      if (copyScriptText) copyScriptText.textContent = "📋 COPY APPS SCRIPT CODE";
+    }, 3000);
+  } catch (_) {}
+  document.body.removeChild(ta);
+}
+
+/**
+ * Fetches and synchronizes tournament state from Google Drive (Zero-Login Cloud Database)
+ * Essential for syncing between Laptop and Mobile!
+ */
+let isCloudPulling = false;
+
+async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = false, silent = false } = {}) {
+  const webhookUrl = getDriveWebhookUrl();
+  if (!webhookUrl) {
+    if (!silent) alert("Please configure your Google Apps Script Webhook URL first under CLOUD DRIVE SYNC.");
+    return { success: false, reason: "no_webhook" };
+  }
+
+  if (isCloudPulling) return { success: false, reason: "in_progress" };
+  isCloudPulling = true;
+
+  if (syncSpinIcon) syncSpinIcon.classList.add("spinning");
+  if (syncBtnText) syncBtnText.textContent = "SYNCING...";
+
+  try {
+    const targetLobby = lobbyId || state.activeLobby || "lobby1";
+    const lobbyInfo = LOBBY_CONFIGS[targetLobby] || { label: targetLobby.toUpperCase() };
+
+    let cloudData = null;
+
+    // Method 1: Try POST with action: 'get_backup'
+    try {
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "get_backup",
+          lobbyId: targetLobby
+        })
+      });
+
+      if (res.status === 403) {
+        throw new Error("ACCESS_DENIED_403");
+      }
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json && json.success && json.found && json.backupData) {
+          cloudData = json.backupData;
+        }
+      }
+    } catch (postErr) {
+      if (postErr.message === "ACCESS_DENIED_403") throw postErr;
+      // Fallback: Try GET with action=get_backup
+      try {
+        const getUrl = `${webhookUrl}${webhookUrl.includes("?") ? "&" : "?"}action=get_backup&lobbyId=${encodeURIComponent(targetLobby)}`;
+        const getRes = await fetch(getUrl);
+        if (getRes.status === 403) throw new Error("ACCESS_DENIED_403");
+        if (getRes.ok) {
+          const json = await getRes.json();
+          if (json && json.success && json.found && json.backupData) {
+            cloudData = json.backupData;
+          }
+        }
+      } catch (getErr) {
+        if (getErr.message === "ACCESS_DENIED_403") throw getErr;
+        console.warn("[Cloud Pull Fallback Notice]", getErr.message);
+      }
+    }
+
+    if (!cloudData) {
+      if (!silent) {
+        showError(`No cloud backup found on Drive for ${lobbyInfo.label} yet. Save a match first!`);
+        setTimeout(() => clearError(), 4000);
+      }
+      return { success: true, updated: false };
+    }
+
+    // Check if cloud data is newer or if current local state is empty
+    const localKey = getLobbyStorageKey(targetLobby);
+    const localRaw = localStorage.getItem(localKey);
+    let localSavedAt = 0;
+    if (localRaw) {
+      try {
+        const parsedLocal = JSON.parse(localRaw);
+        if (parsedLocal.savedAt) localSavedAt = new Date(parsedLocal.savedAt).getTime();
+      } catch (_) {}
+    }
+
+    const cloudSavedAt = cloudData.savedAt ? new Date(cloudData.savedAt).getTime() : Date.now();
+    const isLocalEmpty = !localRaw || state.matches.length === 0 || state.matches.every(m => !m.isSaved);
+
+    if (force || isLocalEmpty || cloudSavedAt > localSavedAt) {
+      // Apply cloud data to local storage and active state
+      localStorage.setItem(localKey, JSON.stringify(cloudData));
+
+      if (targetLobby === state.activeLobby) {
+        loadSavedState(targetLobby);
+        initMatchesState();
+
+        if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
+          setupScreen.classList.remove("active");
+          tournamentScreen.classList.add("active");
+          if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
+          if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
+          renderMatchSelectors();
+          renderMatchTeamForms();
+          updateProgressBadge();
+          renderLeaderboardRows();
+          renderMatrixTable();
+          updateActiveMatchBanner();
+        } else {
+          tournamentScreen.classList.remove("active");
+          setupScreen.classList.add("active");
+          if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
+          if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
+          renderTeamInputs();
+          updateFilledCount();
+        }
+        updateLobbyUI();
+      }
+
+      if (autosaveStatusPill && autosaveText) {
+        autosaveStatusPill.classList.add("drive-synced");
+        autosaveText.textContent = `☁️ SYNCED FROM DRIVE (${lobbyInfo.label})`;
+      }
+
+      const msg = `✅ ${lobbyInfo.label} synced from Google Drive!`;
+      if (!silent) {
+        showError(msg);
+        setTimeout(() => clearError(), 4000);
+      } else {
+        console.log(`[Cloud Pull] ${msg}`);
+      }
+      return { success: true, updated: true };
+    } else {
+      if (!silent) {
+        showError(`✅ ${lobbyInfo.label} is already up to date with Google Drive.`);
+        setTimeout(() => clearError(), 3000);
+      }
+      return { success: true, updated: false };
+    }
+  } catch (err) {
+    if (err.message === "ACCESS_DENIED_403") {
+      const warningMsg = "⚠️ Google Apps Script Access Denied (403): In script.google.com, click Deploy > Manage deployments > Edit ✏️ > set 'Who has access' to 'Anyone' (NOT 'Only myself') so mobile can sync without login.";
+      console.warn(warningMsg);
+      if (!silent) {
+        alert(warningMsg);
+      }
+    } else {
+      console.warn("[Cloud Pull Error]:", err.message);
+      if (!silent) {
+        showError(`⚠️ Cloud sync error: ${err.message}`);
+        setTimeout(() => clearError(), 4000);
+      }
+    }
+    return { success: false, error: err.message };
+  } finally {
+    isCloudPulling = false;
+    if (syncSpinIcon) syncSpinIcon.classList.remove("spinning");
+    if (syncBtnText) syncBtnText.textContent = "SYNC FROM CLOUD";
+  }
+}
   document.body.appendChild(ta);
   ta.select();
   document.execCommand("copy");
@@ -5192,7 +5492,8 @@ if (typeof module !== "undefined" && module.exports) {
     saveState,
     loadSavedState,
     handleExecuteTournamentReset,
-    calculateTeamMatchScore
+    calculateTeamMatchScore,
+    fetchTournamentFromCloud
   };
 }
 

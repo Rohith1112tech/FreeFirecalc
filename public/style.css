@@ -5378,6 +5378,54 @@ body {
   color: #ffebec;
 }
 
+.lobby-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.lobby-cloud-sync-btn {
+  background: rgba(16, 24, 38, 0.95);
+  border: 1px solid rgba(0, 255, 204, 0.45);
+  color: #00ffcc;
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.22s ease;
+  user-select: none;
+}
+
+.lobby-cloud-sync-btn:hover {
+  background: rgba(0, 255, 204, 0.15);
+  border-color: #00ffcc;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+  transform: translateY(-1px);
+}
+
+.sync-spin-icon {
+  display: inline-block;
+  font-size: 0.85rem;
+  transition: transform 0.3s ease;
+}
+
+.sync-spin-icon.spinning {
+  animation: spinIcon 1s linear infinite;
+}
+
+@keyframes spinIcon {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 .lobby-sync-tag {
   display: inline-flex;
   align-items: center;
@@ -5448,7 +5496,55 @@ body {
   .lobby-tab-db-tag {
     display: none;
   }
-  .lobby-sync-tag {
+  .lobby-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.lobby-cloud-sync-btn {
+  background: rgba(16, 24, 38, 0.95);
+  border: 1px solid rgba(0, 255, 204, 0.45);
+  color: #00ffcc;
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.22s ease;
+  user-select: none;
+}
+
+.lobby-cloud-sync-btn:hover {
+  background: rgba(0, 255, 204, 0.15);
+  border-color: #00ffcc;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+  transform: translateY(-1px);
+}
+
+.sync-spin-icon {
+  display: inline-block;
+  font-size: 0.85rem;
+  transition: transform 0.3s ease;
+}
+
+.sync-spin-icon.spinning {
+  animation: spinIcon 1s linear infinite;
+}
+
+@keyframes spinIcon {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.lobby-sync-tag {
     justify-content: center;
   }
 }
