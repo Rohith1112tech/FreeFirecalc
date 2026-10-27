@@ -102,18 +102,45 @@ function saveTournamentBackup(payload) {
 
 /**
  * Appends match score rows to Google Spreadsheet
+ * Supports dedicated separate tabs for LOBBY 1, LOBBY 2, and LOBBY 3
  */
 function appendToSpreadsheet(payload) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet = ss.getSheets()[0];
   const rows = payload.sheetRows || payload.rows || [];
-
-  if (rows && rows.length > 0) {
-    const startRow = sheet.getLastRow() + 1;
-    sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
-    return { rowsAppended: rows.length };
+  if (!rows || rows.length === 0) {
+    return { rowsAppended: 0 };
   }
-  return { rowsAppended: 0 };
+
+  const tabName = payload.lobbyName || 'LOBBY 1';
+  let sheet = ss.getSheetByName(tabName);
+
+  // If dedicated sheet tab doesn't exist, create it with header columns
+  if (!sheet) {
+    try {
+      sheet = ss.insertSheet(tabName);
+      sheet.appendRow([
+        'TIMESTAMP',
+        'TOURNAMENT / SCRIMS TITLE',
+        'MATCH',
+        'RANK / PLACE',
+        'TEAM NAME',
+        'PLAYER ROSTER',
+        'KILLS',
+        'PLACEMENT POINTS',
+        'TOTAL MATCH POINTS'
+      ]);
+      // Format header row
+      sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#222b3a').setFontColor('#ffffff');
+      sheet.setFrozenRows(1);
+    } catch (tabErr) {
+      // Fallback to first sheet if insert fails
+      sheet = ss.getSheets()[0];
+    }
+  }
+
+  const startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
+  return { rowsAppended: rows.length, sheetName: sheet.getName() };
 }
 
 /**

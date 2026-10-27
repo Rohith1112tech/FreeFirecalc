@@ -22,6 +22,38 @@
       <img src="assets/header_banner.png" alt="Free Fire Paid Scrims - NZ ESPORTS Points Calculator" class="scrims-header-banner-img">
     </header>
 
+    <!-- 3-LOBBY SELECTOR & MULTI-DATABASE CONTROLLER -->
+    <section class="lobby-selector-bar" id="lobby-selector-bar" aria-label="Lobby Multi-Database Selector">
+      <div class="lobby-bar-inner">
+        <div class="lobby-bar-label">
+          <span class="lobby-icon">⚡</span>
+          <span class="lobby-label-title">ACTIVE LOBBY:</span>
+          <span class="lobby-label-sub">SEPARATE CLOUD &amp; LOCAL DATABASE</span>
+        </div>
+        <div class="lobby-tabs-group" role="tablist" aria-label="Lobby Switcher">
+          <button type="button" class="lobby-tab-btn active" id="btn-lobby-1" data-lobby="lobby1" role="tab" aria-selected="true" title="Switch to Lobby 1 (Database 1)">
+            <span class="lobby-tab-dot"></span>
+            <span class="lobby-tab-text">LOBBY 1</span>
+            <span class="lobby-tab-db-tag">DB 1</span>
+          </button>
+          <button type="button" class="lobby-tab-btn" id="btn-lobby-2" data-lobby="lobby2" role="tab" aria-selected="false" title="Switch to Lobby 2 (Database 2)">
+            <span class="lobby-tab-dot"></span>
+            <span class="lobby-tab-text">LOBBY 2</span>
+            <span class="lobby-tab-db-tag">DB 2</span>
+          </button>
+          <button type="button" class="lobby-tab-btn" id="btn-lobby-3" data-lobby="lobby3" role="tab" aria-selected="false" title="Switch to Lobby 3 (Database 3)">
+            <span class="lobby-tab-dot"></span>
+            <span class="lobby-tab-text">LOBBY 3</span>
+            <span class="lobby-tab-db-tag">DB 3</span>
+          </button>
+        </div>
+        <div class="lobby-sync-tag" id="lobby-active-sync-badge">
+          <span class="active-dot"></span>
+          <span id="lobby-active-badge-text">LOBBY 1 ACTIVE</span>
+        </div>
+      </div>
+    </section>
+
     <!-- MAIN SCREENS CONTAINER -->
     <main class="main-content">
       
@@ -225,6 +257,7 @@
           <div class="active-tourney-meta">
             <div class="meta-pills-row">
               <div class="live-pill"><span class="blink-dot"></span> LIVE TOURNAMENT</div>
+              <div class="lobby-pill" id="tourney-lobby-pill"><span class="active-dot"></span> LOBBY 1</div>
               <div class="autosave-pill" id="autosave-status-pill">
                 <span class="save-icon">💾</span> <span id="autosave-text">AUTO-SAVED TO BROWSER</span>
               </div>

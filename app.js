@@ -66,9 +66,29 @@ const DEFAULT_TEAMS = [
   "TEAM MAFIA"
 ];
 
+// Multi-Lobby Configurations (3 Independent Lobbies with Isolated Databases)
+const LOBBY_CONFIGS = {
+  lobby1: { id: "lobby1", label: "LOBBY 1", defaultTitle: "NZ PAID SCRIMS - LOBBY 01", dbTag: "DB-01" },
+  lobby2: { id: "lobby2", label: "LOBBY 2", defaultTitle: "NZ PAID SCRIMS - LOBBY 02", dbTag: "DB-02" },
+  lobby3: { id: "lobby3", label: "LOBBY 3", defaultTitle: "NZ PAID SCRIMS - LOBBY 03", dbTag: "DB-03" }
+};
+
+function getActiveLobbyId() {
+  try {
+    return localStorage.getItem("ff_active_lobby_id") || "lobby1";
+  } catch (_) {
+    return "lobby1";
+  }
+}
+
+function getLobbyStorageKey(lobbyId = (typeof state !== "undefined" && state.activeLobby)) {
+  return `ff_tournament_calculator_state_${lobbyId || "lobby1"}`;
+}
+
 // App State
 const state = {
-  tournamentTitle: "NZ PAID SCRIMS - BATTLE 01",
+  activeLobby: "lobby1",
+  tournamentTitle: "NZ PAID SCRIMS - LOBBY 01",
   totalMatches: 6,
   teams: [...DEFAULT_TEAMS],
   teamRosters: {}, // Keyed by team index (0..11): [p1, p2, p3, p4]
@@ -117,6 +137,93 @@ const btnCleanParseSlots = document.getElementById("btn-clean-parse-slots");
 
 const btnStartTournament = document.getElementById("btn-start-tournament");
 const setupErrorMsg = document.getElementById("setup-error-msg");
+
+// DOM Elements - 3-Lobby Multi-Database Controller
+const btnLobby1 = document.getElementById("btn-lobby-1");
+const btnLobby2 = document.getElementById("btn-lobby-2");
+const btnLobby3 = document.getElementById("btn-lobby-3");
+const lobbyActiveBadgeText = document.getElementById("lobby-active-badge-text");
+const tourneyLobbyPill = document.getElementById("tourney-lobby-pill");
+
+/**
+ * Updates UI styling & badges for active lobby
+ */
+function updateLobbyUI() {
+  const currentLobby = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
+  const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: "LOBBY 1" };
+
+  if (btnLobby1) {
+    const isAct = currentLobby === "lobby1";
+    btnLobby1.classList.toggle("active", isAct);
+    btnLobby1.setAttribute("aria-selected", isAct ? "true" : "false");
+  }
+  if (btnLobby2) {
+    const isAct = currentLobby === "lobby2";
+    btnLobby2.classList.toggle("active", isAct);
+    btnLobby2.setAttribute("aria-selected", isAct ? "true" : "false");
+  }
+  if (btnLobby3) {
+    const isAct = currentLobby === "lobby3";
+    btnLobby3.classList.toggle("active", isAct);
+    btnLobby3.setAttribute("aria-selected", isAct ? "true" : "false");
+  }
+
+  if (lobbyActiveBadgeText) {
+    lobbyActiveBadgeText.textContent = `${lobbyInfo.label} ACTIVE`;
+  }
+  if (tourneyLobbyPill) {
+    tourneyLobbyPill.innerHTML = `<span class="active-dot"></span> ${lobbyInfo.label}`;
+  }
+}
+
+/**
+ * Switches to target lobby with 100% data isolation
+ * Automatically saves current lobby first, then loads target lobby database
+ */
+function switchLobby(newLobbyId) {
+  if (!newLobbyId || newLobbyId === state.activeLobby) return;
+
+  // 1. Save current lobby state first to preserve everything entered
+  saveState();
+
+  // 2. Set active lobby pointer
+  state.activeLobby = newLobbyId;
+  try {
+    localStorage.setItem("ff_active_lobby_id", newLobbyId);
+  } catch (_) {}
+
+  // 3. Load target lobby's isolated database
+  loadSavedState(newLobbyId);
+  initMatchesState();
+
+  // 4. Update Admin Setup UI
+  renderTeamInputs();
+  updateFilledCount();
+
+  // 5. Update Tournament Scoring & Leaderboard UI if currently in tournament screen
+  if (state.activeScreen === "tournament") {
+    if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
+    if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
+    renderMatchSelectors();
+    renderMatchTeamForms();
+    updateProgressBadge();
+    renderLeaderboardRows();
+    renderMatrixTable();
+    updateActiveMatchBanner();
+  }
+
+  // 6. Update Lobby Switcher UI indicators
+  updateLobbyUI();
+
+  // 7. Visual user feedback
+  const lobbyInfo = LOBBY_CONFIGS[newLobbyId] || { label: newLobbyId.toUpperCase() };
+  if (typeof showMatchAlert === "function" && state.activeScreen === "tournament") {
+    showMatchAlert(`⚡ Switched to ${lobbyInfo.label} Database`, "info");
+  }
+
+  // 8. Auto-save newly activated lobby so storage entry is confirmed
+  saveState();
+}
 
 // DOM Elements - Tournament Dashboard
 const activeTournamentTitleEl = document.getElementById("active-tournament-title");
@@ -258,13 +365,15 @@ const btnSharedExit = document.getElementById("btn-shared-exit");
 document.addEventListener("DOMContentLoaded", () => {
   const hasShared = checkForSharedResultsUrl();
   if (!hasShared) {
-    loadSavedState();
+    const storedLobby = getActiveLobbyId();
+    loadSavedState(storedLobby);
   }
   setPosterTheme(state.selectedPosterTheme || "red");
   initMatchesState();
   renderTeamInputs();
   bindEvents();
   updateFilledCount();
+  updateLobbyUI();
   handleOAuthCallbackFromUrl();
   checkOAuthStatusUI();
 
@@ -721,6 +830,17 @@ function updatePastePreviewUI() {
  * Event Bindings
  */
 function bindEvents() {
+  // 3-Lobby Database Switcher Tabs
+  if (btnLobby1) {
+    btnLobby1.addEventListener("click", () => switchLobby("lobby1"));
+  }
+  if (btnLobby2) {
+    btnLobby2.addEventListener("click", () => switchLobby("lobby2"));
+  }
+  if (btnLobby3) {
+    btnLobby3.addEventListener("click", () => switchLobby("lobby3"));
+  }
+
   // Total Matches quick chips
   matchChips.forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -3049,21 +3169,29 @@ function closeResetConfirmationModal() {
 }
 
 function handleExecuteTournamentReset() {
-  // 1. Clear from browser localStorage
+  const currentLobby = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
+  const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: currentLobby.toUpperCase(), defaultTitle: `NZ PAID SCRIMS - ${currentLobby.toUpperCase()}` };
+
+  // 1. Clear from browser localStorage for active lobby ONLY
   try {
-    localStorage.removeItem("ff_tournament_calculator_state");
+    localStorage.removeItem(getLobbyStorageKey(currentLobby));
+    if (currentLobby === "lobby1") {
+      localStorage.removeItem("ff_tournament_calculator_state"); // clear legacy key too
+    }
   } catch (err) {
     console.warn("Could not clear localStorage:", err);
   }
 
-  // 2. Reset app state back to defaults
-  state.tournamentTitle = "NZ PAID SCRIMS - BATTLE 01";
+  // 2. Reset app state back to defaults for active lobby
+  state.tournamentTitle = lobbyInfo.defaultTitle;
   state.totalMatches = 6;
   state.teams = [...DEFAULT_TEAMS];
+  state.teamRosters = {};
   state.activeScreen = "setup";
   state.activeSubView = "view-match-input";
   state.selectedMatchIndex = 0;
   state.positionDisplayMode = "points";
+  state.selectedPosterTheme = "red";
   state.exportFormat = "jpg";
   state.matches = [];
 
@@ -3083,12 +3211,14 @@ function handleExecuteTournamentReset() {
     }
   });
 
+  saveState();
+
   // 4. Close dialog and return to setup screen
   closeResetConfirmationModal();
   showSetupScreen();
 
   // 5. User feedback notification
-  showError("Tournament reset successfully. All previous match data cleared. Ready for a new scrim!");
+  showError(`${lobbyInfo.label} reset successfully. Ready for a new scrim!`);
   setTimeout(() => {
     clearError();
   }, 4500);
@@ -3121,13 +3251,14 @@ function flashAutoSaveIndicator() {
 }
 
 /**
- * Local Storage Persistence (Prompt 6)
- * Automatically saves full tournament state to localStorage and queues Google Drive background sync
+ * Local Storage Persistence (Prompt 6 & Multi-Lobby Isolation)
+ * Automatically saves full tournament state to localStorage for the active lobby and queues Google Drive background sync
  */
 function saveState() {
   if (state.isSharedView) return; // Do not overwrite user's local tournament while in shared read-only view
   try {
     const dataToSave = {
+      activeLobby: state.activeLobby || "lobby1",
       tournamentTitle: state.tournamentTitle,
       totalMatches: state.totalMatches,
       teams: state.teams,
@@ -3141,7 +3272,10 @@ function saveState() {
       matches: state.matches
     };
 
-    localStorage.setItem("ff_tournament_calculator_state", JSON.stringify(dataToSave));
+    const targetKey = getLobbyStorageKey(state.activeLobby);
+    localStorage.setItem(targetKey, JSON.stringify(dataToSave));
+    localStorage.setItem("ff_active_lobby_id", state.activeLobby || "lobby1");
+
     flashAutoSaveIndicator();
 
     // Trigger debounced auto-sync to Google Drive (Continuous Live Auto-Save)
@@ -3152,19 +3286,37 @@ function saveState() {
 }
 
 /**
- * Load Saved State from Local Storage (Prompt 6)
- * Reloads active tournament state, team names, match count, and all saved scores
+ * Load Saved State from Local Storage (Prompt 6 & Multi-Lobby Isolation)
+ * Reloads active tournament state, team names, match count, and all saved scores for specified lobby
  */
-function loadSavedState() {
+function loadSavedState(targetLobbyId) {
   try {
-    const saved = localStorage.getItem("ff_tournament_calculator_state");
+    const activeLobby = targetLobbyId || getActiveLobbyId();
+    state.activeLobby = activeLobby;
+
+    const targetKey = getLobbyStorageKey(activeLobby);
+    let saved = localStorage.getItem(targetKey);
+
+    // Backward compatibility: If lobby1 has no saved state, check legacy storage key
+    if (!saved && activeLobby === "lobby1") {
+      const legacySaved = localStorage.getItem("ff_tournament_calculator_state");
+      if (legacySaved) {
+        saved = legacySaved;
+        try { localStorage.setItem(targetKey, legacySaved); } catch (_) {}
+      }
+    }
+
+    const defaultTitle = (LOBBY_CONFIGS[activeLobby] && LOBBY_CONFIGS[activeLobby].defaultTitle) || `NZ PAID SCRIMS - ${activeLobby.toUpperCase()}`;
+
     if (saved) {
       const parsed = JSON.parse(saved);
 
       if (parsed.tournamentTitle) state.tournamentTitle = parsed.tournamentTitle;
+      else state.tournamentTitle = defaultTitle;
       if (parsed.totalMatches) state.totalMatches = parseInt(parsed.totalMatches, 10) || 6;
       if (Array.isArray(parsed.teams) && parsed.teams.length > 0) state.teams = parsed.teams;
       if (parsed.teamRosters && typeof parsed.teamRosters === "object") state.teamRosters = parsed.teamRosters;
+      else state.teamRosters = {};
       if (parsed.activeScreen) state.activeScreen = parsed.activeScreen;
       if (parsed.activeSubView) state.activeSubView = parsed.activeSubView;
       if (parsed.selectedMatchIndex !== undefined) state.selectedMatchIndex = parsed.selectedMatchIndex;
@@ -3172,19 +3324,34 @@ function loadSavedState() {
       if (parsed.selectedPosterTheme) state.selectedPosterTheme = parsed.selectedPosterTheme;
       if (parsed.exportFormat) state.exportFormat = parsed.exportFormat;
       if (Array.isArray(parsed.matches)) state.matches = parsed.matches;
-
-      // Sync setup inputs
-      if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
-      if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
-
-      matchChips.forEach((chip) => {
-        if (parseInt(chip.dataset.matches, 10) === state.totalMatches) {
-          chip.classList.add("active");
-        } else {
-          chip.classList.remove("active");
-        }
-      });
+      else state.matches = [];
+    } else {
+      // Fresh clean lobby defaults
+      state.tournamentTitle = defaultTitle;
+      state.totalMatches = 6;
+      state.teams = [...DEFAULT_TEAMS];
+      state.teamRosters = {};
+      state.selectedMatchIndex = 0;
+      state.positionDisplayMode = "points";
+      state.selectedPosterTheme = "red";
+      state.exportFormat = "jpg";
+      state.matches = [];
+      initMatchesState();
     }
+
+    // Sync setup inputs
+    if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
+    if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
+
+    matchChips.forEach((chip) => {
+      if (parseInt(chip.dataset.matches, 10) === state.totalMatches) {
+        chip.classList.add("active");
+      } else {
+        chip.classList.remove("active");
+      }
+    });
+
+    updateLobbyUI();
   } catch (err) {
     console.warn("Could not load tournament state from localStorage:", err);
   }
@@ -4462,10 +4629,12 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
     };
   });
 
+  const lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
+  const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
   const now = new Date().toLocaleString();
   const rowsToAppend = teamsDataPayload.map((team) => [
     now,
-    state.tournamentTitle || 'Free Fire Scrims',
+    `[${lobbyInfo.label}] ${state.tournamentTitle || 'Free Fire Scrims'}`,
     `Match ${matchNumber}`,
     team.placement !== undefined && team.placement !== '' ? Number(team.placement) : '-',
     team.teamName || 'Unknown Team',
@@ -4484,11 +4653,13 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData) {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "append_sheet",
+          lobbyId: lobbyId,
+          lobbyName: lobbyInfo.label,
           sheetRows: rowsToAppend
         })
       });
-      console.log(`[Google Sheets Webhook] Match ${matchNumber} scores synced directly via Webhook.`);
-      showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets & Drive!`, "success");
+      console.log(`[Google Sheets Webhook] Match ${matchNumber} scores synced directly via Webhook (${lobbyInfo.label}).`);
+      showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets (${lobbyInfo.label}) & Drive!`, "success");
       return { success: true };
     } catch (whErr) {
       console.warn("[Google Sheets Webhook Sync Warning]", whErr);
@@ -4800,10 +4971,15 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
   }
 
   try {
+    const lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
+    const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
+    const lobbyPrefix = lobbyId.toUpperCase();
     const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
-    const filename = `FreeFire_${safeTitle}_AutoBackup.json`;
+    const filename = `FreeFire_${lobbyPrefix}_${safeTitle}_AutoBackup.json`;
 
     const backupData = {
+      lobbyId: lobbyId,
+      lobbyName: lobbyInfo.label,
       tournamentTitle: state.tournamentTitle,
       totalMatches: state.totalMatches,
       teams: state.teams,
@@ -4823,6 +4999,8 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           action: "backup",
+          lobbyId: lobbyId,
+          lobbyName: lobbyInfo.label,
           filename,
           backupData
         })
@@ -4840,7 +5018,7 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
         autosaveStatusPill.classList.remove("syncing-drive", "saving");
         autosaveStatusPill.classList.add("drive-synced");
         autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
-        autosaveStatusPill.title = `Auto-saved to Google Drive folder (${GOOGLE_DRIVE_FOLDER_ID}) as ${filename} at ${timeStr} (Zero-Login Webhook)`;
+        autosaveStatusPill.title = `Auto-saved to Google Drive folder (${GOOGLE_DRIVE_FOLDER_ID}) as ${filename} at ${timeStr} (${lobbyInfo.label} Webhook)`;
       }
       console.log(`[Google Drive Webhook Auto-Sync] Tournament backup synced (${filename})`);
       return { success: true };
@@ -4849,14 +5027,14 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
     const jsonStr = JSON.stringify(backupData, null, 2);
     const base64Data = "data:application/json;base64," + btoa(unescape(encodeURIComponent(jsonStr)));
 
-    const storageKey = `ff_drive_autobackup_id_${safeTitle}`;
+    const storageKey = `ff_drive_autobackup_id_${lobbyPrefix}_${safeTitle}`;
     const cachedFileId = localStorage.getItem(storageKey) || null;
 
     const result = await uploadFileToDrive({
       filename,
       mimeType: "application/json",
       base64Data,
-      description: `Auto-saved tournament state for ${state.tournamentTitle || "Free Fire Scrims"}`,
+      description: `Auto-saved tournament state for ${lobbyInfo.label} - ${state.tournamentTitle || "Free Fire Scrims"}`,
       fileId: cachedFileId,
       updateIfExists: true,
       silent: true
@@ -4926,7 +5104,12 @@ async function handleCloudDriveBackup() {
   btnCloudBackup.innerHTML = `<span>⏳ UPLOADING...</span>`;
 
   try {
+    const lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
+    const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
+    const lobbyPrefix = lobbyId.toUpperCase();
     const backupData = {
+      lobbyId: lobbyId,
+      lobbyName: lobbyInfo.label,
       tournamentTitle: state.tournamentTitle,
       totalMatches: state.totalMatches,
       teams: state.teams,
@@ -4935,7 +5118,7 @@ async function handleCloudDriveBackup() {
       savedAt: new Date().toISOString()
     };
 
-    const filename = `${(state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_")}_Backup_${Date.now()}.json`;
+    const filename = `FreeFire_${lobbyPrefix}_${(state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_")}_Backup_${Date.now()}.json`;
     const base64Data = "data:application/json;base64," + btoa(unescape(encodeURIComponent(JSON.stringify(backupData, null, 2))));
 
     const result = await uploadFileToDrive({
@@ -4994,5 +5177,22 @@ async function handleCloudDrivePosterExport(format = "jpg") {
       alert(`⚠️ Could not upload poster to Google Drive: ${err.message}`);
     }
   });
+}
+
+// Node.js CommonJS exports for test suites
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    state,
+    DEFAULT_TEAMS,
+    LOBBY_CONFIGS,
+    getActiveLobbyId,
+    getLobbyStorageKey,
+    updateLobbyUI,
+    switchLobby,
+    saveState,
+    loadSavedState,
+    handleExecuteTournamentReset,
+    calculateTeamMatchScore
+  };
 }
 
