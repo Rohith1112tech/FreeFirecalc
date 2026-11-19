@@ -217,6 +217,7 @@ function switchLobby(newLobbyId) {
   if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
     setupScreen.classList.remove("active");
     tournamentScreen.classList.add("active");
+    if (btnBackSetup) btnBackSetup.style.display = "inline-flex";
     if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
     if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
     renderMatchSelectors();
@@ -229,6 +230,7 @@ function switchLobby(newLobbyId) {
     // Show Admin Setup Screen for target lobby
     tournamentScreen.classList.remove("active");
     setupScreen.classList.add("active");
+    if (btnBackSetup) btnBackSetup.style.display = "none";
     if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
     if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
     renderTeamInputs();
@@ -1098,15 +1100,21 @@ function bindEvents() {
   btnStartTournament.addEventListener("click", handleStartTournament);
 
   // Back to setup button
-  btnBackSetup.addEventListener("click", () => {
-    state.activeScreen = "setup";
-    saveState();
-    showSetupScreen();
-  });
+  if (btnBackSetup) {
+    btnBackSetup.addEventListener("click", () => {
+      state.activeScreen = "setup";
+      saveState();
+      showSetupScreen();
+    });
+  }
 
   // Reset Tournament Button - Triggers Confirmation Modal (Prompt 6)
   if (btnResetTournament) {
     btnResetTournament.addEventListener("click", openResetConfirmationModal);
+  }
+  const btnSetupReset = document.getElementById("btn-setup-reset");
+  if (btnSetupReset) {
+    btnSetupReset.addEventListener("click", openResetConfirmationModal);
   }
 
   // Reset Modal Controls (Prompt 6)
@@ -1363,6 +1371,7 @@ function handleStartTournament() {
 function showSetupScreen() {
   tournamentScreen.classList.remove("active");
   setupScreen.classList.add("active");
+  if (btnBackSetup) btnBackSetup.style.display = "none";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1372,6 +1381,7 @@ function showSetupScreen() {
 function showTournamentScreen() {
   setupScreen.classList.remove("active");
   tournamentScreen.classList.add("active");
+  if (btnBackSetup) btnBackSetup.style.display = "inline-flex";
 
   activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
   displayTotalMatchesEl.textContent = state.totalMatches;

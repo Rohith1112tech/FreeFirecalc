@@ -52,6 +52,13 @@
             <span class="sync-spin-icon" id="sync-spin-icon">🔄</span>
             <span class="sync-btn-text" id="sync-btn-text">SYNC FROM CLOUD</span>
           </button>
+          <button type="button" class="lobby-back-setup-btn" id="btn-back-setup" style="display: none;" title="Return to Admin Configuration & Teams Setup">
+            <span>⚙️ EDIT SETUP</span>
+          </button>
+          <button type="button" class="lobby-reset-btn" id="btn-reset-tournament" title="Reset tournament for active lobby and start fresh">
+            <span class="reset-icon">🗑️</span>
+            <span class="reset-btn-text">RESET TOURNAMENT</span>
+          </button>
           <div class="lobby-sync-tag" id="lobby-active-sync-badge">
             <span class="active-dot"></span>
             <span id="lobby-active-badge-text">LOBBY 1 ACTIVE</span>
@@ -136,6 +143,9 @@
                   </button>
                   <button type="button" id="btn-clear-teams" class="action-ghost-btn danger">
                     <span>🗑️ Clear Names</span>
+                  </button>
+                  <button type="button" id="btn-setup-reset" class="action-ghost-btn danger" title="Reset tournament for active lobby and start fresh">
+                    <span>🗑️ Reset Tournament</span>
                   </button>
                 </div>
               </div>
@@ -276,27 +286,6 @@
               <span class="meta-divider">•</span>
               <span class="meta-tag">STATUS: <b class="status-ready" id="status-ready-text">READY FOR MATCH SCORING</b></span>
             </div>
-          </div>
-
-          <div class="tourney-controls">
-            <button type="button" id="btn-share-results-top" class="cyber-btn primary-action-btn" title="Generate shareable URL for players without screenshots">
-              <span>🔗 SHARE LINK</span>
-            </button>
-            <button type="button" id="btn-google-account" class="cyber-btn" title="Zero-Login Google Drive & Sheets Cloud Auto-Sync">
-              <span>☁️ CLOUD DRIVE SYNC</span>
-            </button>
-            <button type="button" id="btn-sync-sheets" class="cyber-btn" title="Push match scores directly to Google Spreadsheet">
-              <span>📊 SYNC SHEETS</span>
-            </button>
-            <button type="button" id="btn-cloud-backup" class="cyber-btn primary-action-btn" title="Save JSON Backup directly to Google Drive folder">
-              <span>☁️ DRIVE BACKUP</span>
-            </button>
-            <button type="button" id="btn-back-setup" class="cyber-btn secondary-btn">
-              <span>⚙️ EDIT SETUP / TEAMS</span>
-            </button>
-            <button type="button" id="btn-reset-tournament" class="cyber-btn danger-btn">
-              <span>🗑️ RESET TOURNAMENT</span>
-            </button>
           </div>
         </div>
 
