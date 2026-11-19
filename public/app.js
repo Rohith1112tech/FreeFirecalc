@@ -89,8 +89,8 @@ function getLobbyStorageKey(lobbyId = (typeof state !== "undefined" && state.act
 const state = {
   activeLobby: "lobby1",
   tournamentTitle: "NZ PAID SCRIMS - LOBBY 01",
-  totalMatches: 6,
-  teams: [...DEFAULT_TEAMS],
+  totalMatches: 3,
+  teams: Array(12).fill(""),
   teamRosters: {}, // Keyed by team index (0..11): [p1, p2, p3, p4]
   activeScreen: "setup", // 'setup' | 'tournament'
   activeSubView: "view-match-input", // 'view-match-input' | 'view-leaderboard' | 'view-matrix'
@@ -931,28 +931,32 @@ function bindEvents() {
     saveState();
   });
 
-  // Autofill button
-  btnQuickFill.addEventListener("click", () => {
-    state.teams = [...DEFAULT_TEAMS];
-    const inputs = teamsInputContainer.querySelectorAll(".team-name-input");
-    inputs.forEach((input, idx) => {
-      input.value = DEFAULT_TEAMS[idx] || "";
-    });
-    updateFilledCount();
-    clearError();
-  });
-
-  // Clear teams button
-  btnClearTeams.addEventListener("click", () => {
-    if (confirm("Clear all 12 team names?")) {
-      state.teams = Array(12).fill("");
+  // Autofill button (if present)
+  if (btnQuickFill) {
+    btnQuickFill.addEventListener("click", () => {
+      state.teams = [...DEFAULT_TEAMS];
       const inputs = teamsInputContainer.querySelectorAll(".team-name-input");
-      inputs.forEach((input) => {
-        input.value = "";
+      inputs.forEach((input, idx) => {
+        input.value = DEFAULT_TEAMS[idx] || "";
       });
       updateFilledCount();
-    }
-  });
+      clearError();
+    });
+  }
+
+  // Clear teams button (if present)
+  if (btnClearTeams) {
+    btnClearTeams.addEventListener("click", () => {
+      if (confirm("Clear all 12 team names?")) {
+        state.teams = Array(12).fill("");
+        const inputs = teamsInputContainer.querySelectorAll(".team-name-input");
+        inputs.forEach((input) => {
+          input.value = "";
+        });
+        updateFilledCount();
+      }
+    });
+  }
 
   // --- Roster Actions & Paste Lineup Modal Events (Prompt 9) ---
   if (btnOpenPasteModal && pasteLineupModalBackdrop) {
@@ -3269,8 +3273,8 @@ function handleExecuteTournamentReset() {
 
   // 2. Reset app state back to defaults for active lobby
   state.tournamentTitle = lobbyInfo.defaultTitle;
-  state.totalMatches = 6;
-  state.teams = [...DEFAULT_TEAMS];
+  state.totalMatches = 3;
+  state.teams = Array(12).fill("");
   state.teamRosters = {};
   state.activeScreen = "setup";
   state.activeSubView = "view-match-input";
@@ -3289,7 +3293,7 @@ function handleExecuteTournamentReset() {
   if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
 
   matchChips.forEach((chip) => {
-    if (parseInt(chip.dataset.matches, 10) === 6) {
+    if (parseInt(chip.dataset.matches, 10) === 3) {
       chip.classList.add("active");
     } else {
       chip.classList.remove("active");
@@ -3401,9 +3405,9 @@ function loadSavedState(targetLobbyId) {
 
       if (parsed.tournamentTitle) state.tournamentTitle = parsed.tournamentTitle;
       else state.tournamentTitle = defaultTitle;
-      if (parsed.totalMatches) state.totalMatches = parseInt(parsed.totalMatches, 10) || 6;
+      if (parsed.totalMatches) state.totalMatches = parseInt(parsed.totalMatches, 10) || 3;
       if (Array.isArray(parsed.teams) && parsed.teams.length > 0) state.teams = parsed.teams;
-      else state.teams = [...DEFAULT_TEAMS];
+      else state.teams = Array(12).fill("");
       if (parsed.teamRosters && typeof parsed.teamRosters === "object") state.teamRosters = parsed.teamRosters;
       else state.teamRosters = {};
       state.activeScreen = parsed.activeScreen || "setup";
@@ -3416,8 +3420,8 @@ function loadSavedState(targetLobbyId) {
     } else {
       // Fresh clean lobby defaults
       state.tournamentTitle = defaultTitle;
-      state.totalMatches = 6;
-      state.teams = [...DEFAULT_TEAMS];
+      state.totalMatches = 3;
+      state.teams = Array(12).fill("");
       state.teamRosters = {};
       state.activeScreen = "setup"; // Fresh lobby starts on setup screen!
       state.activeSubView = "view-match-input";

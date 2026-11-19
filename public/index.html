@@ -103,13 +103,13 @@
                     <span class="required-star">*</span>
                   </label>
                   <div class="cyber-input-wrap match-count-wrap">
-                    <input type="number" id="total-matches" class="cyber-input num-input" min="1" max="20" value="6" required>
+                    <input type="number" id="total-matches" class="cyber-input num-input" min="1" max="20" value="3" required>
                     <span class="input-glow"></span>
                   </div>
                   <div class="quick-match-chips">
-                    <button type="button" class="chip-btn" data-matches="3">3 Matches</button>
+                    <button type="button" class="chip-btn active" data-matches="3">3 Matches</button>
                     <button type="button" class="chip-btn" data-matches="4">4 Matches</button>
-                    <button type="button" class="chip-btn active" data-matches="6">6 Matches</button>
+                    <button type="button" class="chip-btn" data-matches="6">6 Matches</button>
                     <button type="button" class="chip-btn" data-matches="8">8 Matches</button>
                   </div>
                   <p class="field-hint">Specify how many scrim matches will be scored in this tournament.</p>
@@ -134,19 +134,6 @@
                     <div class="rule-chip"><span class="k">#11-#12</span>: <span class="v">0 pts</span></div>
                     <div class="rule-chip kill-rule"><span class="k">💀 1 Kill</span>: <span class="v">+1 pt</span></div>
                   </div>
-                </div>
-
-                <!-- Quick Actions for Teams -->
-                <div class="quick-actions-bar">
-                  <button type="button" id="btn-quick-fill" class="action-ghost-btn">
-                    <span>⚡ Autofill Sample Teams</span>
-                  </button>
-                  <button type="button" id="btn-clear-teams" class="action-ghost-btn danger">
-                    <span>🗑️ Clear Names</span>
-                  </button>
-                  <button type="button" id="btn-setup-reset" class="action-ghost-btn danger" title="Reset tournament for active lobby and start fresh">
-                    <span>🗑️ Reset Tournament</span>
-                  </button>
                 </div>
               </div>
             </div>
@@ -198,7 +185,7 @@
                   <h2>COMPETING TEAMS &amp; PLAYER ROSTERS</h2>
                 </div>
                 <div class="roster-counter">
-                  <span id="teams-filled-count">12</span> REGISTERED TEAMS
+                  <span id="teams-filled-count">0</span> REGISTERED TEAMS
                 </div>
               </div>
 
