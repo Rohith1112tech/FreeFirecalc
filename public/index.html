@@ -315,6 +315,21 @@
               </div>
             </div>
 
+            <!-- Mode Switcher: MANUAL vs AUTO PASTE -->
+            <div class="match-mode-tabs-bar">
+              <span class="match-mode-label">INPUT METHOD:</span>
+              <div class="match-mode-btns">
+                <button type="button" class="match-mode-btn active" id="btn-mode-manual">
+                  <span class="mode-icon">✍️</span>
+                  <span>MANUAL INPUT (MATCH 1, 2, 3)</span>
+                </button>
+                <button type="button" class="match-mode-btn" id="btn-mode-auto">
+                  <span class="mode-icon">⚡</span>
+                  <span>AUTO PASTE (MATCH 1, 2, 3)</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Tab strip for matches (e.g. Match 1, Match 2...) -->
             <div class="match-tabs-strip" id="match-tabs-container">
               <!-- Dynamically populated buttons -->
@@ -332,24 +347,83 @@
               <span id="match-success-message">Match 1 data saved successfully! Standings updated.</span>
             </div>
 
-            <!-- Form for 12 Teams Match Input Grid -->
-            <div class="match-teams-grid" id="match-teams-grid-container">
-              <!-- Dynamically populated 12 team forms -->
+            <!-- 1. MANUAL ENTRY CONTAINER (12 Team Cards + Save Button) -->
+            <div id="manual-match-container" class="manual-match-container">
+              <!-- Form for 12 Teams Match Input Grid -->
+              <div class="match-teams-grid" id="match-teams-grid-container">
+                <!-- Dynamically populated 12 team forms -->
+              </div>
+
+              <!-- Save Match Data Action Bar -->
+              <div class="match-save-footer">
+                <div class="save-status-info" id="save-status-info">
+                  All 12 teams must have a unique Placement (1-12) and valid Kills.
+                </div>
+                <button type="button" id="btn-save-match-data" class="cyber-btn primary-start-btn save-match-btn">
+                  <span class="btn-cutout-left"></span>
+                  <span class="btn-content">
+                    <span class="btn-flame-icon" id="save-match-btn-icon">💾</span>
+                    <span class="btn-text" id="save-match-btn-text">SAVE MATCH DATA</span>
+                  </span>
+                  <span class="btn-cutout-right"></span>
+                </button>
+              </div>
             </div>
 
-            <!-- Save Match Data Action Bar -->
-            <div class="match-save-footer">
-              <div class="save-status-info" id="save-status-info">
-                All 12 teams must have a unique Placement (1-12) and valid Kills.
+            <!-- 2. AUTO ENTRY CONTAINER (Paste Match Results Table) -->
+            <div id="auto-match-container" class="auto-match-panel" style="display: none;">
+              <div class="auto-paste-header">
+                <div class="auto-paste-title-wrap">
+                  <span class="auto-paste-icon">📋</span>
+                  <div>
+                    <h3 class="auto-paste-title" id="auto-paste-title">AUTO MATCH 1 DATA (PASTE TABLE)</h3>
+                    <span class="auto-paste-subtitle">Paste match results table from Excel, Google Sheets, or text format</span>
+                  </div>
+                </div>
+                <button type="button" class="action-ghost-btn" id="btn-auto-sample-table" title="Load sample table format">
+                  <span>💡 Load Sample Format</span>
+                </button>
               </div>
-              <button type="button" id="btn-save-match-data" class="cyber-btn primary-start-btn save-match-btn">
-                <span class="btn-cutout-left"></span>
-                <span class="btn-content">
-                  <span class="btn-flame-icon" id="save-match-btn-icon">💾</span>
-                  <span class="btn-text" id="save-match-btn-text">SAVE MATCH DATA</span>
-                </span>
-                <span class="btn-cutout-right"></span>
-              </button>
+
+              <div class="auto-paste-textarea-wrap">
+                <textarea id="auto-match-paste-input" class="cyber-textarea auto-paste-textarea" rows="8" placeholder="Paste your match results table here...&#10;&#10;Format:&#10; Rank	Team Name	Match Pos	Place Pts	Eliminations	Total Points&#10;1	JACK DANIELS	2nd	9	22	31&#10;2	SEVENSHOT ACADEMY	1st	12	13	25&#10;..."></textarea>
+              </div>
+
+              <div class="auto-paste-actions">
+                <button type="button" id="btn-parse-auto-match" class="cyber-btn primary-start-btn">
+                  <span class="btn-cutout-left"></span>
+                  <span class="btn-content">
+                    <span class="btn-flame-icon">⚡</span>
+                    <span class="btn-text" id="btn-parse-auto-match-text">PARSE &amp; SAVE MATCH 1</span>
+                  </span>
+                  <span class="btn-cutout-right"></span>
+                </button>
+                <button type="button" id="btn-clear-auto-match" class="action-ghost-btn danger">
+                  <span>↺ Clear</span>
+                </button>
+              </div>
+
+              <div id="auto-match-alert" class="auto-paste-feedback-box" style="display: none;"></div>
+
+              <div id="auto-match-preview-wrap" class="auto-paste-preview-wrap" style="display: none;">
+                <h4 class="auto-preview-title">📊 PARSED MATCH DATA PREVIEW</h4>
+                <div class="table-responsive">
+                  <table class="auto-preview-table" id="auto-preview-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>TEAM NAME</th>
+                        <th>MATCH POS</th>
+                        <th>PLACE PTS</th>
+                        <th>ELIMINATIONS</th>
+                        <th>TOTAL PTS</th>
+                      </tr>
+                    </thead>
+                    <tbody id="auto-preview-tbody">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         </div>

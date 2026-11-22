@@ -98,6 +98,7 @@ const state = {
   selectedPosterTheme: "red", // 'red' (Red Crimson) | 'cyan' (Cyan Storm)
   exportFormat: "jpg", // 'jpg' default
   selectedMatchIndex: 0, // 0-indexed (0 = Match 1)
+  matchInputMode: "manual", // 'manual' | 'auto'
   // Match history & scores
   matches: []
 };
@@ -293,6 +294,21 @@ const matchTeamsGridContainer = document.getElementById("match-teams-grid-contai
 const btnSaveMatchData = document.getElementById("btn-save-match-data");
 const saveMatchBtnText = document.getElementById("save-match-btn-text");
 const saveMatchBtnIcon = document.getElementById("save-match-btn-icon");
+
+// Manual vs Auto Match Mode & Auto Match Elements
+const btnModeManual = document.getElementById("btn-mode-manual");
+const btnModeAuto = document.getElementById("btn-mode-auto");
+const manualMatchContainer = document.getElementById("manual-match-container");
+const autoMatchContainer = document.getElementById("auto-match-container");
+const autoPasteTitle = document.getElementById("auto-paste-title");
+const btnParseAutoMatchText = document.getElementById("btn-parse-auto-match-text");
+const autoMatchPasteInput = document.getElementById("auto-match-paste-input");
+const btnParseAutoMatch = document.getElementById("btn-parse-auto-match");
+const btnAutoSampleTable = document.getElementById("btn-auto-sample-table");
+const btnClearAutoMatch = document.getElementById("btn-clear-auto-match");
+const autoMatchAlert = document.getElementById("auto-match-alert");
+const autoMatchPreviewWrap = document.getElementById("auto-match-preview-wrap");
+const autoPreviewTbody = document.getElementById("auto-preview-tbody");
 
 // Leaderboard Rows & Controls (Prompt 4 & 5)
 const scrimsLeaderboardRowsEl = document.getElementById("scrims-leaderboard-rows");
@@ -1167,6 +1183,25 @@ function bindEvents() {
   // Save Match Data Button (Prompt 2)
   btnSaveMatchData.addEventListener("click", handleSaveMatchData);
 
+  // Manual vs Auto Match Mode Switching
+  if (btnModeManual) {
+    btnModeManual.addEventListener("click", () => switchMatchInputMode("manual"));
+  }
+  if (btnModeAuto) {
+    btnModeAuto.addEventListener("click", () => switchMatchInputMode("auto"));
+  }
+
+  // Auto Match Actions
+  if (btnParseAutoMatch) {
+    btnParseAutoMatch.addEventListener("click", handleParseAndSaveAutoMatch);
+  }
+  if (btnAutoSampleTable) {
+    btnAutoSampleTable.addEventListener("click", handleLoadSampleTable);
+  }
+  if (btnClearAutoMatch) {
+    btnClearAutoMatch.addEventListener("click", handleClearAutoMatch);
+  }
+
   // Quick Auto-Assign unique ranks helper
   if (btnQuickFillScores) {
     btnQuickFillScores.addEventListener("click", handleAutoAssignRanks);
@@ -1448,11 +1483,21 @@ function switchSubView(viewId) {
 }
 
 /**
- * Render Match Selector Dropdown and Tabs Strip (Prompt 2 & 7)
+ * Render Match Selector Dropdown and Tabs Strip (Manual vs Auto Mode)
  */
 function renderMatchSelectors() {
   matchSelectDropdown.innerHTML = "";
   matchTabsContainer.innerHTML = "";
+
+  const isAuto = state.matchInputMode === "auto";
+
+  // Toggle active styling on mode buttons
+  if (btnModeManual) btnModeManual.classList.toggle("active", !isAuto);
+  if (btnModeAuto) btnModeAuto.classList.toggle("active", isAuto);
+
+  // Toggle visibility of Manual vs Auto container
+  if (manualMatchContainer) manualMatchContainer.style.display = isAuto ? "none" : "block";
+  if (autoMatchContainer) autoMatchContainer.style.display = isAuto ? "block" : "none";
 
   for (let i = 0; i < state.totalMatches; i++) {
     const matchNum = i + 1;
@@ -1462,7 +1507,8 @@ function renderMatchSelectors() {
     // Dropdown Option
     const option = document.createElement("option");
     option.value = i;
-    option.textContent = `Match ${matchNum} ${isSaved ? "(Saved ✓ - Click to Edit)" : "(Pending)"}`;
+    const prefix = isAuto ? "⚡ Auto Match" : "Match";
+    option.textContent = `${prefix} ${matchNum} ${isSaved ? "(Saved ✓)" : "(Pending)"}`;
     if (i === state.selectedMatchIndex) option.selected = true;
     matchSelectDropdown.appendChild(option);
 
@@ -1472,13 +1518,13 @@ function renderMatchSelectors() {
     tabBtn.className = `match-tab-btn ${i === state.selectedMatchIndex ? "active" : ""} ${isSaved ? "saved" : ""}`;
     tabBtn.dataset.index = i;
     
-    // In Prompt 7: Add an explicit ✏️ Edit badge if the match is already saved
+    const label = isAuto ? `⚡ AUTO MATCH ${matchNum}` : `MATCH ${matchNum}`;
     let tabContent = `
       <span class="tab-status-dot"></span>
-      <span>MATCH ${matchNum}</span>
+      <span>${label}</span>
     `;
     if (isSaved) {
-      tabContent += `<span class="tab-edit-pill">✏️ EDIT</span>`;
+      tabContent += `<span class="tab-edit-pill">SAVED ✓</span>`;
     }
 
     tabBtn.innerHTML = tabContent;
@@ -1490,8 +1536,310 @@ function renderMatchSelectors() {
     matchTabsContainer.appendChild(tabBtn);
   }
 
+  if (isAuto) {
+    updateAutoMatchView();
+  }
+
   renderCompletedMatchesManager();
   updateActiveMatchBanner();
+}
+
+/**
+ * Switch between Manual and Auto match input modes
+ */
+function switchMatchInputMode(mode) {
+  state.matchInputMode = mode;
+  renderMatchSelectors();
+  if (mode === "manual") {
+    renderMatchTeamForms();
+  } else {
+    updateAutoMatchView();
+  }
+}
+
+/**
+ * Update Auto Match View elements for the currently selected match
+ */
+function updateAutoMatchView() {
+  const matchNum = state.selectedMatchIndex + 1;
+  const matchData = state.matches[state.selectedMatchIndex];
+
+  if (autoPasteTitle) {
+    autoPasteTitle.textContent = `AUTO MATCH ${matchNum} DATA (PASTE TABLE)`;
+  }
+  if (btnParseAutoMatchText) {
+    btnParseAutoMatchText.textContent = `PARSE & SAVE MATCH ${matchNum}`;
+  }
+
+  if (autoMatchAlert) {
+    autoMatchAlert.style.display = "none";
+    autoMatchAlert.textContent = "";
+  }
+
+  if (matchData && matchData.isSaved && Array.isArray(matchData.teamData) && matchData.teamData.length > 0) {
+    renderAutoMatchPreview(matchData.teamData);
+  } else {
+    if (autoMatchPreviewWrap) autoMatchPreviewWrap.style.display = "none";
+    if (autoPreviewTbody) autoPreviewTbody.innerHTML = "";
+  }
+}
+
+/**
+ * Render Live Parsed Match Preview Table
+ */
+function renderAutoMatchPreview(teamData) {
+  if (!autoMatchPreviewWrap || !autoPreviewTbody) return;
+  autoPreviewTbody.innerHTML = "";
+
+  const sorted = [...teamData].sort((a, b) => {
+    const pA = parseInt(a.placement, 10) || 999;
+    const pB = parseInt(b.placement, 10) || 999;
+    return pA - pB;
+  });
+
+  sorted.forEach((t, idx) => {
+    const tr = document.createElement("tr");
+    const p = parseInt(t.placement, 10) || 0;
+    const placePts = PLACEMENT_POINTS[p] !== undefined ? PLACEMENT_POINTS[p] : 0;
+    const kills = parseInt(t.kills, 10) || 0;
+    const total = placePts + kills - (parseInt(t.minus, 10) || 0);
+
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td style="font-weight: 800; color: #ffffff;">${escapeHtml(t.teamName)}</td>
+      <td><span style="color: #38bdf8; font-weight: 700;">#${p || "-"}</span></td>
+      <td>${placePts}</td>
+      <td><span style="color: #f87171; font-weight: 700;">${kills}</span></td>
+      <td><span style="color: #34d399; font-weight: 800;">${total}</span></td>
+    `;
+    autoPreviewTbody.appendChild(tr);
+  });
+
+  autoMatchPreviewWrap.style.display = "block";
+}
+
+/**
+ * Show feedback alert for auto match parsing
+ */
+function showAutoMatchFeedback(msg, type = "success") {
+  if (!autoMatchAlert) return;
+  autoMatchAlert.className = `auto-paste-feedback-box ${type}`;
+  autoMatchAlert.textContent = msg;
+  autoMatchAlert.style.display = "block";
+}
+
+/**
+ * Clear auto match paste textarea
+ */
+function handleClearAutoMatch() {
+  if (autoMatchPasteInput) autoMatchPasteInput.value = "";
+  if (autoMatchAlert) autoMatchAlert.style.display = "none";
+}
+
+/**
+ * Load sample table format into auto match paste box
+ */
+function handleLoadSampleTable() {
+  if (!autoMatchPasteInput) return;
+  autoMatchPasteInput.value = `Rank\tTeam Name\tMatch Pos\tPlace Pts\tEliminations\tTotal Points
+1\tJACK DANIELS\t2nd\t9\t22\t31
+2\tSEVENSHOT ACADEMY\t1st\t12\t13\t25
+3\tDK SPARTANZ\t5th\t6\t12\t18
+4\tRAGNAROK ESP\t8th\t3\t13\t16
+5\tCELESTIALS\t6th\t5\t9\t14
+6\tVORAX ESPORTS\t3rd\t8\t5\t13
+7\tTIS ESPORTZ\t4th\t7\t4\t11
+8\tCSS ESPORTS\t7th\t4\t0\t4
+9\tNEXIS ESPORTS\t9th\t2\t0\t2
+10\tDUREX\t11th\t0\t1\t1
+11\tXZ ESPORTS\t10th\t1\t0\t1
+12\tARES NEXES\t12th\t0\t0\t0`;
+  showAutoMatchFeedback("💡 Sample table format loaded. Click 'PARSE & SAVE MATCH' to save!", "success");
+}
+
+/**
+ * Parse Match Results Table from pasted text
+ */
+function parseMatchResultsTable(text) {
+  if (!text || !text.trim()) {
+    return { success: false, error: "Please paste match results table text." };
+  }
+
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    return { success: false, error: "No data found in pasted text." };
+  }
+
+  let startIndex = 0;
+  if (/rank|team|pos|place|elim|kill|point/i.test(lines[0])) {
+    startIndex = 1;
+  }
+
+  const parsedRows = [];
+
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    let parts = [];
+    if (line.includes("\t")) {
+      parts = line.split("\t").map((p) => p.trim()).filter(Boolean);
+    } else if (line.includes("|")) {
+      parts = line.split("|").map((p) => p.trim()).filter(Boolean);
+    } else {
+      parts = line.split(/\s{2,}/).map((p) => p.trim()).filter(Boolean);
+    }
+
+    let teamName = "";
+    let matchPos = null;
+    let placePts = 0;
+    let kills = 0;
+    let totalPts = 0;
+
+    if (parts.length >= 3) {
+      const isFirstColNumber = /^\d+$/.test(parts[0]);
+      if (isFirstColNumber && parts.length >= 4) {
+        teamName = parts[1];
+        const posMatch = (parts[2] || "").match(/(\d+)/);
+        matchPos = posMatch ? parseInt(posMatch[1], 10) : null;
+        placePts = parseInt(parts[3], 10) || 0;
+        kills = parseInt(parts[4], 10) || 0;
+        totalPts = parseInt(parts[5], 10) || 0;
+      } else {
+        teamName = parts[0];
+        const posMatch = (parts[1] || "").match(/(\d+)/);
+        matchPos = posMatch ? parseInt(posMatch[1], 10) : null;
+        placePts = parseInt(parts[2], 10) || 0;
+        kills = parseInt(parts[3], 10) || 0;
+        totalPts = parseInt(parts[4], 10) || 0;
+      }
+    } else {
+      const tokens = line.split(/\s+/).filter(Boolean);
+      if (tokens.length >= 4) {
+        const firstIdx = /^\d+$/.test(tokens[0]) ? 1 : 0;
+        const posToken = tokens[tokens.length - 4];
+        const posMatch = posToken ? posToken.match(/(\d+)/) : null;
+        if (posMatch) {
+          matchPos = parseInt(posMatch[1], 10);
+          placePts = parseInt(tokens[tokens.length - 3], 10) || 0;
+          kills = parseInt(tokens[tokens.length - 2], 10) || 0;
+          totalPts = parseInt(tokens[tokens.length - 1], 10) || 0;
+          teamName = tokens.slice(firstIdx, tokens.length - 4).join(" ");
+        }
+      }
+    }
+
+    if (teamName && matchPos !== null) {
+      const calcPlacePts = placePts || (PLACEMENT_POINTS[matchPos] !== undefined ? PLACEMENT_POINTS[matchPos] : 0);
+      parsedRows.push({
+        teamName: teamName.toUpperCase(),
+        placement: matchPos,
+        placementPoints: calcPlacePts,
+        kills: Math.max(0, kills),
+        totalPoints: totalPts || (calcPlacePts + kills)
+      });
+    }
+  }
+
+  if (parsedRows.length === 0) {
+    return {
+      success: false,
+      error: "Could not parse any team rows. Ensure format has Team Name, Placement, and Kills."
+    };
+  }
+
+  return { success: true, rows: parsedRows };
+}
+
+/**
+ * Handle Parse and Save Auto Match Data
+ */
+function handleParseAndSaveAutoMatch() {
+  if (!autoMatchPasteInput) return;
+  const rawText = autoMatchPasteInput.value.trim();
+
+  if (!rawText) {
+    showAutoMatchFeedback("⚠️ Please paste the match results table text in the box above.", "error");
+    autoMatchPasteInput.focus();
+    return;
+  }
+
+  const parseResult = parseMatchResultsTable(rawText);
+  if (!parseResult.success) {
+    showAutoMatchFeedback(`❌ Parse Error: ${parseResult.error}`, "error");
+    return;
+  }
+
+  const parsedRows = parseResult.rows;
+  const matchIdx = state.selectedMatchIndex;
+  const matchNum = matchIdx + 1;
+  const currentMatch = state.matches[matchIdx];
+
+  if (!currentMatch) {
+    showAutoMatchFeedback("⚠️ Match index not found.", "error");
+    return;
+  }
+
+  // If tournament teams in state.teams are empty, placeholders, or fewer than parsed:
+  const isDefaultTeams = !state.teams || state.teams.length === 0 || state.teams.every((t) => !t || t.trim() === "" || /^Team\s+\d+$/i.test(t));
+  if (isDefaultTeams) {
+    state.teams = parsedRows.map((r) => r.teamName);
+    state.matches.forEach((m) => {
+      m.teamData = state.teams.map((name) => ({
+        teamName: name,
+        placement: "",
+        kills: 0,
+        minus: 0
+      }));
+    });
+  } else {
+    parsedRows.forEach((r) => {
+      const exists = state.teams.some((t) => t && t.trim().toUpperCase() === r.teamName.trim().toUpperCase());
+      if (!exists) {
+        const emptyIdx = state.teams.findIndex((t) => !t || !t.trim());
+        if (emptyIdx !== -1) {
+          state.teams[emptyIdx] = r.teamName;
+        } else if (state.teams.length < 12) {
+          state.teams.push(r.teamName);
+        }
+      }
+    });
+  }
+
+  currentMatch.teamData = state.teams.map((teamName) => {
+    const row = parsedRows.find((r) => r.teamName.trim().toUpperCase() === (teamName || "").trim().toUpperCase());
+    if (row) {
+      return {
+        teamName,
+        placement: row.placement,
+        kills: row.kills,
+        minus: 0
+      };
+    } else {
+      return {
+        teamName,
+        placement: "",
+        kills: 0,
+        minus: 0
+      };
+    }
+  });
+
+  currentMatch.isSaved = true;
+
+  // Re-render UI & components
+  renderAutoMatchPreview(currentMatch.teamData);
+  renderMatchSelectors();
+  renderMatchTeamForms(); // Keep manual form synchronized!
+  updateProgressBadge();
+  renderLeaderboardRows();
+  renderMatrixTable();
+  renderSlotListRows();
+  saveState();
+
+  showAutoMatchFeedback(`✅ Match ${matchNum} parsed and saved successfully! Scores sent to Leaderboard.`, "success");
+
+  // Automatic Google Sheets & Drive Sync
+  syncMatchScoresToGoogleSheets(matchNum, currentMatch.teamData, { silent: false, lobbyId: state.activeLobby }).catch(console.warn);
+  autoSyncTournamentToDrive({ silent: true }).catch(console.warn);
 }
 
 /**
@@ -1556,6 +1904,9 @@ function selectMatch(matchIndex) {
   hideMatchAlerts();
   updateActiveMatchBanner();
   renderMatchTeamForms();
+  if (state.matchInputMode === "auto") {
+    updateAutoMatchView();
+  }
 }
 
 /**

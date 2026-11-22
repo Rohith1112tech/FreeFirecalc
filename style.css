@@ -1808,6 +1808,215 @@ body {
   box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
 }
 
+/* =====================================================================
+   MANUAL vs AUTO MATCH INPUT MODE
+===================================================================== */
+.match-mode-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(15, 18, 25, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.match-mode-label {
+  font-family: var(--font-tech);
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  letter-spacing: 1.2px;
+}
+
+.match-mode-btns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.match-mode-btn {
+  background: rgba(22, 27, 38, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all 0.2s ease;
+}
+
+.match-mode-btn:hover {
+  border-color: #38bdf8;
+  color: #ffffff;
+  background: rgba(30, 41, 59, 0.9);
+}
+
+.match-mode-btn#btn-mode-manual.active {
+  background: var(--crimson-badge-grad);
+  border-color: #ff334b;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.5);
+}
+
+.match-mode-btn#btn-mode-auto.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
+}
+
+.auto-match-panel {
+  background: rgba(14, 17, 24, 0.85);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.auto-paste-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.auto-paste-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.auto-paste-icon {
+  font-size: 1.75rem;
+}
+
+.auto-paste-title {
+  margin: 0;
+  font-family: var(--font-tech);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.auto-paste-subtitle {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: #38bdf8;
+}
+
+.auto-paste-textarea-wrap {
+  margin-bottom: 1rem;
+}
+
+.auto-paste-textarea {
+  width: 100%;
+  min-height: 200px;
+  background: rgba(8, 10, 15, 0.95);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-radius: 6px;
+  color: #f1f5f9;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  padding: 0.85rem;
+  box-sizing: border-box;
+  resize: vertical;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.auto-paste-textarea:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+}
+
+.auto-paste-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.auto-paste-feedback-box {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-family: var(--font-tech);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
+}
+
+.auto-paste-feedback-box.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.auto-paste-feedback-box.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.auto-paste-preview-wrap {
+  margin-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1rem;
+}
+
+.auto-preview-title {
+  margin: 0 0 0.75rem 0;
+  font-family: var(--font-tech);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  letter-spacing: 1px;
+}
+
+.auto-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+}
+
+.auto-preview-table th {
+  background: rgba(15, 23, 42, 0.8);
+  color: #94a3b8;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.auto-preview-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+}
+
+.auto-preview-table tr:hover td {
+  background: rgba(56, 189, 248, 0.08);
+}
+
 /* Match Tabs Strip */
 .match-tabs-strip {
   display: flex;
