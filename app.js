@@ -215,22 +215,10 @@ function switchLobby(newLobbyId) {
 
   // 4. Update Screen Visibility and Components for target lobby
   if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
-    setupScreen.classList.remove("active");
-    tournamentScreen.classList.add("active");
-    if (btnBackSetup) btnBackSetup.style.display = "inline-flex";
-    if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
-    if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
-    renderMatchSelectors();
-    renderMatchTeamForms();
-    updateProgressBadge();
-    renderLeaderboardRows();
-    renderMatrixTable();
-    updateActiveMatchBanner();
+    showTournamentScreen();
   } else {
     // Show Admin Setup Screen for target lobby
-    tournamentScreen.classList.remove("active");
-    setupScreen.classList.add("active");
-    if (btnBackSetup) btnBackSetup.style.display = "none";
+    showSetupScreen();
     if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
     if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
     renderTeamInputs();
@@ -418,11 +406,13 @@ document.addEventListener("DOMContentLoaded", () => {
   handleOAuthCallbackFromUrl();
   checkOAuthStatusUI();
 
-  if (state.activeScreen === "tournament" || hasShared) {
+  if ((state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) || hasShared) {
     showTournamentScreen();
     if (hasShared) {
       switchSubView("view-leaderboard");
     }
+  } else {
+    showSetupScreen();
   }
 
   // Cross-device cloud sync: Automatically pull latest cloud backup for this lobby on load
@@ -1401,9 +1391,11 @@ function handleStartTournament() {
  * Switch to Setup Screen
  */
 function showSetupScreen() {
+  state.activeScreen = "setup";
   tournamentScreen.classList.remove("active");
   setupScreen.classList.add("active");
   if (btnBackSetup) btnBackSetup.style.display = "none";
+  if (btnResetTournament) btnResetTournament.style.display = "none";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1411,9 +1403,11 @@ function showSetupScreen() {
  * Switch to Tournament Screen (Screen 2)
  */
 function showTournamentScreen() {
+  state.activeScreen = "tournament";
   setupScreen.classList.remove("active");
   tournamentScreen.classList.add("active");
   if (btnBackSetup) btnBackSetup.style.display = "inline-flex";
+  if (btnResetTournament) btnResetTournament.style.display = "inline-flex";
 
   activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
   displayTotalMatchesEl.textContent = state.totalMatches;
