@@ -1178,10 +1178,14 @@ function bindEvents() {
   btnSaveMatchData.addEventListener("click", handleSaveMatchData);
 
   // Quick Auto-Assign unique ranks helper
-  btnQuickFillScores.addEventListener("click", handleAutoAssignRanks);
+  if (btnQuickFillScores) {
+    btnQuickFillScores.addEventListener("click", handleAutoAssignRanks);
+  }
 
   // Reset match inputs helper
-  btnResetMatchInputs.addEventListener("click", handleResetCurrentMatch);
+  if (btnResetMatchInputs) {
+    btnResetMatchInputs.addEventListener("click", handleResetCurrentMatch);
+  }
 
   // Leaderboard Refresh / Pull Latest Data Button (Prompt 4)
   if (btnRefreshLeaderboard) {
@@ -1570,9 +1574,11 @@ function updateActiveMatchBanner() {
 
   if (isSaved) {
     // Prompt 7 Edit Mode
-    activeMatchTitleText.textContent = `CORRECTING DATA: MATCH ${matchNum}`;
-    activeMatchStatusPill.textContent = "✏️ EDIT MODE (SAVED ✓)";
-    activeMatchStatusPill.className = "match-status-pill editing";
+    if (activeMatchTitleText) activeMatchTitleText.textContent = `CORRECTING DATA: MATCH ${matchNum}`;
+    if (activeMatchStatusPill) {
+      activeMatchStatusPill.textContent = "✏️ EDIT MODE (SAVED ✓)";
+      activeMatchStatusPill.className = "match-status-pill editing";
+    }
     if (activeMatchBanner) activeMatchBanner.classList.add("editing-saved-match");
     if (matchEditBanner) matchEditBanner.style.display = "flex";
 
@@ -1582,9 +1588,11 @@ function updateActiveMatchBanner() {
     if (saveMatchBtnIcon) saveMatchBtnIcon.textContent = "⚡";
   } else {
     // Standard Pending Data Entry
-    activeMatchTitleText.textContent = `ENTERING DATA: MATCH ${matchNum}`;
-    activeMatchStatusPill.textContent = "STATUS: PENDING";
-    activeMatchStatusPill.className = "match-status-pill";
+    if (activeMatchTitleText) activeMatchTitleText.textContent = `ENTERING DATA: MATCH ${matchNum}`;
+    if (activeMatchStatusPill) {
+      activeMatchStatusPill.textContent = "STATUS: PENDING";
+      activeMatchStatusPill.className = "match-status-pill";
+    }
     if (activeMatchBanner) activeMatchBanner.classList.remove("editing-saved-match");
     if (matchEditBanner) matchEditBanner.style.display = "none";
 
