@@ -304,8 +304,12 @@ const autoPasteTitle = document.getElementById("auto-paste-title");
 const btnParseAutoMatchText = document.getElementById("btn-parse-auto-match-text");
 const autoMatchPasteInput = document.getElementById("auto-match-paste-input");
 const btnParseAutoMatch = document.getElementById("btn-parse-auto-match");
+const btnImportAllMatches = document.getElementById("btn-import-all-matches");
 const btnAutoSampleTable = document.getElementById("btn-auto-sample-table");
 const btnClearAutoMatch = document.getElementById("btn-clear-auto-match");
+const btnToggleFormatHelp = document.getElementById("btn-toggle-format-help");
+const formatHelpContent = document.getElementById("format-help-content");
+const formatHelpArrow = document.getElementById("format-help-arrow");
 const autoMatchAlert = document.getElementById("auto-match-alert");
 const autoMatchPreviewWrap = document.getElementById("auto-match-preview-wrap");
 const autoPreviewTbody = document.getElementById("auto-preview-tbody");
@@ -717,69 +721,110 @@ function parseSlotList(rawText) {
 
   if (lines.length === 0) return {};
 
+  // Filter out image artifacts or notes copied from Gemini/web: e.g. "image_8ac428.jpg", "+ 3", etc.
+  const isImageArtifact = (l) =>
+    /\.(?:jpg|jpeg|png|webp|gif)$/i.test(l) ||
+    /^image_[a-z0-9]+/i.test(l) ||
+    /^\+\s*\d+$/.test(l);
+
   const slots = {};
-  let currentSlot = null;
 
   // Detect whether the input uses explicit "Slot X" / "SX" tokens
   const hasExplicitSlotTokens = lines.some((l) => /^(?:slot|s)\s*\d+[\s.:\-–—]*/i.test(l));
 
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+  if (hasExplicitSlotTokens) {
+    let currentSlot = null;
 
-    // Remove WhatsApp formatting bold stars e.g. *Slot 1: Team* or *1) Team*
-    line = line.replace(/^\*+|\*+$/g, "").trim();
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      if (isImageArtifact(line)) continue;
 
-    // 1. Explicit "Slot X" or "S X" e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1"
-    const explicitSlotMatch = line.match(/^(?:slot|s)\s*(\d+)[\s.:\-–—]*(.*)$/i);
-    // 2. Numbered "1. Team Name" or "1) Team Name" (only if text doesn't use explicit Slot tokens)
-    const numberedSlotMatch = !explicitSlotMatch && !hasExplicitSlotTokens && line.match(/^(\d+)[\s.:)\]\-–—]+(.*)$/);
+      // Remove WhatsApp formatting bold stars e.g. *Slot 1: Team* or *1) Team*
+      line = line.replace(/^\*+|\*+$/g, "").trim();
 
-    let detectedSlotNum = null;
-    let rawTeamName = "";
+      // Explicit "Slot X" or "S X" e.g. "Slot 1:", "Slot 01 -", "S1:", "Slot 1"
+      const explicitSlotMatch = line.match(/^(?:slot|s)\s*(\d+)[\s.:\-–—]*(.*)$/i);
 
-    if (explicitSlotMatch) {
-      detectedSlotNum = parseInt(explicitSlotMatch[1], 10);
-      rawTeamName = explicitSlotMatch[2] || "";
-    } else if (numberedSlotMatch) {
-      const num = parseInt(numberedSlotMatch[1], 10);
-      if (num >= 1 && num <= 12) {
-        detectedSlotNum = num;
-        rawTeamName = numberedSlotMatch[2] || "";
-      }
-    }
+      if (explicitSlotMatch) {
+        const detectedSlotNum = parseInt(explicitSlotMatch[1], 10);
+        if (detectedSlotNum >= 1 && detectedSlotNum <= 12) {
+          currentSlot = detectedSlotNum;
+          let rawTeamName = explicitSlotMatch[2] || "";
+          let playerString = "";
 
-    if (detectedSlotNum !== null && detectedSlotNum >= 1 && detectedSlotNum <= 12) {
-      let teamName = rawTeamName.trim();
-      // Remove trailing player count e.g. "(3 Players)", "(4 Players)", "[4P]", etc.
-      teamName = teamName.replace(/[\(\[\{]\s*\d+\s*(?:players?|p)?\s*[\)\]\}]/gi, "").trim();
-      // Remove leading punctuation
-      teamName = teamName.replace(/^[:\-–—.)\]\s]+/, "").trim();
-
-      currentSlot = detectedSlotNum;
-      slots[currentSlot] = {
-        teamName: teamName || `TEAM ${String(currentSlot).padStart(2, "0")}`,
-        players: []
-      };
-      continue;
-    }
-
-    // Otherwise, if we have an active slot, this line is a player name (or multiple comma-separated players)
-    if (currentSlot !== null && slots[currentSlot]) {
-      // Clean player line: remove leading "1.", "1)", "P1:", "Player 1:", "-", "•"
-      let cleanedPlayerLine = line.replace(/^(?:(?:p[1-4]|player\s*[1-4]|[1-4])\s*[:.\-–—)\]]\s*|[-•*]\s*)/i, "").trim();
-
-      // Check if players are comma-separated on a single line e.g. "PlayerA, PlayerB, PlayerC, PlayerD"
-      if (cleanedPlayerLine.includes(",") && slots[currentSlot].players.length === 0) {
-        const parts = cleanedPlayerLine.split(",").map((p) => p.trim()).filter(Boolean);
-        for (const p of parts) {
-          if (slots[currentSlot].players.length < 4) {
-            slots[currentSlot].players.push(p);
+          // Check if line has a colon dividing team name and player list
+          // e.g. "Wrz eSports: F2W PANEL✓, Shanks.11, Wrz.Deso28!, Wrz.krish04!"
+          if (rawTeamName.includes(":")) {
+            const colonIdx = rawTeamName.indexOf(":");
+            playerString = rawTeamName.slice(colonIdx + 1).trim();
+            rawTeamName = rawTeamName.slice(0, colonIdx).trim();
           }
+
+          let teamName = rawTeamName.trim();
+          // Remove trailing player count e.g. "(3 Players)", "(4 Players)", "[4P]", etc.
+          teamName = teamName.replace(/[\(\[\{]\s*\d+\s*(?:players?|p)?\s*[\)\]\}]/gi, "").trim();
+          // Remove leading punctuation
+          teamName = teamName.replace(/^[:\-–—.)\]\s]+/, "").trim();
+
+          const initialPlayers = [];
+          if (playerString) {
+            const parts = playerString.split(",").map((p) => p.trim()).filter((p) => p && !isImageArtifact(p));
+            parts.forEach((p) => {
+              if (initialPlayers.length < 4) initialPlayers.push(p);
+            });
+          }
+
+          slots[currentSlot] = {
+            teamName: teamName || `TEAM ${String(currentSlot).padStart(2, "0")}`,
+            players: initialPlayers
+          };
+          continue;
         }
-      } else if (cleanedPlayerLine.length > 0 && slots[currentSlot].players.length < 4) {
-        slots[currentSlot].players.push(cleanedPlayerLine);
+      }
+
+      // Otherwise, if we have an active slot, this line is a player name (or multiple comma-separated players)
+      if (currentSlot !== null && slots[currentSlot]) {
+        // Clean player line: remove leading "1.", "1)", "P1:", "Player 1:", "-", "•"
+        let cleanedPlayerLine = line.replace(/^(?:(?:p[1-4]|player\s*[1-4]|[1-4])\s*[:.\-–—)\]]\s*|[-•*]\s*)/i, "").trim();
+        if (isImageArtifact(cleanedPlayerLine)) continue;
+
+        // Check if players are comma-separated on a single line e.g. "PlayerA, PlayerB, PlayerC, PlayerD"
+        if (cleanedPlayerLine.includes(",") && slots[currentSlot].players.length === 0) {
+          const parts = cleanedPlayerLine.split(",").map((p) => p.trim()).filter((p) => p && !isImageArtifact(p));
+          for (const p of parts) {
+            if (slots[currentSlot].players.length < 4) {
+              slots[currentSlot].players.push(p);
+            }
+          }
+        } else if (cleanedPlayerLine.length > 0 && slots[currentSlot].players.length < 4) {
+          slots[currentSlot].players.push(cleanedPlayerLine);
+        }
       }
     }
+
+    return slots;
+  }
+
+  // Fallback: Numbered or simple line-by-line list (e.g. "TEAM LIST\nWrz eSports\nTபி KNIGHTS\n3.MOBILE JODZ...")
+  const cleanTeamLines = [];
+  for (let l of lines) {
+    if (isImageArtifact(l)) continue;
+    if (/team\s*list|registered\s*teams|competing\s*teams/i.test(l)) continue;
+    const numMatch = l.match(/^(\d+)[\s.:)\]\-–—]+(.*)$/);
+    if (numMatch) {
+      cleanTeamLines.push({ num: parseInt(numMatch[1], 10), name: numMatch[2].trim() });
+    } else {
+      cleanTeamLines.push({ num: null, name: l.trim() });
+    }
+  }
+
+  for (let idx = 0; idx < Math.min(12, cleanTeamLines.length); idx++) {
+    const item = cleanTeamLines[idx];
+    const slotNum = item.num && item.num >= 1 && item.num <= 12 ? item.num : idx + 1;
+    slots[slotNum] = {
+      teamName: item.name || `TEAM ${String(slotNum).padStart(2, "0")}`,
+      players: []
+    };
   }
 
   return slots;
@@ -1195,11 +1240,21 @@ function bindEvents() {
   if (btnParseAutoMatch) {
     btnParseAutoMatch.addEventListener("click", handleParseAndSaveAutoMatch);
   }
+  if (btnImportAllMatches) {
+    btnImportAllMatches.addEventListener("click", handleImportAllMatches);
+  }
   if (btnAutoSampleTable) {
     btnAutoSampleTable.addEventListener("click", handleLoadSampleTable);
   }
   if (btnClearAutoMatch) {
     btnClearAutoMatch.addEventListener("click", handleClearAutoMatch);
+  }
+  if (btnToggleFormatHelp && formatHelpContent) {
+    btnToggleFormatHelp.addEventListener("click", () => {
+      const isHidden = formatHelpContent.style.display === "none";
+      formatHelpContent.style.display = isHidden ? "block" : "none";
+      if (formatHelpArrow) formatHelpArrow.textContent = isHidden ? "▲" : "▼";
+    });
   }
 
   // Quick Auto-Assign unique ranks helper
@@ -1658,36 +1713,71 @@ function handleLoadSampleTable() {
 }
 
 /**
+ * Extract specific match section from text if multiple matches exist
+ */
+function extractMatchSection(text, matchNum) {
+  if (!text) return text;
+
+  // Look for match heading e.g. "M1", "Match 1", "Match 1 (M1) Leaderboard", "## Match 1"
+  const mRegex = new RegExp(`(?:^|\\n)\\s*(?:match\\s*${matchNum}\\b|m${matchNum}\\b)[^\\n]*`, "i");
+  const matchIndex = text.search(mRegex);
+  if (matchIndex === -1) {
+    return text;
+  }
+
+  const sub = text.slice(matchIndex);
+  const firstLineEnd = sub.indexOf("\n");
+  if (firstLineEnd === -1) return sub;
+
+  const afterFirstLine = sub.slice(firstLineEnd + 1);
+  // Match next section: e.g. M2, Match 2, Overall Standings, etc.
+  const nextSectionRegex = new RegExp(`(?:\\n\\s*(?:match\\s*(?!${matchNum}\\b)\\d+\\b|m(?!${matchNum}\\b)\\d+\\b|overall\\s+standings|final\\s+overall))`, "i");
+  const nextMatchPos = afterFirstLine.search(nextSectionRegex);
+  if (nextMatchPos !== -1) {
+    return afterFirstLine.slice(0, nextMatchPos);
+  }
+  return afterFirstLine;
+}
+
+/**
  * Parse Match Results Table from pasted text
  */
-function parseMatchResultsTable(text) {
+function parseMatchResultsTable(text, targetMatchNum = null) {
   if (!text || !text.trim()) {
     return { success: false, error: "Please paste match results table text." };
   }
 
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  if (lines.length === 0) {
-    return { success: false, error: "No data found in pasted text." };
+  let textToParse = text;
+  if (targetMatchNum !== null) {
+    textToParse = extractMatchSection(text, targetMatchNum);
   }
 
-  let startIndex = 0;
-  if (/rank|team|pos|place|elim|kill|point/i.test(lines[0])) {
-    startIndex = 1;
+  const rawLines = textToParse.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (rawLines.length === 0) {
+    return { success: false, error: "No data found in pasted text." };
   }
 
   const parsedRows = [];
 
-  for (let i = startIndex; i < lines.length; i++) {
-    const line = lines[i];
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+
+    // Skip metadata, notes, images, headers, overall standings
+    if (/^(?:match\s*\d+|m\d+\b|rank\s+team|overall|final|ready\s+for|\(calculated|image_|\+\s*\d+)/i.test(line)) {
+      continue;
+    }
+    if (/^\*+|\*+$/.test(line) || line.startsWith("---")) continue;
+
     let parts = [];
     if (line.includes("\t")) {
-      parts = line.split("\t").map((p) => p.trim()).filter(Boolean);
+      parts = line.split("\t").map((p) => p.trim()).filter((p) => p.length > 0);
     } else if (line.includes("|")) {
-      parts = line.split("|").map((p) => p.trim()).filter(Boolean);
+      parts = line.split("|").map((p) => p.trim()).filter((p) => p.length > 0);
     } else {
-      parts = line.split(/\s{2,}/).map((p) => p.trim()).filter(Boolean);
+      parts = line.split(/\s{2,}/).map((p) => p.trim()).filter((p) => p.length > 0);
     }
 
+    let rank = null;
     let teamName = "";
     let matchPos = null;
     let placePts = 0;
@@ -1695,11 +1785,19 @@ function parseMatchResultsTable(text) {
     let totalPts = 0;
 
     if (parts.length >= 3) {
-      const isFirstColNumber = /^\d+$/.test(parts[0]);
-      if (isFirstColNumber && parts.length >= 4) {
+      const rankMatch = parts[0].match(/^#?(\d+)$/);
+      if (rankMatch) {
+        rank = parseInt(rankMatch[1], 10);
         teamName = parts[1];
+
         const posMatch = (parts[2] || "").match(/(\d+)/);
-        matchPos = posMatch ? parseInt(posMatch[1], 10) : null;
+        if (posMatch) {
+          matchPos = parseInt(posMatch[1], 10);
+        } else {
+          // If pos is "-" or empty, fallback to rank (e.g. 11 or 12)
+          matchPos = rank;
+        }
+
         placePts = parseInt(parts[3], 10) || 0;
         kills = parseInt(parts[4], 10) || 0;
         totalPts = parseInt(parts[5], 10) || 0;
@@ -1714,7 +1812,10 @@ function parseMatchResultsTable(text) {
     } else {
       const tokens = line.split(/\s+/).filter(Boolean);
       if (tokens.length >= 4) {
-        const firstIdx = /^\d+$/.test(tokens[0]) ? 1 : 0;
+        const firstIsRank = /^\d+$/.test(tokens[0]);
+        rank = firstIsRank ? parseInt(tokens[0], 10) : null;
+        const firstIdx = firstIsRank ? 1 : 0;
+
         const posToken = tokens[tokens.length - 4];
         const posMatch = posToken ? posToken.match(/(\d+)/) : null;
         if (posMatch) {
@@ -1723,15 +1824,21 @@ function parseMatchResultsTable(text) {
           kills = parseInt(tokens[tokens.length - 2], 10) || 0;
           totalPts = parseInt(tokens[tokens.length - 1], 10) || 0;
           teamName = tokens.slice(firstIdx, tokens.length - 4).join(" ");
+        } else if (posToken === "-" || posToken === "–") {
+          matchPos = rank || 12;
+          placePts = parseInt(tokens[tokens.length - 3], 10) || 0;
+          kills = parseInt(tokens[tokens.length - 2], 10) || 0;
+          totalPts = parseInt(tokens[tokens.length - 1], 10) || 0;
+          teamName = tokens.slice(firstIdx, tokens.length - 4).join(" ");
         }
       }
     }
 
-    if (teamName && matchPos !== null) {
-      const calcPlacePts = placePts || (PLACEMENT_POINTS[matchPos] !== undefined ? PLACEMENT_POINTS[matchPos] : 0);
+    if (teamName && teamName.toLowerCase() !== "team name") {
+      const calcPlacePts = placePts || (matchPos && PLACEMENT_POINTS[matchPos] !== undefined ? PLACEMENT_POINTS[matchPos] : 0);
       parsedRows.push({
         teamName: teamName.toUpperCase(),
-        placement: matchPos,
+        placement: matchPos || 12,
         placementPoints: calcPlacePts,
         kills: Math.max(0, kills),
         totalPoints: totalPts || (calcPlacePts + kills)
@@ -1762,21 +1869,23 @@ function handleParseAndSaveAutoMatch() {
     return;
   }
 
-  const parseResult = parseMatchResultsTable(rawText);
+  const matchIdx = state.selectedMatchIndex;
+  const matchNum = matchIdx + 1;
+  const parseResult = parseMatchResultsTable(rawText, matchNum);
   if (!parseResult.success) {
     showAutoMatchFeedback(`❌ Parse Error: ${parseResult.error}`, "error");
     return;
   }
 
   const parsedRows = parseResult.rows;
-  const matchIdx = state.selectedMatchIndex;
-  const matchNum = matchIdx + 1;
   const currentMatch = state.matches[matchIdx];
 
   if (!currentMatch) {
     showAutoMatchFeedback("⚠️ Match index not found.", "error");
     return;
   }
+
+  const norm = (s) => (s || "").toUpperCase().replace(/[\s\-_]+/g, "");
 
   // If tournament teams in state.teams are empty, placeholders, or fewer than parsed:
   const isDefaultTeams = !state.teams || state.teams.length === 0 || state.teams.every((t) => !t || t.trim() === "" || /^Team\s+\d+$/i.test(t));
@@ -1792,7 +1901,7 @@ function handleParseAndSaveAutoMatch() {
     });
   } else {
     parsedRows.forEach((r) => {
-      const exists = state.teams.some((t) => t && t.trim().toUpperCase() === r.teamName.trim().toUpperCase());
+      const exists = state.teams.some((t) => norm(t) === norm(r.teamName));
       if (!exists) {
         const emptyIdx = state.teams.findIndex((t) => !t || !t.trim());
         if (emptyIdx !== -1) {
@@ -1805,7 +1914,7 @@ function handleParseAndSaveAutoMatch() {
   }
 
   currentMatch.teamData = state.teams.map((teamName) => {
-    const row = parsedRows.find((r) => r.teamName.trim().toUpperCase() === (teamName || "").trim().toUpperCase());
+    const row = parsedRows.find((r) => norm(r.teamName) === norm(teamName));
     if (row) {
       return {
         teamName,
@@ -1839,6 +1948,135 @@ function handleParseAndSaveAutoMatch() {
 
   // Automatic Google Sheets & Drive Sync
   syncMatchScoresToGoogleSheets(matchNum, currentMatch.teamData, { silent: false, lobbyId: state.activeLobby }).catch(console.warn);
+  autoSyncTournamentToDrive({ silent: true }).catch(console.warn);
+}
+
+/**
+ * Handle Import All Matches from text (M1, M2, M3, M4...)
+ */
+function handleImportAllMatches() {
+  if (!autoMatchPasteInput) return;
+  const rawText = autoMatchPasteInput.value.trim();
+
+  if (!rawText) {
+    showAutoMatchFeedback("⚠️ Please paste the multi-match Gemini text in the box above.", "error");
+    autoMatchPasteInput.focus();
+    return;
+  }
+
+  // Detect which matches exist in the pasted text: e.g. M1, M2, M3, M4
+  const detectedMatches = [];
+  for (let m = 1; m <= 8; m++) {
+    const res = parseMatchResultsTable(rawText, m);
+    if (res.success && res.rows && res.rows.length >= 3) {
+      detectedMatches.push({ matchNum: m, rows: res.rows });
+    }
+  }
+
+  if (detectedMatches.length === 0) {
+    // If no distinct match markers found, try parsing as single match table
+    handleParseAndSaveAutoMatch();
+    return;
+  }
+
+  // Ensure state.totalMatches accommodates all detected matches
+  const maxMatchNum = Math.max(...detectedMatches.map((d) => d.matchNum));
+  if (maxMatchNum > state.totalMatches) {
+    state.totalMatches = maxMatchNum;
+    const matchCountInput = document.getElementById("total-matches-input");
+    if (matchCountInput) matchCountInput.value = state.totalMatches;
+  }
+
+  // Ensure state.matches has enough entries
+  while (state.matches.length < state.totalMatches) {
+    const idx = state.matches.length;
+    state.matches.push({
+      matchIndex: idx,
+      isSaved: false,
+      teamData: state.teams.map((t) => ({ teamName: t, placement: "", kills: 0, minus: 0 }))
+    });
+  }
+
+  const norm = (s) => (s || "").toUpperCase().replace(/[\s\-_]+/g, "");
+
+  // Collect all unique team names from all matches if state.teams is default
+  const isDefaultTeams = !state.teams || state.teams.length === 0 || state.teams.every((t) => !t || t.trim() === "" || /^Team\s+\d+$/i.test(t));
+  if (isDefaultTeams) {
+    const allTeams = [];
+    detectedMatches.forEach((d) => {
+      d.rows.forEach((r) => {
+        if (!allTeams.some((t) => norm(t) === norm(r.teamName)) && allTeams.length < 12) {
+          allTeams.push(r.teamName);
+        }
+      });
+    });
+    state.teams = allTeams;
+    state.matches.forEach((m) => {
+      m.teamData = state.teams.map((name) => ({ teamName: name, placement: "", kills: 0, minus: 0 }));
+    });
+  } else {
+    detectedMatches.forEach((d) => {
+      d.rows.forEach((r) => {
+        const exists = state.teams.some((t) => norm(t) === norm(r.teamName));
+        if (!exists) {
+          const emptyIdx = state.teams.findIndex((t) => !t || !t.trim());
+          if (emptyIdx !== -1) {
+            state.teams[emptyIdx] = r.teamName;
+          } else if (state.teams.length < 12) {
+            state.teams.push(r.teamName);
+          }
+        }
+      });
+    });
+  }
+
+  // Save each detected match
+  detectedMatches.forEach((d) => {
+    const matchIdx = d.matchNum - 1;
+    const match = state.matches[matchIdx];
+    if (match) {
+      match.teamData = state.teams.map((teamName) => {
+        const row = d.rows.find((r) => norm(r.teamName) === norm(teamName));
+        if (row) {
+          return {
+            teamName,
+            placement: row.placement,
+            kills: row.kills,
+            minus: 0
+          };
+        } else {
+          return {
+            teamName,
+            placement: "",
+            kills: 0,
+            minus: 0
+          };
+        }
+      });
+      match.isSaved = true;
+
+      // Sync each match to Google Sheets
+      syncMatchScoresToGoogleSheets(d.matchNum, match.teamData, { silent: true, lobbyId: state.activeLobby }).catch(console.warn);
+    }
+  });
+
+  // Re-render UI & components
+  const curMatch = state.matches[state.selectedMatchIndex];
+  if (curMatch && curMatch.teamData) {
+    renderAutoMatchPreview(curMatch.teamData);
+  }
+  renderMatchSelectors();
+  renderMatchTeamForms();
+  updateProgressBadge();
+  renderLeaderboardRows();
+  renderMatrixTable();
+  renderSlotListRows();
+  saveState();
+
+  const matchNames = detectedMatches.map((d) => `Match ${d.matchNum}`).join(", ");
+  showAutoMatchFeedback(`🚀 Successfully imported and saved ${detectedMatches.length} matches (${matchNames})! Standings updated.`, "success");
+
+  // Sync to Drive
   autoSyncTournamentToDrive({ silent: true }).catch(console.warn);
 }
 
