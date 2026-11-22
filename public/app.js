@@ -264,12 +264,22 @@ const btnResetTournament = document.getElementById("btn-reset-tournament");
 
 // Tournament Nav Tabs
 const tabBtnMatches = document.getElementById("tab-btn-matches");
+const tabBtnSlotList = document.getElementById("tab-btn-slot-list");
 const tabBtnLeaderboard = document.getElementById("tab-btn-leaderboard");
 const tabBtnMatrix = document.getElementById("tab-btn-matrix");
 const matchProgressBadge = document.getElementById("match-progress-badge");
 const viewMatchInput = document.getElementById("view-match-input");
+const viewSlotList = document.getElementById("view-slot-list");
 const viewLeaderboard = document.getElementById("view-leaderboard");
 const viewMatrix = document.getElementById("view-matrix");
+
+// Slot List Elements
+const slotListOverlayRowsEl = document.getElementById("slot-list-overlay-rows");
+const slotListRegisteredCountEl = document.getElementById("slot-list-registered-count");
+const btnDownloadSlotList = document.getElementById("btn-download-slot-list");
+const btnCopySlotList = document.getElementById("btn-copy-slot-list");
+const btnCopySlotListBottom = document.getElementById("btn-copy-slot-list-bottom");
+const slotListStatusMessage = document.getElementById("slot-list-status-message");
 
 // Match Selector Controls (Prompt 2 & 7)
 const matchSelectDropdown = document.getElementById("match-select-dropdown");
@@ -1137,11 +1147,25 @@ function bindEvents() {
     btnConfirmReset.addEventListener("click", handleExecuteTournamentReset);
   }
 
-  // Tournament Sub-navigation (Matches vs Leaderboard vs Matrix)
+  // Tournament Sub-navigation (Matches vs Leaderboard vs Matrix vs Slot List)
   tabBtnMatches.addEventListener("click", () => switchSubView("view-match-input"));
+  if (tabBtnSlotList) {
+    tabBtnSlotList.addEventListener("click", () => switchSubView("view-slot-list"));
+  }
   tabBtnLeaderboard.addEventListener("click", () => switchSubView("view-leaderboard"));
   if (tabBtnMatrix) {
     tabBtnMatrix.addEventListener("click", () => switchSubView("view-matrix"));
+  }
+
+  // Slot List Download and Copy
+  if (btnDownloadSlotList) {
+    btnDownloadSlotList.addEventListener("click", () => handleDownloadSlotList("jpg"));
+  }
+  if (btnCopySlotList) {
+    btnCopySlotList.addEventListener("click", handleCopySlotListToClipboard);
+  }
+  if (btnCopySlotListBottom) {
+    btnCopySlotListBottom.addEventListener("click", handleCopySlotListToClipboard);
   }
 
   // Match dropdown selector change
@@ -1395,25 +1419,30 @@ function showTournamentScreen() {
   updateProgressBadge();
   renderLeaderboardRows();
   renderMatrixTable();
+  renderSlotListRows();
   switchSubView(state.activeSubView || "view-match-input");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 /**
- * Switch between Subviews (Match Input vs Leaderboard vs Matrix)
+ * Switch between Subviews (Match Input vs Slot List vs Leaderboard vs Matrix)
  */
 function switchSubView(viewId) {
   state.activeSubView = viewId;
 
   tabBtnMatches.classList.toggle("active", viewId === "view-match-input");
+  if (tabBtnSlotList) tabBtnSlotList.classList.toggle("active", viewId === "view-slot-list");
   tabBtnLeaderboard.classList.toggle("active", viewId === "view-leaderboard");
   if (tabBtnMatrix) tabBtnMatrix.classList.toggle("active", viewId === "view-matrix");
 
   viewMatchInput.classList.toggle("active", viewId === "view-match-input");
+  if (viewSlotList) viewSlotList.classList.toggle("active", viewId === "view-slot-list");
   viewLeaderboard.classList.toggle("active", viewId === "view-leaderboard");
   if (viewMatrix) viewMatrix.classList.toggle("active", viewId === "view-matrix");
 
-  if (viewId === "view-leaderboard") {
+  if (viewId === "view-slot-list") {
+    renderSlotListRows();
+  } else if (viewId === "view-leaderboard") {
     renderLeaderboardRows(); // Automatically pulls latest calculated cumulative data
   } else if (viewId === "view-matrix") {
     renderMatrixTable();
@@ -3124,6 +3153,249 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
       }, 5000);
     }
   });
+}
+
+/**
+ * Render the 12 Slot Rows directly overlaid on the purple SCRIMS SLOT LIST template
+ */
+function renderSlotListRows() {
+  if (!slotListOverlayRowsEl) return;
+  slotListOverlayRowsEl.innerHTML = "";
+
+  const teams = Array.isArray(state.teams) ? state.teams : [];
+  const rosters = state.teamRosters || {};
+  let registeredCount = 0;
+
+  for (let i = 0; i < 12; i++) {
+    const slotNum = i + 1;
+    const teamName = (teams[i] || "").trim();
+    const rawRoster = rosters[i] || [];
+    const playerList = Array.isArray(rawRoster) ? rawRoster.filter((p) => p && p.trim()) : [];
+    const rosterStr = playerList.join(" • ");
+
+    const row = document.createElement("div");
+    row.className = `slot-overlay-row slot-${slotNum}`;
+
+    if (teamName) {
+      registeredCount++;
+      const nameEl = document.createElement("div");
+      nameEl.className = "slot-team-name";
+      nameEl.textContent = teamName;
+      nameEl.title = teamName;
+      row.appendChild(nameEl);
+
+      if (rosterStr) {
+        const rosterEl = document.createElement("div");
+        rosterEl.className = "slot-team-roster";
+        rosterEl.textContent = rosterStr;
+        rosterEl.title = rosterStr;
+        row.appendChild(rosterEl);
+      }
+    } else {
+      const emptyEl = document.createElement("div");
+      emptyEl.className = "slot-empty-label";
+      emptyEl.textContent = "— AVAILABLE SLOT —";
+      row.appendChild(emptyEl);
+    }
+
+    slotListOverlayRowsEl.appendChild(row);
+  }
+
+  if (slotListRegisteredCountEl) {
+    slotListRegisteredCountEl.textContent = `${registeredCount} / 12 REGISTERED TEAM${registeredCount === 1 ? "" : "S"}`;
+  }
+}
+
+/**
+ * Built-in Canvas Renderer for the Purple Scrims Slot List Template
+ * Renders 100% pixel-accurate text directly onto the 935 x 1024 poster graphic at 2x Retina resolution
+ */
+function drawSlotListCanvas(canvas, ctx, img) {
+  const baseW = img.naturalWidth || 935;
+  const baseH = img.naturalHeight || 1024;
+  canvas.width = baseW * 2;
+  canvas.height = baseH * 2;
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  const slotYCenters = [343.5, 395.5, 446.0, 498.0, 548.5, 598.5, 648.5, 698.0, 747.0, 796.0, 846.0, 897.5];
+  const teams = Array.isArray(state.teams) ? state.teams : [];
+  const rosters = state.teamRosters || {};
+
+  slotYCenters.forEach((yc, i) => {
+    const teamName = (teams[i] || "").trim();
+    const rawRoster = rosters[i] || [];
+    const playerList = Array.isArray(rawRoster) ? rawRoster.filter((p) => p && p.trim()) : [];
+    const rosterStr = playerList.join(" • ");
+
+    const xLeft = 280 * 2; // ~560px on 2x canvas
+    const yCenter = yc * 2;
+    const maxTextWidth = canvas.width * 0.53;
+
+    if (teamName && rosterStr) {
+      // 2 lines: Team name on top, players below
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "800 28px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      let displayName = teamName.toUpperCase();
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, xLeft, yCenter - 14);
+
+      ctx.font = "600 20px 'Chakra Petch', 'Segoe UI', monospace";
+      ctx.fillStyle = "#d8b4fe";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+      ctx.shadowBlur = 6;
+      let displayRoster = rosterStr;
+      while (ctx.measureText(displayRoster).width > maxTextWidth && displayRoster.length > 3) {
+        displayRoster = displayRoster.slice(0, -1);
+      }
+      ctx.fillText(displayRoster, xLeft, yCenter + 15);
+    } else if (teamName) {
+      // 1 line centered vertically
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "800 32px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+
+      let displayName = teamName.toUpperCase();
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, xLeft, yCenter);
+    } else {
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.font = "italic 700 22px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      ctx.fillStyle = "rgba(192, 132, 252, 0.4)";
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.fillText("— AVAILABLE SLOT —", xLeft, yCenter);
+    }
+
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+  });
+}
+
+/**
+ * Handle Download Slot List Poster
+ */
+async function handleDownloadSlotList(format = "jpg") {
+  const btnTextEl = document.getElementById("download-slot-list-btn-text");
+  const originalText = btnTextEl ? btnTextEl.textContent : "DOWNLOAD SLOT LIST";
+
+  if (btnTextEl) btnTextEl.textContent = "GENERATING...";
+  if (btnDownloadSlotList) btnDownloadSlotList.classList.add("downloading");
+  if (slotListStatusMessage) slotListStatusMessage.textContent = "⏳ Generating high-definition slot list poster...";
+
+  const safeTitle = (state.tournamentTitle || "Tournament").replace(/[^a-zA-Z0-9_-]/g, "_");
+  const ext = format === "png" ? "png" : "jpg";
+  const filename = `FreeFire_${safeTitle}_SlotList_${Date.now()}.${ext}`;
+
+  try {
+    const bgImg = document.getElementById("slot-list-template-bg");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      drawSlotListCanvas(canvas, ctx, img);
+      const mime = format === "png" ? "image/png" : "image/jpeg";
+      const quality = format === "png" ? 1.0 : 0.95;
+      const dataUrl = canvas.toDataURL(mime, quality);
+      triggerFileDownload(dataUrl, filename);
+      if (slotListStatusMessage) {
+        slotListStatusMessage.textContent = `✅ Slot list poster downloaded (${filename})!`;
+        setTimeout(() => {
+          if (slotListStatusMessage) slotListStatusMessage.textContent = "";
+        }, 4000);
+      }
+      if (btnTextEl) btnTextEl.textContent = originalText;
+      if (btnDownloadSlotList) btnDownloadSlotList.classList.remove("downloading");
+    };
+    img.onerror = () => {
+      if (bgImg && bgImg.complete) {
+        drawSlotListCanvas(canvas, ctx, bgImg);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        triggerFileDownload(dataUrl, filename);
+        if (slotListStatusMessage) slotListStatusMessage.textContent = "✅ Download complete!";
+      } else {
+        if (slotListStatusMessage) slotListStatusMessage.textContent = "⚠️ Error loading poster image.";
+      }
+      if (btnTextEl) btnTextEl.textContent = originalText;
+      if (btnDownloadSlotList) btnDownloadSlotList.classList.remove("downloading");
+    };
+    img.src = (bgImg && bgImg.src) ? bgImg.src : "assets/slot_list_template.jpg";
+  } catch (err) {
+    console.error("Export error:", err);
+    if (slotListStatusMessage) {
+      slotListStatusMessage.textContent = "⚠️ Error generating image. Please try again.";
+    }
+    if (btnTextEl) btnTextEl.textContent = originalText;
+    if (btnDownloadSlotList) btnDownloadSlotList.classList.remove("downloading");
+  }
+}
+
+/**
+ * Handle Copy Slot List Text to Clipboard
+ */
+function handleCopySlotListToClipboard() {
+  const teams = Array.isArray(state.teams) ? state.teams : [];
+  const rosters = state.teamRosters || {};
+  const tourneyTitle = state.tournamentTitle || "FREE FIRE SCRIMS";
+
+  const lines = [
+    "╔════════════════════════════════════╗",
+    `   🔥 ${tourneyTitle.toUpperCase()} 🔥`,
+    "            📋 OFFICIAL SLOT LIST",
+    "╚════════════════════════════════════╝\n"
+  ];
+
+  let regCount = 0;
+  for (let i = 0; i < 12; i++) {
+    const slotNum = String(i + 1).padStart(2, "0");
+    const team = (teams[i] || "").trim();
+    const rawRoster = rosters[i] || [];
+    const playerList = Array.isArray(rawRoster) ? rawRoster.filter((p) => p && p.trim()) : [];
+
+    if (team) {
+      regCount++;
+      lines.push(`SLOT [${slotNum}]: ${team}`);
+      if (playerList.length > 0) {
+        lines.push(`   └─ 👥 ${playerList.join(", ")}`);
+      }
+    } else {
+      lines.push(`SLOT [${slotNum}]: AVAILABLE`);
+    }
+  }
+
+  lines.push("\n═════════════════════════════════════");
+  lines.push(`Total Registered: ${regCount} / 12 Teams`);
+  lines.push("Generated by Free Fire Points Calculator");
+
+  const text = lines.join("\n");
+  copyTextToClipboard(text);
+
+  if (slotListStatusMessage) {
+    slotListStatusMessage.textContent = "📋 Slot list text copied to clipboard!";
+    setTimeout(() => {
+      if (slotListStatusMessage) slotListStatusMessage.textContent = "";
+    }, 3000);
+  }
 }
 
 /**

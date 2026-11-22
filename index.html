@@ -282,6 +282,9 @@
             <span>⚔️ MATCH DATA INPUT</span>
             <span class="match-progress-badge" id="match-progress-badge">0 / 6 SAVED</span>
           </button>
+          <button type="button" class="tourney-nav-btn" id="tab-btn-slot-list" data-target="view-slot-list">
+            <span>📋 SLOT LIST</span>
+          </button>
           <button type="button" class="tourney-nav-btn" id="tab-btn-leaderboard" data-target="view-leaderboard">
             <span>🏆 LEADERBOARD POSTER</span>
           </button>
@@ -385,6 +388,61 @@
                 <span class="btn-cutout-right"></span>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- SECTION: SLOT LIST POSTER VIEW -->
+        <div id="view-slot-list" class="tourney-subview">
+          <!-- Slot List Header / Actions Bar -->
+          <div class="slot-list-controls-bar">
+            <div class="slot-list-info-wrap">
+              <span class="slot-list-icon">📋</span>
+              <div>
+                <h3 class="slot-list-title">OFFICIAL TOURNAMENT SLOT LIST</h3>
+                <span class="slot-list-subtitle" id="slot-list-registered-count">0 / 12 REGISTERED</span>
+              </div>
+            </div>
+            <div class="slot-list-actions">
+              <button type="button" id="btn-copy-slot-list" class="cyber-btn action-ghost-btn" title="Copy text format to clipboard">
+                <span>📋 COPY TEXT LIST</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- The Slot List Poster Container -->
+          <div class="slot-list-exact-poster-container" id="slot-list-poster-capture">
+            <!-- Background Template Image -->
+            <img src="assets/slot_list_template.jpg" alt="Free Fire Scrims Slot List" class="slot-list-template-bg" id="slot-list-template-bg">
+
+            <!-- Dynamic Slot Overlay (precisely mapped to the 12 template slots) -->
+            <div class="slot-list-overlay-slots" id="slot-list-overlay-rows">
+              <!-- Dynamically populated 12 overlay rows -->
+            </div>
+          </div>
+
+          <!-- Bottom Export Actions -->
+          <div class="slot-list-bottom-export-panel">
+            <div class="export-panel-buttons-only">
+              <button type="button" id="btn-download-slot-list" class="cyber-btn primary-start-btn download-results-prominent-btn">
+                <span class="btn-cutout-left"></span>
+                <span class="btn-content">
+                  <span class="btn-flame-icon">📸</span>
+                  <span class="btn-text" id="download-slot-list-btn-text">DOWNLOAD SLOT LIST</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/>
+                  </svg>
+                </span>
+                <span class="btn-cutout-right"></span>
+              </button>
+
+              <button type="button" id="btn-copy-slot-list-bottom" class="cyber-btn share-results-prominent-btn" title="Copy text format for WhatsApp / Discord">
+                <span class="btn-content">
+                  <span class="btn-flame-icon">📋</span>
+                  <span>COPY TEXT FORMAT</span>
+                </span>
+              </button>
+            </div>
+            <div id="slot-list-status-message" class="export-status-note"></div>
           </div>
         </div>
 
