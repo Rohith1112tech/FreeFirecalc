@@ -149,6 +149,54 @@ const syncBtnText = document.getElementById("sync-btn-text");
 const lobbyActiveBadgeText = document.getElementById("lobby-active-badge-text");
 const tourneyLobbyPill = document.getElementById("tourney-lobby-pill");
 
+// UI Theme State & Controller (Cyber Blue <-> Neon Crimson)
+const UI_THEME_STORAGE_KEY = "jse_ui_theme";
+const btnToggleUiTheme = document.getElementById("btn-toggle-ui-theme");
+const uiThemeBtnText = document.getElementById("ui-theme-btn-text");
+
+function getSavedUiTheme() {
+  try {
+    return localStorage.getItem(UI_THEME_STORAGE_KEY) || "blue";
+  } catch (_) {
+    return "blue";
+  }
+}
+
+function applyUiTheme(theme) {
+  const isCrimson = theme === "crimson";
+  if (typeof document !== "undefined" && document.documentElement) {
+    if (isCrimson) {
+      document.documentElement.setAttribute("data-ui-theme", "crimson");
+    } else {
+      document.documentElement.removeAttribute("data-ui-theme");
+    }
+  }
+  try {
+    localStorage.setItem(UI_THEME_STORAGE_KEY, isCrimson ? "crimson" : "blue");
+  } catch (_) {}
+
+  const textEl = uiThemeBtnText || (typeof document !== "undefined" ? document.getElementById("ui-theme-btn-text") : null);
+  if (textEl) {
+    textEl.textContent = isCrimson ? "UI: NEON CRIMSON" : "UI: CYBER BLUE";
+  }
+  const btnEl = btnToggleUiTheme || (typeof document !== "undefined" ? document.getElementById("btn-toggle-ui-theme") : null);
+  if (btnEl) {
+    btnEl.setAttribute("aria-label", isCrimson ? "Switch to Cyber Blue theme" : "Switch to Neon Crimson theme");
+    btnEl.setAttribute("data-current-theme", isCrimson ? "crimson" : "blue");
+  }
+}
+
+function toggleUiTheme() {
+  const current = getSavedUiTheme();
+  const next = current === "crimson" ? "blue" : "crimson";
+  applyUiTheme(next);
+}
+
+// Immediately apply theme on script load
+try {
+  applyUiTheme(getSavedUiTheme());
+} catch (_) {}
+
 /**
  * Updates UI styling & badges for active lobby
  */
@@ -408,6 +456,7 @@ const btnSharedExit = document.getElementById("btn-shared-exit");
 
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
+  applyUiTheme(getSavedUiTheme());
   const hasShared = checkForSharedResultsUrl();
   if (!hasShared) {
     const storedLobby = getActiveLobbyId();
@@ -935,6 +984,12 @@ function updatePastePreviewUI() {
  * Event Bindings
  */
 function bindEvents() {
+  // One-Click UI Theme Toggle (Cyber Blue <-> Neon Crimson)
+  const themeBtn = btnToggleUiTheme || document.getElementById("btn-toggle-ui-theme");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", toggleUiTheme);
+  }
+
   // 3-Lobby Database Switcher Tabs
   if (btnLobby1) {
     btnLobby1.addEventListener("click", () => switchLobby("lobby1"));
@@ -6282,7 +6337,10 @@ if (typeof module !== "undefined" && module.exports) {
     fetchTournamentFromCloud,
     syncMatchScoresToGoogleSheets,
     showMatchAlert,
-    hideMatchAlerts
+    hideMatchAlerts,
+    getSavedUiTheme,
+    applyUiTheme,
+    toggleUiTheme
   };
 }
 
