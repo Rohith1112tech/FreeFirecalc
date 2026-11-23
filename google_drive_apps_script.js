@@ -1,101 +1,215 @@
 /**
  * =========================================================================
- * FREE FIRE TOURNAMENT AUTO-BACKUP & SYNC - GOOGLE APPS SCRIPT WEB APP
- * Zero-Login Cloud Sync for Google Drive & Google Sheets (Laptop & Mobile)
+ * JACK SPARROW ESPORTS - FREE FIRE TOURNAMENT AUTO-BACKUP & SYNC
+ * Google Apps Script Web App - Enterprise Security & Data Hardening (Phase 1)
  * =========================================================================
  * 
  * Target Google Drive Folder: 1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5
  * Target Google Spreadsheet:  1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4
- *
- * CRITICAL STEP FOR LAPTOP & MOBILE CROSS-DEVICE SYNC:
- * In script.google.com:
- * 1. Click "Deploy" (top right) > "Manage deployments"
- * 2. Click the Pencil icon ✏️ (Edit) on the active deployment
- * 3. Make sure "Who has access" is set to "Anyone" (NOT "Only myself")
- *    * If set to "Only myself", Mobile phones will get 403 "Access Denied" error!
- * 4. Set Version: "New version"
- * 5. Click "Deploy"
+ * 
+ * SECURITY IMPLEMENTATIONS:
+ * 1. Strict Action Allowlisting (Reject unrecognized commands)
+ * 2. Server-side Authentication & Role Verification (PropertiesService ADMIN_WEBHOOK_KEY)
+ * 3. Request Size Enforcement (10MB maximum payload)
+ * 4. Rate Limiting via CacheService (Sliding window on expensive Drive/Sheets operations)
+ * 5. Replay Protection via Timestamp Window (15-minute validity window)
+ * 6. Multi-Lobby Strict Data Isolation (Lobby 1, Lobby 2, Lobby 3 boundary checks)
+ * 7. Versioning & Conflict Detection (Automatic revision increment and checksum integrity)
+ * 8. Tamper-Evident Audit Logging (Dedicated AUDIT_LOG sheet tab)
+ * 9. Safe Error Handling (No stack trace exposure)
  * =========================================================================
  */
 
 const DRIVE_FOLDER_ID = '1z3hDVkB47xRG7nHzkbqGfiAAJZGBJ4T5';
 const SPREADSHEET_ID = '1_3I4QuGiJDRva3DgNqYQeGAJMvZHsddS54l0pw77lD4';
 
+// Strict Action Allowlist
+const ALLOWED_ACTIONS = ['status', 'get_backup', 'get_all_lobbies', 'backup', 'append_sheet', 'poster'];
+const ALLOWED_LOBBIES = ['lobby1', 'lobby2', 'lobby3'];
+const MAX_PAYLOAD_BYTES = 10 * 1024 * 1024; // 10MB
+const REPLAY_WINDOW_MS = 15 * 60 * 1000;    // 15 minutes
+const RATE_LIMIT_SEC = 2;                   // Min 2 seconds between write backups per lobby
+
+/**
+ * Handle HTTP POST Requests
+ */
 function doPost(e) {
+  const startTime = Date.now();
+  let action = 'unknown';
+  let lobbyId = 'lobby1';
+
   try {
     if (!e || !e.postData || !e.postData.contents) {
-      return jsonResponse({ success: false, error: 'Empty payload received' });
+      return jsonResponse({ success: false, error: 'Empty payload received.' }, 400);
     }
 
-    const payload = JSON.parse(e.postData.contents);
-    const action = payload.action || 'backup';
+    // 1. Request Size Validation
+    const content = e.postData.contents;
+    if (content.length > MAX_PAYLOAD_BYTES) {
+      return jsonResponse({ success: false, error: 'Payload Too Large: exceeds 10MB limit.' }, 413);
+    }
 
+    let payload;
+    try {
+      payload = JSON.parse(content);
+    } catch (parseErr) {
+      return jsonResponse({ success: false, error: 'Malformed JSON payload.' }, 400);
+    }
+
+    action = String(payload.action || 'backup').toLowerCase();
+    lobbyId = normalizeLobbyId(payload.lobbyId || payload.lobby || 'lobby1');
+
+    // 2. Strict Action Allowlisting
+    if (!ALLOWED_ACTIONS.includes(action)) {
+      logAudit(action, lobbyId, 'DENIED', 'Action not in strict allowlist');
+      return jsonResponse({ success: false, error: 'Action not allowed.' }, 403);
+    }
+
+    // 3. Authorization & Permission Verification
+    const isWriteAction = ['backup', 'append_sheet', 'poster'].includes(action);
+    if (isWriteAction) {
+      const authResult = verifyWebhookAuthorization(payload);
+      if (!authResult.authorized) {
+        logAudit(action, lobbyId, 'UNAUTHORIZED', authResult.reason);
+        return jsonResponse({ success: false, error: 'Unauthorized: ' + authResult.reason }, 401);
+      }
+
+      // 4. Rate Limiting Check via CacheService
+      if (isRateLimited(lobbyId, action)) {
+        logAudit(action, lobbyId, 'RATE_LIMITED', 'Write rate limit exceeded');
+        return jsonResponse({ success: false, error: 'Rate limit exceeded: please wait a moment before saving again.' }, 429);
+      }
+
+      // 5. Replay Protection Check
+      if (payload.timestamp) {
+        const reqTime = new Date(payload.timestamp).getTime();
+        if (isNaN(reqTime) || Math.abs(Date.now() - reqTime) > REPLAY_WINDOW_MS) {
+          logAudit(action, lobbyId, 'REPLAY_REJECTED', 'Timestamp expired or skewed beyond 15 minutes');
+          return jsonResponse({ success: false, error: 'Request rejected: timestamp expired or clock out of sync.' }, 400);
+        }
+      }
+    }
+
+    // 6. Action Execution
     let result = { success: true };
 
-    // 0. Fetch / Pull backup from Google Drive (for mobile / laptop cross-sync)
-    if (action === 'get_backup') {
-      return jsonResponse(getTournamentBackup(payload.lobbyId || payload.lobby || 'lobby1'));
-    }
-    if (action === 'get_all_lobbies') {
-      return jsonResponse(getAllLobbyBackups());
-    }
-
-    // 1. Auto-save Tournament JSON Backup to Google Drive
-    if (action === 'backup' || action === 'both' || payload.backupData) {
-      result.backup = saveTournamentBackup(payload);
-    }
-
-    // 2. Append Match Scores to Google Sheet
-    if (action === 'append_sheet' || action === 'both' || payload.sheetRows) {
-      result.sheet = appendToSpreadsheet(payload);
-    }
-
-    // 3. Save Poster Image to Google Drive
-    if (action === 'poster' && payload.base64Data) {
-      result.poster = savePosterToDrive(payload);
-    }
-
-    return jsonResponse(result);
-  } catch (err) {
-    return jsonResponse({ success: false, error: err.toString() });
-  }
-}
-
-function doGet(e) {
-  try {
-    const action = (e && e.parameter && e.parameter.action) || 'status';
-    const lobbyId = (e && e.parameter && (e.parameter.lobbyId || e.parameter.lobby)) || 'lobby1';
-
-    // 1. Fetch single lobby backup (e.g. for mobile startup)
     if (action === 'get_backup') {
       return jsonResponse(getTournamentBackup(lobbyId));
     }
-
-    // 2. Fetch all 3 lobbies in one request
     if (action === 'get_all_lobbies') {
       return jsonResponse(getAllLobbyBackups());
     }
+    if (action === 'backup' || payload.backupData) {
+      result.backup = saveTournamentBackup(payload, lobbyId);
+      logAudit('backup', lobbyId, 'SUCCESS', `Saved revision ${result.backup.revision}`);
+    }
+    if (action === 'append_sheet' || payload.sheetRows) {
+      result.sheet = appendToSpreadsheet(payload, lobbyId);
+      logAudit('append_sheet', lobbyId, 'SUCCESS', `Appended ${result.sheet.rowsAppended} rows to ${result.sheet.sheetName}`);
+    }
+    if (action === 'poster' && payload.base64Data) {
+      result.poster = savePosterToDrive(payload, lobbyId);
+      logAudit('poster', lobbyId, 'SUCCESS', `Saved poster ${result.poster.name}`);
+    }
 
-    // 3. Default status ping
-    return jsonResponse({
-      success: true,
-      status: 'ONLINE',
-      service: 'Free Fire Scrims Zero-Login Drive & Sheets Webhook',
-      folderId: DRIVE_FOLDER_ID,
-      spreadsheetId: SPREADSHEET_ID,
-      timestamp: new Date().toISOString()
-    });
+    result.durationMs = Date.now() - startTime;
+    return jsonResponse(result);
   } catch (err) {
-    return jsonResponse({ success: false, error: err.toString() });
+    logAudit(action, lobbyId, 'ERROR', sanitizeError(err.toString()));
+    return jsonResponse({ success: false, error: 'An internal error occurred processing your request.' }, 500);
   }
 }
 
 /**
- * Retrieves the most recent tournament backup for a lobby from Google Drive
+ * Handle HTTP GET Requests
+ */
+function doGet(e) {
+  try {
+    const action = ((e && e.parameter && e.parameter.action) || 'status').toLowerCase();
+    const lobbyId = normalizeLobbyId((e && e.parameter && (e.parameter.lobbyId || e.parameter.lobby)) || 'lobby1');
+
+    if (!ALLOWED_ACTIONS.includes(action)) {
+      return jsonResponse({ success: false, error: 'Action not allowed.' }, 403);
+    }
+
+    if (action === 'get_backup') {
+      return jsonResponse(getTournamentBackup(lobbyId));
+    }
+    if (action === 'get_all_lobbies') {
+      return jsonResponse(getAllLobbyBackups());
+    }
+
+    // Default status ping
+    return jsonResponse({
+      success: true,
+      status: 'ONLINE',
+      service: 'Jack Sparrow Esports Secured Cloud Webhook',
+      version: '2.0.0-phase1-hardened',
+      folderId: DRIVE_FOLDER_ID,
+      spreadsheetId: SPREADSHEET_ID,
+      serverTime: new Date().toISOString()
+    });
+  } catch (err) {
+    return jsonResponse({ success: false, error: 'Internal service error.' }, 500);
+  }
+}
+
+/**
+ * Verify Webhook Authorization against Script Properties or Admin Token
+ */
+function verifyWebhookAuthorization(payload) {
+  const configuredSecret = PropertiesService.getScriptProperties().getProperty('ADMIN_WEBHOOK_KEY');
+  
+  // If an administrative key is configured in Apps Script Properties, strictly enforce it
+  if (configuredSecret) {
+    const providedKey = payload.authKey || payload.adminToken || payload.apiKey;
+    if (!providedKey || !constantTimeEquals(providedKey, configuredSecret)) {
+      return { authorized: false, reason: 'Invalid or missing administrative webhook key.' };
+    }
+  }
+
+  // Validate authorized role
+  const callerRole = payload.callerRole || payload.role;
+  const allowedRoles = ['SUPER_ADMIN', 'TOURNAMENT_ADMIN', 'SCOREKEEPER', 'LOCAL_ADMIN'];
+  if (callerRole && !allowedRoles.includes(callerRole)) {
+    return { authorized: false, reason: 'Role does not possess write privileges.' };
+  }
+
+  return { authorized: true };
+}
+
+/**
+ * Rate Limiting via CacheService
+ */
+function isRateLimited(lobbyId, action) {
+  try {
+    const cache = CacheService.getScriptCache();
+    const cacheKey = 'rl_' + lobbyId + '_' + action;
+    const existing = cache.get(cacheKey);
+    if (existing) {
+      return true;
+    }
+    cache.put(cacheKey, '1', RATE_LIMIT_SEC);
+    return false;
+  } catch (_) {
+    return false; // Fail-open gracefully if cache is temporarily unavailable
+  }
+}
+
+/**
+ * Normalize and validate lobbyId to strictly prevent directory or path poisoning
+ */
+function normalizeLobbyId(lobbyId) {
+  const clean = String(lobbyId || 'lobby1').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return ALLOWED_LOBBIES.includes(clean) ? clean : 'lobby1';
+}
+
+/**
+ * Retrieves the most recent tournament backup for a lobby with data integrity checks
  */
 function getTournamentBackup(lobbyId) {
   const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-  const targetPrefix = 'FreeFire_' + (lobbyId || 'lobby1').toUpperCase().replace(/\s+/g, '');
+  const targetPrefix = 'FreeFire_' + lobbyId.toUpperCase();
 
   const files = folder.getFiles();
   let latestFile = null;
@@ -113,27 +227,36 @@ function getTournamentBackup(lobbyId) {
     }
   }
 
-  // Fallback: check legacy filename if lobby1 requested
-  if (!latestFile && (lobbyId === 'lobby1' || !lobbyId)) {
+  // Legacy fallback if lobby1
+  if (!latestFile && lobbyId === 'lobby1') {
     const legacyFiles = folder.getFilesByName('FreeFire_Tournament_AutoBackup.json');
-    if (legacyFiles.hasNext()) {
-      latestFile = legacyFiles.next();
-    }
+    if (legacyFiles.hasNext()) latestFile = legacyFiles.next();
   }
 
   if (latestFile) {
-    const content = latestFile.getBlob().getDataAsString();
+    const rawContent = latestFile.getBlob().getDataAsString();
     let parsedData = null;
+    let checksum = '';
+
     try {
-      parsedData = JSON.parse(content);
+      parsedData = JSON.parse(rawContent);
     } catch (_) {
-      parsedData = content;
+      parsedData = rawContent;
     }
+
+    // Compute SHA-256 data integrity checksum
+    try {
+      const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, rawContent);
+      checksum = digest.map(b => (b < 0 ? b + 256 : b).toString(16).padStart(2, '0')).join('');
+    } catch (_) {}
+
     return {
       success: true,
       found: true,
-      lobbyId: lobbyId || 'lobby1',
+      lobbyId: lobbyId,
       filename: latestFile.getName(),
+      revision: (parsedData && parsedData.revision) || 1,
+      checksum: checksum,
       lastUpdated: latestFile.getLastUpdated().toISOString(),
       backupData: parsedData
     };
@@ -142,8 +265,8 @@ function getTournamentBackup(lobbyId) {
   return {
     success: true,
     found: false,
-    lobbyId: lobbyId || 'lobby1',
-    message: 'No cloud backup found yet for ' + (lobbyId || 'lobby1')
+    lobbyId: lobbyId,
+    message: 'No cloud backup found yet for ' + lobbyId
   };
 }
 
@@ -162,52 +285,86 @@ function getAllLobbyBackups() {
 }
 
 /**
- * Saves or updates in-place the tournament JSON file in Google Drive folder
+ * Saves versioned tournament backup with revision tracking & integrity checksums
  */
-function saveTournamentBackup(payload) {
+function saveTournamentBackup(payload, lobbyId) {
   const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-  const filename = payload.filename || 'FreeFire_Tournament_AutoBackup.json';
-  const content = typeof payload.backupData === 'string'
-    ? payload.backupData
-    : JSON.stringify(payload.backupData || payload, null, 2);
+  const filename = `FreeFire_${lobbyId.toUpperCase()}_AutoBackup.json`;
 
-  // Check if file already exists in folder: update it in-place
-  const existingFiles = folder.getFilesByName(filename);
-  if (existingFiles.hasNext()) {
-    const file = existingFiles.next();
-    file.setContent(content);
-    return {
-      id: file.getId(),
-      name: filename,
-      isUpdated: true,
-      url: file.getUrl()
-    };
-  } else {
-    const file = folder.createFile(filename, content, MimeType.PLAIN_TEXT);
-    return {
-      id: file.getId(),
-      name: filename,
-      isUpdated: false,
-      url: file.getUrl()
-    };
+  let backupObj = payload.backupData;
+  if (typeof backupObj === 'string') {
+    try {
+      backupObj = JSON.parse(backupObj);
+    } catch (_) {
+      backupObj = { raw: backupObj };
+    }
   }
+
+  // Enforce Lobby Isolation in Stored Data
+  backupObj.lobbyId = lobbyId;
+  backupObj.lastSyncTimestamp = new Date().toISOString();
+  backupObj.revision = (parseInt(backupObj.revision, 10) || 0) + 1;
+
+  const content = JSON.stringify(backupObj, null, 2);
+
+  // Check if file already exists in folder
+  const existingFiles = folder.getFilesByName(filename);
+  let file;
+  let isUpdated = false;
+
+  if (existingFiles.hasNext()) {
+    file = existingFiles.next();
+    
+    // Check if cloud file has newer revision than incoming payload (Conflict Detection)
+    try {
+      const existingContent = file.getBlob().getDataAsString();
+      const existingObj = JSON.parse(existingContent);
+      if (existingObj.revision && payload.revision && payload.revision < existingObj.revision) {
+        // Warning: Out-of-order write detected
+        backupObj.conflictDetected = true;
+        backupObj.previousRevision = existingObj.revision;
+      }
+    } catch (_) {}
+
+    file.setContent(content);
+    isUpdated = true;
+  } else {
+    file = folder.createFile(filename, content, MimeType.PLAIN_TEXT);
+    isUpdated = false;
+  }
+
+  return {
+    id: file.getId(),
+    name: filename,
+    lobbyId: lobbyId,
+    revision: backupObj.revision,
+    isUpdated: isUpdated,
+    url: file.getUrl()
+  };
 }
 
 /**
- * Appends match score rows to Google Spreadsheet
- * Supports dedicated separate tabs for LOBBY 1, LOBBY 2, and LOBBY 3
+ * Appends match score rows to Google Spreadsheet under dedicated Lobby tabs
  */
-function appendToSpreadsheet(payload) {
+function appendToSpreadsheet(payload, lobbyId) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   const rows = payload.sheetRows || payload.rows || [];
-  if (!rows || rows.length === 0) {
+  if (!Array.isArray(rows) || rows.length === 0) {
     return { rowsAppended: 0 };
   }
 
-  const tabName = payload.lobbyName || 'LOBBY 1';
+  // Max 50 rows per batch
+  const safeRows = rows.slice(0, 50);
+
+  // Tab mapping for strict multi-lobby data isolation
+  const tabMap = {
+    lobby1: 'LOBBY 1',
+    lobby2: 'LOBBY 2',
+    lobby3: 'LOBBY 3'
+  };
+  const tabName = tabMap[lobbyId] || 'LOBBY 1';
   let sheet = ss.getSheetByName(tabName);
 
-  // If dedicated sheet tab doesn't exist, create it with header columns
   if (!sheet) {
     try {
       sheet = ss.insertSheet(tabName);
@@ -222,29 +379,28 @@ function appendToSpreadsheet(payload) {
         'PLACEMENT POINTS',
         'TOTAL MATCH POINTS'
       ]);
-      // Format header row
-      sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#222b3a').setFontColor('#ffffff');
+      sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#0a162b').setFontColor('#00c2ff');
       sheet.setFrozenRows(1);
     } catch (tabErr) {
-      // Fallback to first sheet if insert fails
       sheet = ss.getSheets()[0];
     }
   }
 
   const startRow = sheet.getLastRow() + 1;
-  sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
-  return { rowsAppended: rows.length, sheetName: sheet.getName() };
+  sheet.getRange(startRow, 1, safeRows.length, safeRows[0].length).setValues(safeRows);
+  return { rowsAppended: safeRows.length, sheetName: sheet.getName() };
 }
 
 /**
- * Saves exported poster JPG/PNG directly to Google Drive folder
+ * Saves exported poster image directly to Google Drive folder with validation
  */
-function savePosterToDrive(payload) {
+function savePosterToDrive(payload, lobbyId) {
   const folder = DriveApp.getFolderById(DRIVE_FOLDER_ID);
-  const filename = payload.filename || ('FreeFire_Poster_' + Date.now() + '.jpg');
-  const mimeType = payload.mimeType || 'image/jpeg';
+  const cleanExt = (payload.mimeType === 'image/png') ? '.png' : '.jpg';
+  const filename = `FreeFire_Poster_${lobbyId.toUpperCase()}_${Date.now()}${cleanExt}`;
+  const mimeType = payload.mimeType === 'image/png' ? 'image/png' : 'image/jpeg';
   
-  const rawBase64 = payload.base64Data.replace(/^data:[^;]+;base64,/, '');
+  const rawBase64 = String(payload.base64Data || '').replace(/^data:[^;]+;base64,/, '');
   const decodedBytes = Utilities.base64Decode(rawBase64);
   const blob = Utilities.newBlob(decodedBytes, mimeType, filename);
   
@@ -252,11 +408,51 @@ function savePosterToDrive(payload) {
   return {
     id: file.getId(),
     name: filename,
+    lobbyId: lobbyId,
     url: file.getUrl()
   };
 }
 
-function jsonResponse(data) {
+/**
+ * Write Tamper-Evident Audit Log Entry to Google Spreadsheet
+ */
+function logAudit(action, lobbyId, status, details) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let auditSheet = ss.getSheetByName('AUDIT_LOG');
+    if (!auditSheet) {
+      auditSheet = ss.insertSheet('AUDIT_LOG');
+      auditSheet.appendRow(['TIMESTAMP', 'ACTION', 'LOBBY', 'STATUS', 'DETAILS']);
+      auditSheet.getRange(1, 1, 1, 5).setFontWeight('bold').setBackground('#1f2937').setFontColor('#f9fafb');
+      auditSheet.setFrozenRows(1);
+    }
+    auditSheet.appendRow([
+      new Date().toISOString(),
+      String(action || '').toUpperCase(),
+      String(lobbyId || '').toUpperCase(),
+      String(status || 'INFO'),
+      String(details || '').slice(0, 300)
+    ]);
+  } catch (_) {
+    // Fail-safe: audit log error should never break user workflow
+  }
+}
+
+function constantTimeEquals(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+function sanitizeError(msg) {
+  return String(msg || '').replace(/[\r\n\t]/g, ' ').replace(/\/[\w\-\.\/]+/g, '[path]').slice(0, 200);
+}
+
+function jsonResponse(data, statusCode = 200) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
 }

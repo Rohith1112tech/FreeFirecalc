@@ -53,6 +53,15 @@
             <span class="ui-theme-icon">🎨</span>
             <span class="ui-theme-text" id="ui-theme-btn-text">UI: CYBER BLUE</span>
           </button>
+          <!-- Admin Security & RBAC Status Pill & Login Button -->
+          <div class="lobby-auth-pill" id="lobby-auth-status-pill" title="Security Status & Current Role">
+            <span class="auth-role-dot" id="auth-role-dot"></span>
+            <span class="auth-role-text" id="auth-role-text">PUBLIC</span>
+          </div>
+          <button type="button" class="lobby-auth-btn" id="btn-toggle-auth-modal" title="Sign In as Tournament Admin or Scorekeeper">
+            <span id="btn-auth-icon">🔑</span>
+            <span id="btn-auth-text">ADMIN LOGIN</span>
+          </button>
           <button type="button" class="lobby-cloud-sync-btn" id="btn-lobby-cloud-pull" title="Pull latest scores and teams from Google Drive onto this device">
             <span class="sync-spin-icon" id="sync-spin-icon">🔄</span>
             <span class="sync-btn-text" id="sync-btn-text">SYNC FROM CLOUD</span>
@@ -729,13 +738,89 @@
     </main>
   </div>
 
+    <!-- MODAL: ADMIN AUTHENTICATION & ACCESS CONTROL (PHASE 1 SECURITY) -->
+    <div id="modal-admin-auth" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+      <div class="modal-card auth-modal-card">
+        <div class="modal-header">
+          <div class="auth-modal-title-group">
+            <span class="auth-lock-icon">🛡️</span>
+            <h3 id="auth-modal-title" style="margin: 0; font-size: 1.1rem; letter-spacing: 1px;">ADMIN ACCESS &amp; SECURITY</h3>
+          </div>
+          <button type="button" class="modal-close-btn" id="btn-close-auth-modal" aria-label="Close Auth Dialog">&times;</button>
+        </div>
+        <div class="modal-body auth-modal-body">
+          <div id="auth-current-session-box" class="auth-session-box" style="display: none;">
+            <div class="auth-session-info" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <span class="session-label" style="font-size: 0.75rem; color: var(--text-muted); display: block;">AUTHENTICATED SESSION:</span>
+                <strong id="auth-session-user" class="session-username" style="font-size: 1.05rem; color: #fff;">Admin</strong>
+              </div>
+              <span id="auth-session-role-badge" class="session-role-badge" style="background: var(--primary-accent); color: var(--primary-accent-text); font-weight: 800; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 4px;">SUPER ADMIN</span>
+            </div>
+            <p class="auth-session-desc" style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem;">You currently have active administrative privileges for tournament configuration, score editing, and cloud backups.</p>
+            <div class="auth-session-actions">
+              <button type="button" id="btn-auth-logout" class="cyber-btn danger-btn" style="width: 100%;">
+                <span>🚪 LOGOUT (END SESSION)</span>
+              </button>
+            </div>
+          </div>
+
+          <form id="auth-login-form" class="auth-form" autocomplete="off">
+            <div class="auth-desc-text">
+              Sign in with your tournament credentials to unlock scoring, roster edits, and administrative operations.
+            </div>
+            <div id="auth-alert-box" class="auth-alert" style="display: none;"></div>
+            
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label for="auth-input-username">USERNAME / ROLE</label>
+              <input type="text" id="auth-input-username" class="cyber-input" placeholder="e.g. superadmin, tourneyadmin, scorekeeper" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1rem;">
+              <label for="auth-input-password">PASSWORD</label>
+              <input type="password" id="auth-input-password" class="cyber-input" placeholder="Enter secure password..." required>
+            </div>
+
+            <div class="auth-form-actions" style="margin-top: 1.2rem;">
+              <button type="submit" id="btn-auth-submit-login" class="cyber-btn primary-btn auth-submit-btn" style="width: 100%;">
+                <span>⚡ AUTHENTICATE &amp; SIGN IN</span>
+              </button>
+            </div>
+
+            <div class="auth-roles-reference">
+              <span class="roles-ref-title">ROLE PERMISSIONS:</span>
+              <div class="role-ref-item"><b>👑 SUPER ADMIN:</b> Full tournament control, database reset, cloud backup &amp; settings.</div>
+              <div class="role-ref-item"><b>⚙️ TOURNAMENT ADMIN:</b> Tournament title, teams, rosters, and match management.</div>
+              <div class="role-ref-item"><b>⚡ SCOREKEEPER:</b> Match results, placement/kill entry, and Gemini auto-import.</div>
+            </div>
+
+            <details class="auth-recovery-details">
+              <summary>🆘 Emergency Super Admin Password Recovery</summary>
+              <div class="recovery-box">
+                <p style="margin: 0 0 6px 0;">If you forgot the Super Admin password, enter the emergency master recovery key to reset it:</p>
+                <input type="text" id="auth-recovery-key" class="cyber-input" placeholder="Enter Emergency Recovery Key...">
+                <input type="password" id="auth-recovery-new-pass" class="cyber-input" placeholder="Enter New Super Admin Password..." style="margin-top: 8px;">
+                <button type="button" id="btn-execute-recovery" class="cyber-btn secondary-btn" style="margin-top: 8px; width: 100%;">
+                  <span>RESET SUPER ADMIN PASSWORD</span>
+                </button>
+                <div id="auth-recovery-status" style="margin-top: 6px; font-size: 0.8rem;"></div>
+              </div>
+            </details>
+          </form>
+        </div>
+      </div>
+    </div>
+
   <!-- HTML2Canvas Library for High Quality Poster Export (Prompt 5) -->
   <script src="assets/html2canvas.min.js"></script>
   <script>
     if (typeof html2canvas === 'undefined') {
-      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      document.head.appendChild(s);
     }
   </script>
+  <script src="auth.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

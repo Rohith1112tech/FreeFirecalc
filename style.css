@@ -5945,6 +5945,174 @@ body {
   flex-wrap: wrap;
 }
 
+/* Security & Admin Auth Header Elements (Phase 1 Security) */
+.lobby-auth-pill {
+  background: var(--bg-slot);
+  border: var(--primary-border);
+  color: var(--text-muted);
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0.35rem 0.65rem;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+
+.lobby-auth-pill .auth-role-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  display: inline-block;
+}
+
+.lobby-auth-pill.role-super {
+  border-color: #f59e0b;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+.lobby-auth-pill.role-super .auth-role-dot {
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+}
+
+.lobby-auth-pill.role-admin {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background: var(--secondary-badge-bg);
+}
+.lobby-auth-pill.role-admin .auth-role-dot {
+  background: var(--primary-accent);
+  box-shadow: 0 0 8px var(--primary-accent);
+}
+
+.lobby-auth-pill.role-scorekeeper {
+  border-color: #10b981;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+}
+.lobby-auth-pill.role-scorekeeper .auth-role-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.lobby-auth-btn {
+  background: var(--bg-slot);
+  border: var(--card-border);
+  color: var(--text-white);
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.22s ease;
+  user-select: none;
+}
+
+.lobby-auth-btn:hover {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  box-shadow: var(--primary-accent-glow);
+  transform: translateY(-1px);
+}
+
+/* Auth Modal Styles */
+.auth-modal-card {
+  max-width: 480px;
+  width: 90%;
+  background: var(--bg-card);
+  border: var(--primary-border);
+  box-shadow: 0 0 35px var(--card-border-glow);
+  border-radius: var(--modal-radius);
+  padding: 1.5rem;
+  color: var(--text-white);
+}
+
+.auth-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-desc-text {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.auth-alert {
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 0.9rem;
+  line-height: 1.35;
+}
+
+.auth-alert.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+.auth-alert.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #6ee7b7;
+}
+
+.auth-roles-reference {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-slot);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.roles-ref-title {
+  display: block;
+  font-weight: 800;
+  color: var(--primary-accent);
+  margin-bottom: 0.35rem;
+}
+
+.role-ref-item {
+  margin-bottom: 0.25rem;
+}
+
+.auth-recovery-details {
+  margin-top: 0.9rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.auth-recovery-details summary {
+  cursor: pointer;
+  color: var(--text-gold);
+  font-weight: 700;
+}
+
+.recovery-box {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 190, 11, 0.25);
+  border-radius: 6px;
+}
+
 /* UI Theme Switcher Button (Cyber Blue <-> Neon Crimson) */
 .lobby-ui-theme-btn {
   background: var(--bg-slot);
@@ -6151,6 +6319,174 @@ body {
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+/* Security & Admin Auth Header Elements (Phase 1 Security) */
+.lobby-auth-pill {
+  background: var(--bg-slot);
+  border: var(--primary-border);
+  color: var(--text-muted);
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0.35rem 0.65rem;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  user-select: none;
+}
+
+.lobby-auth-pill .auth-role-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #64748b;
+  display: inline-block;
+}
+
+.lobby-auth-pill.role-super {
+  border-color: #f59e0b;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+.lobby-auth-pill.role-super .auth-role-dot {
+  background: #fbbf24;
+  box-shadow: 0 0 8px #fbbf24;
+}
+
+.lobby-auth-pill.role-admin {
+  border-color: var(--primary-accent);
+  color: var(--primary-accent);
+  background: var(--secondary-badge-bg);
+}
+.lobby-auth-pill.role-admin .auth-role-dot {
+  background: var(--primary-accent);
+  box-shadow: 0 0 8px var(--primary-accent);
+}
+
+.lobby-auth-pill.role-scorekeeper {
+  border-color: #10b981;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+}
+.lobby-auth-pill.role-scorekeeper .auth-role-dot {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.lobby-auth-btn {
+  background: var(--bg-slot);
+  border: var(--card-border);
+  color: var(--text-white);
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.22s ease;
+  user-select: none;
+}
+
+.lobby-auth-btn:hover {
+  background: var(--primary-accent);
+  border-color: var(--primary-accent);
+  color: var(--primary-accent-text);
+  box-shadow: var(--primary-accent-glow);
+  transform: translateY(-1px);
+}
+
+/* Auth Modal Styles */
+.auth-modal-card {
+  max-width: 480px;
+  width: 90%;
+  background: var(--bg-card);
+  border: var(--primary-border);
+  box-shadow: 0 0 35px var(--card-border-glow);
+  border-radius: var(--modal-radius);
+  padding: 1.5rem;
+  color: var(--text-white);
+}
+
+.auth-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-desc-text {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.auth-alert {
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 0.9rem;
+  line-height: 1.35;
+}
+
+.auth-alert.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+.auth-alert.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid #10b981;
+  color: #6ee7b7;
+}
+
+.auth-roles-reference {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-slot);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.roles-ref-title {
+  display: block;
+  font-weight: 800;
+  color: var(--primary-accent);
+  margin-bottom: 0.35rem;
+}
+
+.role-ref-item {
+  margin-bottom: 0.25rem;
+}
+
+.auth-recovery-details {
+  margin-top: 0.9rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.auth-recovery-details summary {
+  cursor: pointer;
+  color: var(--text-gold);
+  font-weight: 700;
+}
+
+.recovery-box {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 190, 11, 0.25);
+  border-radius: 6px;
 }
 
 .lobby-cloud-sync-btn {

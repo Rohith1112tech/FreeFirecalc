@@ -10,10 +10,9 @@ const OAUTH_TOKENS_PATH = path.join(__dirname, 'oauth_tokens.json');
 const OAUTH_CLIENT_PATH = path.join(__dirname, 'oauth_client.json');
 const CLIENT_SECRET_PATH = path.join(__dirname, 'client_secret.json');
 
-// OAuth 2.0 Scopes required for uploading to Google Drive on behalf of user
+// OAuth 2.0 Scopes: Restricted strictly to least-privilege (only files created/managed by this application)
 const OAUTH_SCOPES = [
-  'https://www.googleapis.com/auth/drive.file',
-  'https://www.googleapis.com/auth/drive'
+  'https://www.googleapis.com/auth/drive.file'
 ];
 
 let serviceAccountAuthClient = null;
@@ -126,15 +125,19 @@ function saveUserTokens(tokens) {
 }
 
 /**
- * Generate Google OAuth 2.0 Sign-In URL for user
+ * Generate Google OAuth 2.0 Sign-In URL for user with state parameter
  */
-function generateAuthUrl(redirectUriOverride) {
+function generateAuthUrl(redirectUriOverride, stateParam) {
   const oauth2Client = getOAuth2Client(redirectUriOverride);
-  return oauth2Client.generateAuthUrl({
+  const opts = {
     access_type: 'offline', // Requests refresh_token
     prompt: 'consent',     // Forces consent prompt so refresh_token is always returned
     scope: OAUTH_SCOPES
-  });
+  };
+  if (stateParam) {
+    opts.state = stateParam;
+  }
+  return oauth2Client.generateAuthUrl(opts);
 }
 
 /**
