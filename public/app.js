@@ -2847,21 +2847,10 @@ function updateMVPDisplay() {
   const mvpData = calculateTournamentMVP();
   const top = mvpData.topFragger;
 
-  // 1. Live Poster Overlay (#poster-mvp-strip)
+  // 1. Live Poster Overlay (#poster-mvp-strip) - Removed per user request
   const posterMvpStrip = document.getElementById("poster-mvp-strip");
-  const posterMvpName = document.getElementById("poster-mvp-name");
-  const posterMvpTeam = document.getElementById("poster-mvp-team");
-  const posterMvpKills = document.getElementById("poster-mvp-kills");
-
   if (posterMvpStrip) {
-    if (top && top.totalKills > 0) {
-      posterMvpStrip.style.display = "flex";
-      if (posterMvpName) posterMvpName.textContent = top.playerName;
-      if (posterMvpTeam) posterMvpTeam.textContent = `[${top.teamName}]`;
-      if (posterMvpKills) posterMvpKills.textContent = `🔥 ${top.totalKills} KILLS`;
-    } else {
-      posterMvpStrip.style.display = "none";
-    }
+    posterMvpStrip.style.display = "none";
   }
 
   // 2. Showcase Panel above poster (#mvp-showcase-panel)
@@ -3560,55 +3549,8 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
  * Draws the high-resolution MVP Banner onto the exported canvas
  */
 function drawPosterMVPOverlay(canvas, ctx, theme) {
-  const mvpData = calculateTournamentMVP();
-  const top = mvpData.topFragger;
-  if (!top || top.totalKills <= 0) return;
-
-  const themeConfig = POSTER_THEMES[theme] || POSTER_THEMES.red;
-  const isCyan = themeConfig.layout === "cyan_725";
-
-  // Position: Cyan footer has special layout (86.5%), Red and Modern are at 92.5%
-  const barY = isCyan ? canvas.height * 0.865 : canvas.height * 0.925;
-  const barHeight = canvas.height * 0.038;
-  const barWidth = canvas.width * 0.88;
-  const barX = (canvas.width - barWidth) / 2;
-  const cornerRadius = 6;
-
-  ctx.save();
-
-  // Background box with dark frosted tint
-  ctx.beginPath();
-  if (typeof ctx.roundRect === "function") {
-    ctx.roundRect(barX, barY, barWidth, barHeight, cornerRadius);
-  } else {
-    ctx.rect(barX, barY, barWidth, barHeight);
-  }
-  ctx.fillStyle = "rgba(10, 14, 22, 0.92)";
-  ctx.fill();
-
-  // Glowing border matching theme
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = themeConfig.posColor || "#e50914";
-  ctx.shadowColor = themeConfig.posColor || "#e50914";
-  ctx.shadowBlur = 10;
-  ctx.stroke();
-
-  // Render MVP text
-  const fontSize = Math.round(canvas.width * 0.021);
-  ctx.font = `bold ${fontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  const centerY = barY + barHeight / 2;
-
-  ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-  ctx.shadowBlur = 6;
-  ctx.fillStyle = "#ffffff";
-
-  const mvpText = `🏆 TOURNAMENT MVP: ${top.playerName.toUpperCase()} (${top.teamName.toUpperCase()})  ★  ${top.totalKills} TOTAL KILLS`;
-  ctx.fillText(mvpText, canvas.width / 2, centerY);
-
-  ctx.restore();
+  // On-poster MVP strip removed per user request
+  return;
 }
 
 /**
