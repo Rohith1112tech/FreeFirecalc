@@ -68,9 +68,9 @@ const DEFAULT_TEAMS = [
 
 // Multi-Lobby Configurations (3 Independent Lobbies with Isolated Databases)
 const LOBBY_CONFIGS = {
-  lobby1: { id: "lobby1", label: "LOBBY 1", defaultTitle: "NZ PAID SCRIMS - LOBBY 01", dbTag: "DB-01" },
-  lobby2: { id: "lobby2", label: "LOBBY 2", defaultTitle: "NZ PAID SCRIMS - LOBBY 02", dbTag: "DB-02" },
-  lobby3: { id: "lobby3", label: "LOBBY 3", defaultTitle: "NZ PAID SCRIMS - LOBBY 03", dbTag: "DB-03" }
+  lobby1: { id: "lobby1", label: "LOBBY 1", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 01", dbTag: "DB-01" },
+  lobby2: { id: "lobby2", label: "LOBBY 2", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 02", dbTag: "DB-02" },
+  lobby3: { id: "lobby3", label: "LOBBY 3", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 03", dbTag: "DB-03" }
 };
 
 function getActiveLobbyId() {
@@ -88,7 +88,7 @@ function getLobbyStorageKey(lobbyId = (typeof state !== "undefined" && state.act
 // App State
 const state = {
   activeLobby: "lobby1",
-  tournamentTitle: "NZ PAID SCRIMS - LOBBY 01",
+  tournamentTitle: "JACK SPARROW PAID SCRIMS - LOBBY 01",
   totalMatches: 3,
   teams: Array(12).fill(""),
   teamRosters: {}, // Keyed by team index (0..11): [p1, p2, p3, p4]
@@ -984,7 +984,7 @@ function bindEvents() {
 
   // Tournament title input
   tournamentNameInput.addEventListener("input", (e) => {
-    state.tournamentTitle = e.target.value.trim() || "NZ PAID SCRIMS";
+    state.tournamentTitle = e.target.value.trim() || "JACK SPARROW PAID SCRIMS";
     saveState();
   });
 
@@ -1414,7 +1414,7 @@ function handleStartTournament() {
   state.totalMatches = matches;
 
   const title = tournamentNameInput.value.trim();
-  state.tournamentTitle = title || "NZ PAID SCRIMS";
+  state.tournamentTitle = title || "JACK SPARROW PAID SCRIMS";
 
   // Collect registered teams (NO LONGER COMPULSORY 12 - at least 1 team is required)
   const inputs = teamsInputContainer.querySelectorAll(".team-name-input");
@@ -3981,7 +3981,7 @@ function closeResetConfirmationModal() {
 
 function handleExecuteTournamentReset() {
   const currentLobby = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
-  const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: currentLobby.toUpperCase(), defaultTitle: `NZ PAID SCRIMS - ${currentLobby.toUpperCase()}` };
+  const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: currentLobby.toUpperCase(), defaultTitle: `JACK SPARROW PAID SCRIMS - ${currentLobby.toUpperCase()}` };
 
   // 1. Clear from browser localStorage for active lobby ONLY
   try {
@@ -4120,7 +4120,7 @@ function loadSavedState(targetLobbyId) {
       }
     }
 
-    const defaultTitle = (LOBBY_CONFIGS[activeLobby] && LOBBY_CONFIGS[activeLobby].defaultTitle) || `NZ PAID SCRIMS - ${activeLobby.toUpperCase()}`;
+    const defaultTitle = (LOBBY_CONFIGS[activeLobby] && LOBBY_CONFIGS[activeLobby].defaultTitle) || `JACK SPARROW PAID SCRIMS - ${activeLobby.toUpperCase()}`;
 
     if (saved) {
       const parsed = JSON.parse(saved);

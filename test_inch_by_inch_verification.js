@@ -282,7 +282,7 @@ app.switchLobby("lobby2");
 app.handleExecuteTournamentReset();
 
 assert.strictEqual(app.state.activeLobby, "lobby2");
-assert.strictEqual(app.state.tournamentTitle, "NZ PAID SCRIMS - LOBBY 02");
+assert.strictEqual(app.state.tournamentTitle, "JACK SPARROW PAID SCRIMS - LOBBY 02");
 assert.strictEqual(app.state.matches.every(m => !m.isSaved), true, "Lobby 2 matches must be cleared");
 
 // Switch back to Lobby 1: MUST STILL HAVE ALL MATCHES!
