@@ -5425,18 +5425,52 @@ function fallbackCopyScript() {
 }
 
 /**
- * Fetches and synchronizes tournament state from Google Drive (Zero-Login Cloud Database)
+ * Serverless / API Cloud Proxy Gateway Dispatcher
+ * Securely communicates through Netlify Function / Node API with HttpOnly session credentials.
+ */
+function getCloudProxyEndpoint() {
+  if (typeof window !== "undefined" && window.location && window.location.origin && typeof window.location.origin.includes === "function") {
+    const origin = window.location.origin;
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return "/api/cloud-proxy";
+    }
+  }
+  return "/.netlify/functions/cloud-proxy";
+}
+
+async function dispatchCloudProxyRequest(payload) {
+  const endpoint = getCloudProxyEndpoint();
+  const token = (typeof JSEAuth !== "undefined" && JSEAuth.getAuthToken) ? JSEAuth.getAuthToken() : null;
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {})
+  };
+
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers,
+    credentials: "same-origin", // Automatic transmission of secure HttpOnly session cookie
+    body: JSON.stringify(payload)
+  });
+
+  if (res.status === 401) {
+    throw new Error("UNAUTHORIZED: Session required. Please log in with tournament administrator credentials.");
+  }
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || `Cloud service request failed with HTTP ${res.status}`);
+  }
+
+  return await res.json();
+}
+
+/**
+ * Fetches and synchronizes tournament state from Google Drive via Secure Cloud Proxy
  * Essential for syncing between Laptop and Mobile!
  */
 let isCloudPulling = false;
 
 async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = false, silent = false } = {}) {
-  const webhookUrl = getDriveWebhookUrl();
-  if (!webhookUrl) {
-    if (!silent) alert("Please configure your Google Apps Script Webhook URL first under CLOUD DRIVE SYNC.");
-    return { success: false, reason: "no_webhook" };
-  }
-
   if (isCloudPulling) return { success: false, reason: "in_progress" };
   isCloudPulling = true;
 
@@ -5449,43 +5483,32 @@ async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = f
 
     let cloudData = null;
 
-    // Method 1: Try POST with action: 'get_backup'
     try {
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "get_backup",
-          lobbyId: targetLobby
-        })
+      const json = await dispatchCloudProxyRequest({
+        action: "get_backup",
+        lobbyId: targetLobby
       });
-
-      if (res.status === 403) {
-        throw new Error("ACCESS_DENIED_403");
+      if (json && json.success && json.found && json.backupData) {
+        cloudData = json.backupData;
       }
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.success && json.found && json.backupData) {
-          cloudData = json.backupData;
-        }
-      }
-    } catch (postErr) {
-      if (postErr.message === "ACCESS_DENIED_403") throw postErr;
-      // Fallback: Try GET with action=get_backup
-      try {
-        const getUrl = `${webhookUrl}${webhookUrl.includes("?") ? "&" : "?"}action=get_backup&lobbyId=${encodeURIComponent(targetLobby)}`;
-        const getRes = await fetch(getUrl);
-        if (getRes.status === 403) throw new Error("ACCESS_DENIED_403");
-        if (getRes.ok) {
-          const json = await getRes.json();
-          if (json && json.success && json.found && json.backupData) {
-            cloudData = json.backupData;
+    } catch (proxyErr) {
+      console.warn("[Cloud Proxy Pull Attempt]:", proxyErr.message);
+      // Fallback for direct webhook URL if configured
+      const webhookUrl = getDriveWebhookUrl();
+      if (webhookUrl && !proxyErr.message.includes("UNAUTHORIZED")) {
+        try {
+          const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "get_backup", lobbyId: targetLobby })
+          });
+          if (res.ok) {
+            const json = await res.json();
+            if (json && json.success && json.found && json.backupData) {
+              cloudData = json.backupData;
+            }
           }
-        }
-      } catch (getErr) {
-        if (getErr.message === "ACCESS_DENIED_403") throw getErr;
-        console.warn("[Cloud Pull Fallback Notice]", getErr.message);
+        } catch (_) {}
       }
     }
 
@@ -5925,31 +5948,21 @@ async function syncMatchScoresToGoogleSheets(matchNumber, teamData, options = {}
     Number(team.totalPoints || 0)
   ]);
 
-  // Method 0: Zero-Login Google Apps Script Webhook (Option 1)
-  const webhookUrl = getDriveWebhookUrl();
-  if (webhookUrl) {
-    try {
-      const callerRole = (typeof JSEAuth !== "undefined" ? JSEAuth.getCurrentRole() : "PUBLIC");
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "append_sheet",
-          lobbyId: lobbyId,
-          lobbyName: lobbyInfo.label,
-          timestamp: new Date().toISOString(),
-          callerRole: callerRole,
-          sheetRows: rowsToAppend
-        })
-      });
-      console.log(`[Google Sheets Webhook] Match ${matchNumber} scores synced directly via Webhook (${lobbyInfo.label}).`);
-      if (!silent && (!state || state.activeLobby === lobbyId)) {
-        showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets (${lobbyInfo.label}) & Drive!`, "success");
-      }
-      return { success: true };
-    } catch (whErr) {
-      console.warn("[Google Sheets Webhook Sync Warning]", whErr);
+  // Method 0: Authenticated Netlify Cloud Proxy Gateway (Option 1)
+  try {
+    await dispatchCloudProxyRequest({
+      action: "append_sheet",
+      lobbyId: lobbyId,
+      lobbyName: lobbyInfo.label,
+      sheetRows: rowsToAppend
+    });
+    console.log(`[Google Sheets Proxy] Match ${matchNumber} scores synced via Cloud Proxy (${lobbyInfo.label}).`);
+    if (!silent && (!state || state.activeLobby === lobbyId)) {
+      showMatchAlert(`✅ Match ${matchNumber} saved and synced to Google Sheets (${lobbyInfo.label}) & Drive!`, "success");
     }
+    return { success: true };
+  } catch (proxySheetErr) {
+    console.warn("[Google Sheets Cloud Proxy Notice]", proxySheetErr.message);
   }
 
   // Method 1: Direct Client-Side Google Sheets Append via User's OAuth Token
@@ -6070,26 +6083,20 @@ async function handleSyncAllMatchesToSheets() {
  * Uses user's 5 TB quota via OAuth 2.0 Web Token in browser, or server backend.
  */
 async function uploadFileToDrive({ filename, mimeType, base64Data, description, fileId = null, updateIfExists = false, silent = false }) {
-  // 0. Zero-Login Google Apps Script Webhook (Option 1)
-  const webhookUrl = getDriveWebhookUrl();
-  if (webhookUrl) {
-    try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "backup",
-          filename,
-          mimeType,
-          base64Data,
-          description
-        })
-      });
-      return { success: true, method: "apps_script_webhook" };
-    } catch (whErr) {
-      if (!silent) throw whErr;
-      return { success: false, error: whErr.message };
-    }
+  // 0. Authenticated Netlify Cloud Proxy Gateway (Option 1)
+  try {
+    const action = mimeType && mimeType.includes("image") ? "poster" : "backup";
+    await dispatchCloudProxyRequest({
+      action,
+      filename,
+      mimeType,
+      base64Data,
+      description,
+      lobbyId: (typeof state !== "undefined" && state.activeLobby) || "lobby1"
+    });
+    return { success: true, method: "cloud_proxy" };
+  } catch (whErr) {
+    console.warn("[Cloud Proxy Upload Notice]", whErr.message);
   }
 
   const browserToken = getBrowserOAuthToken();
@@ -6285,21 +6292,14 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       autoSavedToDrive: true
     };
 
-    // 1. Primary Zero-Login Route: Google Apps Script Webhook (Option 1)
-    if (webhookUrl) {
-      const callerRole = (typeof JSEAuth !== "undefined" ? JSEAuth.getCurrentRole() : "PUBLIC");
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "backup",
-          lobbyId: lobbyId,
-          lobbyName: lobbyInfo.label,
-          filename,
-          timestamp: new Date().toISOString(),
-          callerRole: callerRole,
-          backupData
-        })
+    // 1. Primary Authenticated Route: Netlify Cloud Proxy Gateway
+    try {
+      await dispatchCloudProxyRequest({
+        action: "backup",
+        lobbyId: lobbyId,
+        lobbyName: lobbyInfo.label,
+        filename,
+        backupData
       });
 
       // Also auto-sync scores to Google Sheet if current match has scores
@@ -6314,10 +6314,12 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
         autosaveStatusPill.classList.remove("syncing-drive", "saving");
         autosaveStatusPill.classList.add("drive-synced");
         autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
-        autosaveStatusPill.title = `Auto-saved to Google Drive folder (${GOOGLE_DRIVE_FOLDER_ID}) as ${filename} at ${timeStr} (${lobbyInfo.label} Webhook)`;
+        autosaveStatusPill.title = `Auto-saved to Google Drive folder (${GOOGLE_DRIVE_FOLDER_ID}) as ${filename} at ${timeStr} (${lobbyInfo.label} Cloud Proxy)`;
       }
-      console.log(`[Google Drive Webhook Auto-Sync] Tournament backup synced (${filename})`);
+      console.log(`[Google Drive Cloud Proxy Auto-Sync] Tournament backup synced (${filename})`);
       return { success: true };
+    } catch (proxySyncErr) {
+      console.warn("[Cloud Proxy Sync Notice]:", proxySyncErr.message);
     }
 
     const jsonStr = JSON.stringify(backupData, null, 2);

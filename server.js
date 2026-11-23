@@ -14,9 +14,20 @@ const {
   DRIVE_FOLDER_ID,
   SPREADSHEET_ID
 } = require('./google_service');
+const serverAuth = require('./server_auth');
 
 const PORT = process.env.PORT || 3000;
-const ADMIN_API_KEY = process.env.ADMIN_API_KEY || 'jse_admin_secret_key_2026';
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+
+// Production Startup Guard: Reject missing secrets at startup
+if (process.env.NODE_ENV === 'production') {
+  if (!ADMIN_API_KEY) {
+    throw new Error('FATAL CONFIGURATION ERROR: ADMIN_API_KEY must be defined in production environment.');
+  }
+  if (!process.env.AUTH_SESSION_SECRET) {
+    throw new Error('FATAL CONFIGURATION ERROR: AUTH_SESSION_SECRET must be defined in production environment.');
+  }
+}
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -80,16 +91,18 @@ setInterval(() => {
 // OAuth State Store for CSRF Prevention
 const oauthStateCache = new Map();
 
-function sendJson(res, statusCode, data, req = null) {
+function sendJson(res, statusCode, data, req = null, extraHeaders = {}) {
   const origin = req ? getCorsOrigin(req) : ALLOWED_ORIGINS[0];
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
+    'Access-Control-Allow-Credentials': 'true',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
-    'Referrer-Policy': 'strict-origin-when-cross-origin'
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    ...extraHeaders
   });
   res.end(JSON.stringify(data));
 }
@@ -114,35 +127,16 @@ function parseBody(req, maxSizeBytes = 10 * 1024 * 1024) { // Default 10MB max
   });
 }
 
-// Request Authentication Guard
+// Request Authentication Guard: Cryptographic session verification
 function authenticateAdmin(req) {
-  // Allow test / local development bypass if explicitly configured
-  if (process.env.NODE_ENV === 'test' && !req.headers.authorization && !req.headers['x-api-key']) {
-    return { authenticated: true, role: 'SUPER_ADMIN' };
+  const authResult = serverAuth.authenticateRequest(req);
+  if (authResult.authenticated) {
+    return {
+      authenticated: true,
+      role: authResult.user.role,
+      user: authResult.user
+    };
   }
-
-  const authHeader = req.headers.authorization || '';
-  const apiKeyHeader = req.headers['x-api-key'] || '';
-
-  // 1. Check API Key
-  if (apiKeyHeader && apiKeyHeader === ADMIN_API_KEY) {
-    return { authenticated: true, role: 'SUPER_ADMIN' };
-  }
-
-  // 2. Check Bearer Token
-  if (authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7).trim();
-    if (token === ADMIN_API_KEY || token.length >= 32) {
-      return { authenticated: true, role: 'TOURNAMENT_ADMIN' };
-    }
-  }
-
-  // In local development mode without strict env, allow localhost requests
-  const host = req.headers.host || '';
-  if (process.env.NODE_ENV !== 'production' && (host.startsWith('localhost:') || host.startsWith('127.0.0.1:'))) {
-    return { authenticated: true, role: 'LOCAL_ADMIN' };
-  }
-
   return { authenticated: false };
 }
 
@@ -165,9 +159,101 @@ const server = http.createServer(async (req, res) => {
   const reqPath = parsedUrl.pathname;
 
   // Rate Limiting Check
-  const isSensitive = ['/api/record-match-scores', '/api/upload-drive-file', '/api/oauth/configure'].includes(reqPath);
+  const isSensitive = ['/api/record-match-scores', '/api/upload-drive-file', '/api/oauth/configure', '/api/cloud-proxy'].includes(reqPath);
   if (isRateLimited(clientIp, isSensitive)) {
     return sendJson(res, 429, { success: false, error: 'Too Many Requests. Rate limit exceeded, please retry later.' }, req);
+  }
+
+  // ==========================================
+  // SERVER-SIDE AUTHENTICATION & SESSION API
+  // ==========================================
+  if (reqPath === '/api/auth') {
+    if (req.method === 'POST') {
+      try {
+        const body = await parseBody(req, 64 * 1024);
+        const action = body.action || 'login';
+
+        if (action === 'login') {
+          const loginResult = serverAuth.handleLogin(body.username, body.password);
+          if (!loginResult.success) {
+            return sendJson(res, loginResult.status, { success: false, error: loginResult.error }, req);
+          }
+          const isSecure = req.headers['x-forwarded-proto'] === 'https';
+          const setCookie = serverAuth.generateSetCookieHeader(loginResult.token, isSecure);
+          return sendJson(res, 200, {
+            success: true,
+            user: loginResult.user,
+            token: loginResult.token
+          }, req, { 'Set-Cookie': setCookie });
+        }
+
+        if (action === 'logout') {
+          const clearCookie = serverAuth.generateClearCookieHeader();
+          return sendJson(res, 200, { success: true, message: 'Logged out successfully.' }, req, { 'Set-Cookie': clearCookie });
+        }
+
+        return sendJson(res, 400, { success: false, error: 'Unknown auth action.' }, req);
+      } catch (err) {
+        return sendJson(res, 400, { success: false, error: 'Malformed request.' }, req);
+      }
+    }
+
+    if (req.method === 'GET') {
+      const authResult = serverAuth.authenticateRequest(req);
+      if (authResult.authenticated) {
+        return sendJson(res, 200, { success: true, authenticated: true, user: authResult.user }, req);
+      }
+      return sendJson(res, 401, { success: false, authenticated: false, error: 'No active session.' }, req);
+    }
+  }
+
+  // ==========================================
+  // CLOUD PROXY GATEWAY (Google Apps Script)
+  // ==========================================
+  if (req.method === 'POST' && reqPath === '/api/cloud-proxy') {
+    const authResult = serverAuth.authenticateRequest(req);
+    if (!authResult.authenticated) {
+      return sendJson(res, 401, { success: false, error: 'Authentication required to access cloud services.' }, req);
+    }
+
+    try {
+      const payload = await parseBody(req, 10 * 1024 * 1024);
+      const action = String(payload.action || 'backup').toLowerCase();
+      const ALLOWED_PROXY_ACTIONS = ['get_backup', 'get_all_lobbies', 'backup', 'append_sheet', 'poster'];
+      if (!ALLOWED_PROXY_ACTIONS.includes(action)) {
+        return sendJson(res, 403, { success: false, error: 'Action not permitted by cloud proxy allowlist.' }, req);
+      }
+
+      // Enforce Role Permissions
+      const isWrite = ['backup', 'append_sheet', 'poster'].includes(action);
+      const userRole = authResult.user.role;
+      if (isWrite && ![serverAuth.ROLES.SUPER_ADMIN, serverAuth.ROLES.TOURNAMENT_ADMIN, serverAuth.ROLES.SCOREKEEPER].includes(userRole)) {
+        return sendJson(res, 403, { success: false, error: 'Forbidden: Insufficient privileges for cloud write.' }, req);
+      }
+
+      const appsScriptUrl = process.env.APPS_SCRIPT_URL;
+      const adminWebhookKey = process.env.ADMIN_WEBHOOK_KEY;
+
+      if (!appsScriptUrl || !adminWebhookKey) {
+        return sendJson(res, 500, { success: false, error: 'Cloud proxy not configured: APPS_SCRIPT_URL or ADMIN_WEBHOOK_KEY missing on server.' }, req);
+      }
+
+      // Inject secure server-side metadata and webhook secret
+      payload.authKey = adminWebhookKey;
+      payload.requestId = crypto.randomBytes(16).toString('hex');
+      payload.timestamp = new Date().toISOString();
+      delete payload.callerRole; // Never forward client-asserted role
+
+      const proxyRes = await fetch(appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const proxyJson = await proxyRes.json();
+      return sendJson(res, proxyRes.status, proxyJson, req);
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: 'Cloud proxy gateway failure: ' + err.message }, req);
+    }
   }
 
   // ==========================================

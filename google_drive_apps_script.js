@@ -65,32 +65,48 @@ function doPost(e) {
       return jsonResponse({ success: false, error: 'Action not allowed.' }, 403);
     }
 
-    // 3. Authorization & Permission Verification
-    const isWriteAction = ['backup', 'append_sheet', 'poster'].includes(action);
-    if (isWriteAction) {
+    // 3. Authorization & Permission Verification (Fail-Closed, Protects both Reads and Writes)
+    const isPrivileged = ['get_backup', 'get_all_lobbies', 'backup', 'append_sheet', 'poster'].includes(action);
+    if (isPrivileged) {
       const authResult = verifyWebhookAuthorization(payload);
       if (!authResult.authorized) {
         logAudit(action, lobbyId, 'UNAUTHORIZED', authResult.reason);
         return jsonResponse({ success: false, error: 'Unauthorized: ' + authResult.reason }, 401);
       }
 
-      // 4. Rate Limiting Check via CacheService
-      if (isRateLimited(lobbyId, action)) {
+      // 4. Timestamp Validation (Strict 5-minute validity window)
+      if (!payload.timestamp) {
+        logAudit(action, lobbyId, 'MISSING_TIMESTAMP', 'Privileged request missing timestamp');
+        return jsonResponse({ success: false, error: 'Missing request timestamp.' }, 400);
+      }
+      const reqTime = new Date(payload.timestamp).getTime();
+      if (isNaN(reqTime) || Math.abs(Date.now() - reqTime) > (5 * 60 * 1000)) {
+        logAudit(action, lobbyId, 'REPLAY_REJECTED', 'Timestamp expired or skewed beyond 5 minutes');
+        return jsonResponse({ success: false, error: 'Request rejected: timestamp expired or clock out of sync.' }, 400);
+      }
+
+      // 5. Unique Request ID / Nonce Replay Prevention
+      if (!payload.requestId || typeof payload.requestId !== 'string' || payload.requestId.length < 16) {
+        logAudit(action, lobbyId, 'INVALID_NONCE', 'Missing or invalid unique requestId');
+        return jsonResponse({ success: false, error: 'Missing or invalid unique requestId (nonce).' }, 400);
+      }
+      const cache = CacheService.getScriptCache();
+      const nonceKey = 'nonce_' + payload.requestId;
+      if (cache.get(nonceKey)) {
+        logAudit(action, lobbyId, 'REPLAY_DUPLICATE', 'Duplicate requestId / replay detected');
+        return jsonResponse({ success: false, error: 'Duplicate request rejected (replay protection).' }, 409);
+      }
+      cache.put(nonceKey, '1', 300); // 5 minutes TTL
+
+      // 6. Rate Limiting Check via CacheService for write actions
+      const isWriteAction = ['backup', 'append_sheet', 'poster'].includes(action);
+      if (isWriteAction && isRateLimited(lobbyId, action)) {
         logAudit(action, lobbyId, 'RATE_LIMITED', 'Write rate limit exceeded');
         return jsonResponse({ success: false, error: 'Rate limit exceeded: please wait a moment before saving again.' }, 429);
       }
-
-      // 5. Replay Protection Check
-      if (payload.timestamp) {
-        const reqTime = new Date(payload.timestamp).getTime();
-        if (isNaN(reqTime) || Math.abs(Date.now() - reqTime) > REPLAY_WINDOW_MS) {
-          logAudit(action, lobbyId, 'REPLAY_REJECTED', 'Timestamp expired or skewed beyond 15 minutes');
-          return jsonResponse({ success: false, error: 'Request rejected: timestamp expired or clock out of sync.' }, 400);
-        }
-      }
     }
 
-    // 6. Action Execution
+    // 7. Action Execution
     let result = { success: true };
 
     if (action === 'get_backup') {
@@ -121,61 +137,58 @@ function doPost(e) {
 }
 
 /**
- * Handle HTTP GET Requests
+ * Handle HTTP GET Requests (Public status only; reads require authenticated POST)
  */
 function doGet(e) {
   try {
     const action = ((e && e.parameter && e.parameter.action) || 'status').toLowerCase();
-    const lobbyId = normalizeLobbyId((e && e.parameter && (e.parameter.lobbyId || e.parameter.lobby)) || 'lobby1');
 
-    if (!ALLOWED_ACTIONS.includes(action)) {
-      return jsonResponse({ success: false, error: 'Action not allowed.' }, 403);
+    if (action === 'status') {
+      return jsonResponse({
+        success: true,
+        status: 'ONLINE',
+        service: 'Jack Sparrow Esports Secured Cloud Webhook',
+        version: '2.1.0-critical-hardened',
+        folderId: DRIVE_FOLDER_ID,
+        spreadsheetId: SPREADSHEET_ID,
+        serverTime: new Date().toISOString()
+      });
     }
 
-    if (action === 'get_backup') {
-      return jsonResponse(getTournamentBackup(lobbyId));
-    }
-    if (action === 'get_all_lobbies') {
-      return jsonResponse(getAllLobbyBackups());
-    }
-
-    // Default status ping
+    // Unauthenticated GET reads of private tournament backups are strictly rejected
     return jsonResponse({
-      success: true,
-      status: 'ONLINE',
-      service: 'Jack Sparrow Esports Secured Cloud Webhook',
-      version: '2.0.0-phase1-hardened',
-      folderId: DRIVE_FOLDER_ID,
-      spreadsheetId: SPREADSHEET_ID,
-      serverTime: new Date().toISOString()
-    });
+      success: false,
+      error: 'Unauthorized: Tournament data queries require authenticated POST via Netlify Cloud Proxy.'
+    }, 401);
   } catch (err) {
     return jsonResponse({ success: false, error: 'Internal service error.' }, 500);
   }
 }
 
 /**
- * Verify Webhook Authorization against Script Properties or Admin Token
+ * Verify Webhook Authorization against Script Properties (Fail-Closed)
  */
 function verifyWebhookAuthorization(payload) {
   const configuredSecret = PropertiesService.getScriptProperties().getProperty('ADMIN_WEBHOOK_KEY');
   
-  // If an administrative key is configured in Apps Script Properties, strictly enforce it
-  if (configuredSecret) {
-    const providedKey = payload.authKey || payload.adminToken || payload.apiKey;
-    if (!providedKey || !constantTimeEquals(providedKey, configuredSecret)) {
-      return { authorized: false, reason: 'Invalid or missing administrative webhook key.' };
-    }
+  // FAIL CLOSED: If ADMIN_WEBHOOK_KEY is not configured in Script Properties, reject immediately
+  if (!configuredSecret) {
+    return {
+      authorized: false,
+      reason: 'ADMIN_WEBHOOK_KEY is not configured in Script Properties. All privileged operations are locked.'
+    };
   }
 
-  // Validate authorized role
-  const callerRole = payload.callerRole || payload.role;
-  const allowedRoles = ['SUPER_ADMIN', 'TOURNAMENT_ADMIN', 'SCOREKEEPER', 'LOCAL_ADMIN'];
-  if (callerRole && !allowedRoles.includes(callerRole)) {
-    return { authorized: false, reason: 'Role does not possess write privileges.' };
+  const providedKey = payload.authKey || payload.adminToken || payload.apiKey;
+  if (!providedKey || !constantTimeEquals(providedKey, configuredSecret)) {
+    return {
+      authorized: false,
+      reason: 'Invalid or missing administrative webhook key.'
+    };
   }
 
-  return { authorized: true };
+  // Authoritative role derived from verified secret match (NEVER trust client payload role)
+  return { authorized: true, role: 'SUPER_ADMIN' };
 }
 
 /**
