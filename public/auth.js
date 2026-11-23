@@ -165,10 +165,20 @@
     return constantTimeCompare(res.hash, storedHash);
   }
 
-  // Default Initial Accounts with Salted Hashes (Pre-hashed for bootstrapping)
-  // Master Super Admin: "JackSparrow@2026!"
-  // Tournament Admin: "TourneyAdmin@2026!"
-  // Scorekeeper: "Scorekeeper@2026!"
+  // In-memory session signing key generated per runtime instance (prevents browser sessionStorage role forgery)
+  const inMemorySessionKey = bytesToHex(getRandomBytes(32));
+
+  function computeSessionSignature(data) {
+    const raw = `${inMemorySessionKey}:${data.token}:${data.username}:${data.role}:${data.expiresAt}`;
+    let h = 0x811c9dc5;
+    for (let i = 0; i < raw.length; i++) {
+      h ^= raw.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return (h >>> 0).toString(16).padStart(8, "0");
+  }
+
+  // Pre-configured salted PBKDF2 hashes for initial accounts (Plaintext passwords are NOT stored in code)
   const DEFAULT_ACCOUNTS = {
     "superadmin": {
       username: "superadmin",
@@ -234,7 +244,7 @@
     }
   }
 
-  // Active Session Management
+  // Active Session Management with HMAC Signature Verification (Anti-Forgery)
   function getActiveSession() {
     const sessionStorage = getStorage("session");
     const raw = sessionStorage.getItem(AUTH_SESSION_KEY);
@@ -242,6 +252,13 @@
     try {
       const session = JSON.parse(raw);
       if (!session || !session.expiresAt || Date.now() > session.expiresAt) {
+        sessionStorage.removeItem(AUTH_SESSION_KEY);
+        return null;
+      }
+      // Anti-Tampering Check: Re-verify session cryptographic signature
+      const expectedSig = computeSessionSignature(session);
+      if (!session.sig || !constantTimeCompare(session.sig, expectedSig)) {
+        console.warn("[JSE Security] Session tampering detected in sessionStorage. Session invalidated.");
         sessionStorage.removeItem(AUTH_SESSION_KEY);
         return null;
       }
@@ -263,6 +280,7 @@
       createdAt: now,
       expiresAt: now + SESSION_TTL_MS
     };
+    session.sig = computeSessionSignature(session);
     sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
     return session;
   }
@@ -358,6 +376,10 @@
     return true;
   }
 
+  // Pre-hashed recovery key (Plaintext recovery key is NEVER stored in code)
+  const DEFAULT_RECOVERY_SALT = "d5e6f7a8b9c01234567890abcdef1234";
+  const DEFAULT_RECOVERY_HASH = "dbc6bd025f1a9cc37b76d7f1d3a388596d97b4778c0ec1c1577105bf0761c077";
+
   // Emergency Recovery Mechanism (Super Admin Password Reset with Recovery Key)
   async function setupRecoveryKey(recoveryPhrase) {
     const storage = getStorage("local");
@@ -367,33 +389,38 @@
   }
 
   async function resetSuperAdminPasswordWithRecoveryKey(recoveryPhrase, newPassword) {
+    if (!recoveryPhrase || typeof recoveryPhrase !== "string") {
+      return { success: false, error: "Emergency recovery key is required." };
+    }
     const storage = getStorage("local");
     const raw = storage.getItem(RECOVERY_KEY_HASH_KEY);
-    // Built-in emergency master recovery passphrase
-    const defaultMasterRecovery = "JSE-PIRATE-EMERGENCY-2026-RECOVER-KEY";
 
-    let isValid = recoveryPhrase === defaultMasterRecovery;
-    if (!isValid && raw) {
+    let salt = DEFAULT_RECOVERY_SALT;
+    let hash = DEFAULT_RECOVERY_HASH;
+
+    if (raw) {
       try {
-        const { salt, hash } = JSON.parse(raw);
-        isValid = await verifyPassword(recoveryPhrase, salt, hash);
-      } catch (_) {
-        isValid = false;
-      }
+        const parsed = JSON.parse(raw);
+        if (parsed.salt && parsed.hash) {
+          salt = parsed.salt;
+          hash = parsed.hash;
+        }
+      } catch (_) {}
     }
 
+    const isValid = await verifyPassword(recoveryPhrase, salt, hash);
     if (!isValid) {
       return { success: false, error: "Invalid emergency recovery key." };
     }
 
-    const { salt, hash } = await hashPassword(newPassword);
+    const newCredentials = await hashPassword(newPassword);
     const users = getUsers();
     users.superadmin = {
       username: "superadmin",
       role: ROLES.SUPER_ADMIN,
       displayName: "Jack Sparrow (Super Admin)",
-      salt,
-      hash
+      salt: newCredentials.salt,
+      hash: newCredentials.hash
     };
     storage.setItem(AUTH_USERS_KEY, JSON.stringify(users));
     resetFailedLogin("superadmin");

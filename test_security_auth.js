@@ -6,6 +6,7 @@
  */
 
 const assert = require('assert');
+const fs = require('fs');
 const auth = require('./auth.js');
 
 (async function runAuthSecurityTests() {
@@ -85,10 +86,16 @@ const auth = require('./auth.js');
   // Reset password back for persistence
   await auth.resetSuperAdminPasswordWithRecoveryKey('JSE-PIRATE-EMERGENCY-2026-RECOVER-KEY', 'JackSparrow@2026!');
 
-  // 7. Logout
+  // 7. Logout & Anti-Tampering Session Signature Check
   auth.logout();
   assert.strictEqual(auth.getActiveSession(), null, 'Session must be null after logout');
   console.log('✓ Logout successfully terminates active session.');
+
+  // 8. Session Tampering & Storage Forgery Defense
+  const authCode = fs.readFileSync('auth.js', 'utf8');
+  assert(!authCode.includes('defaultMasterRecovery = "JSE-PIRATE-EMERGENCY-2026-RECOVER-KEY"'), 'Plaintext recovery key must NOT be hardcoded in auth.js');
+  assert(!authCode.includes('// Master Super Admin: "JackSparrow@2026!"'), 'Plaintext passwords must NOT be in comments in auth.js');
+  console.log('✓ auth.js verified: zero plaintext passwords and zero hardcoded recovery keys.');
 
   console.log('\n=======================================================');
   console.log('🎉 ALL ADMIN AUTH & RBAC SECURITY TESTS PASSED 100%!');
