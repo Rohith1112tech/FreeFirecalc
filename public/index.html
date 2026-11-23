@@ -398,30 +398,9 @@
                   </span>
                   <span class="btn-cutout-right"></span>
                 </button>
-                <button type="button" id="btn-import-all-matches" class="cyber-btn" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #34d399; color: #ffffff;" title="Import all matches (M1, M2, M3, M4...) from pasted Gemini output at once">
-                  <span class="btn-cutout-left"></span>
-                  <span class="btn-content">
-                    <span class="btn-flame-icon">🚀</span>
-                    <span class="btn-text">IMPORT ALL MATCHES FROM TEXT</span>
-                  </span>
-                  <span class="btn-cutout-right"></span>
-                </button>
                 <button type="button" id="btn-clear-auto-match" class="action-ghost-btn danger">
                   <span>↺ Clear</span>
                 </button>
-              </div>
-
-              <!-- Gemini & Table Format Guide -->
-              <div class="auto-paste-format-help">
-                <div class="format-help-header" id="btn-toggle-format-help" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; color: #38bdf8; padding: 0.45rem 0.75rem; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 4px; margin-top: 0.5rem; margin-bottom: 0.65rem;">
-                  <span>📖 <strong>How to paste Gemini output / Supported Formats</strong> (Click to view)</span>
-                  <span id="format-help-arrow">▼</span>
-                </div>
-                <div id="format-help-content" style="display: none; font-size: 0.78rem; color: #cbd5e1; background: rgba(15, 23, 42, 0.95); padding: 0.85rem; border-radius: 4px; border: 1px solid rgba(56, 189, 248, 0.2); margin-bottom: 0.85rem; line-height: 1.5;">
-                  <p style="margin: 0 0 0.5rem 0; color: #34d399;"><strong>Option 1 — Single Match Paste:</strong> Select a match tab (e.g. <code>⚡ AUTO MATCH 1</code>), paste the match table, and click <strong>PARSE &amp; SAVE MATCH 1</strong>.</p>
-                  <p style="margin: 0 0 0.5rem 0; color: #38bdf8;"><strong>Option 2 — One-Click All Matches:</strong> Paste the full Gemini message (containing <code>M1</code>, <code>M2</code>, <code>M3</code>, <code>M4</code>) into the box and click <strong>IMPORT ALL MATCHES FROM TEXT</strong> to auto-score all matches simultaneously!</p>
-                  <p style="margin: 0; color: #f59e0b;"><strong>Note:</strong> Teams with <code>-</code> (e.g. 0 points / DNP) are automatically assigned to their rank with 0 points so no teams are missed.</p>
-                </div>
               </div>
 
               <div id="auto-match-alert" class="auto-paste-feedback-box" style="display: none;"></div>
