@@ -137,13 +137,15 @@ app.applyUiTheme('crimson');
 assert.strictEqual(mockDocElement.getAttribute('data-ui-theme'), 'crimson', 'documentElement must have data-ui-theme="crimson"');
 assert.strictEqual(document.getElementById('ui-theme-btn-text').textContent, 'UI: NEON CRIMSON', 'Button text must update to UI: NEON CRIMSON');
 assert.strictEqual(localStorage.getItem('jse_ui_theme'), 'crimson', 'localStorage jse_ui_theme must be crimson');
-console.log("✓ applyUiTheme('crimson') correctly updates DOM attribute, label, and localStorage.");
+assert.strictEqual(document.getElementById('header-banner-img').src, 'assets/header_banner_red.jpg', 'header-banner-img must switch to red banner in crimson theme');
+console.log("✓ applyUiTheme('crimson') correctly updates DOM attribute, label, banner image, and localStorage.");
 
 // Test toggleUiTheme() from crimson to blue
 app.toggleUiTheme();
 assert.strictEqual(mockDocElement.getAttribute('data-ui-theme'), undefined, 'data-ui-theme attribute must be removed for default blue');
 assert.strictEqual(document.getElementById('ui-theme-btn-text').textContent, 'UI: CYBER BLUE', 'Button text must update to UI: CYBER BLUE');
 assert.strictEqual(localStorage.getItem('jse_ui_theme'), 'blue', 'localStorage jse_ui_theme must be blue');
+assert.strictEqual(document.getElementById('header-banner-img').src, 'assets/header_banner_blue.jpg', 'header-banner-img must switch to blue banner in blue theme');
 console.log("✓ toggleUiTheme() correctly switches back to Cyber Blue and persists state.");
 
 // Test toggleUiTheme() from blue to crimson

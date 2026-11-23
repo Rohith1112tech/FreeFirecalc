@@ -184,6 +184,11 @@ function applyUiTheme(theme) {
     btnEl.setAttribute("aria-label", isCrimson ? "Switch to Cyber Blue theme" : "Switch to Neon Crimson theme");
     btnEl.setAttribute("data-current-theme", isCrimson ? "crimson" : "blue");
   }
+
+  const headerBannerImg = typeof document !== "undefined" ? document.getElementById("header-banner-img") : null;
+  if (headerBannerImg) {
+    headerBannerImg.src = isCrimson ? "assets/header_banner_red.jpg" : "assets/header_banner_blue.jpg";
+  }
 }
 
 function toggleUiTheme() {
