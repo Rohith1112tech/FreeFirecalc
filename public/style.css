@@ -4303,6 +4303,78 @@ body {
   display: none !important;
 }
 
+/* =====================================================================
+   UIVERSE.IO ANIMATED DOWNLOAD BUTTON
+   From Uiverse.io by Madflows - https://uiverse.io/Madflows/stale-baboon-45
+   MIT License, Copyright (c) Madflows (Folarin Lawal)
+===================================================================== */
+.uiverse-download-btn {
+  position: relative;
+  overflow: hidden;
+  height: 3rem;
+  padding: 0 2rem;
+  border-radius: 1.5rem;
+  background: #3d3a4e;
+  background-size: 400%;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.uiverse-download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(150, 93, 233, 0.45);
+}
+
+.uiverse-download-btn:active {
+  transform: translateY(1px);
+}
+
+.uiverse-download-btn:hover::before {
+  transform: scaleX(1);
+}
+
+.uiverse-btn-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.uiverse-download-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  width: 100%;
+  height: inherit;
+  border-radius: inherit;
+  background: linear-gradient(
+    82.3deg,
+    rgba(150, 93, 233, 1) 10.8%,
+    rgba(99, 88, 238, 1) 94.3%
+  );
+  transition: all 0.475s;
+}
+
+.uiverse-download-btn.downloading {
+  opacity: 0.85;
+  cursor: wait;
+}
+
 /* Compact Aggressive Download Results Button matching poster size */
 .download-results-prominent-btn {
   padding: 0.75rem 1.6rem !important;
