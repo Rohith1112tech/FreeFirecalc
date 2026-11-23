@@ -36,12 +36,24 @@ assert(css.includes('--secondary-accent: #b80022'), 'style.css crimson must defi
 assert(css.includes('--text-muted: #c4969e'), 'style.css crimson must define --text-muted: #c4969e');
 console.log("✓ style.css Theme 2 (Neon Crimson) CSS variables verified.");
 
-// 4. Verify style.css component polish (modals, lobby-ui-theme-btn, tables)
+// 4. Verify style.css component polish (modals, lobby-ui-theme-btn, tables, and themed badges)
 assert(css.includes('.lobby-ui-theme-btn'), 'style.css must style .lobby-ui-theme-btn');
 assert(css.includes('backdrop-filter: var(--modal-backdrop)'), 'style.css must apply modal backdrop blur');
 assert(css.includes('--modal-radius: 16px'), 'style.css must have 16px modal radius');
 assert(css.includes('.cyber-matrix-table tbody tr:nth-child(even)'), 'style.css must have alternating table row shading');
-console.log("✓ style.css component polish (theme button, modals blur & radius, table polish) verified.");
+assert(css.includes('--badge-tag-text: #00c2ff'), 'style.css :root must define --badge-tag-text: #00c2ff');
+assert(css.includes('--badge-tag-text: #ff4d6d'), 'style.css crimson must define --badge-tag-text: #ff4d6d');
+assert(css.includes('--minus-tag-text: #38bdf8'), 'style.css :root must define --minus-tag-text: #38bdf8');
+assert(css.includes('--minus-tag-text: #f87171'), 'style.css crimson must define --minus-tag-text: #f87171');
+assert(css.includes('--btn-danger-bg'), 'style.css must define --btn-danger-bg');
+assert(css.includes('--btn-update-grad'), 'style.css must define --btn-update-grad');
+
+// Verify that user-spotted red elements in Cyber Blue are cleanly themed
+assert(css.includes('.roster-counter {\n  font-family: var(--font-tech);\n  font-weight: 700;\n  font-size: 0.85rem;\n  letter-spacing: 1.5px;\n  color: var(--badge-tag-text);\n  background: var(--badge-tag-bg);'), '.roster-counter must use themed variables');
+assert(css.includes('.minus-label {\n  font-family: var(--font-tech);\n  font-size: 0.74rem;\n  font-weight: 800;\n  letter-spacing: 1.1px;\n  color: var(--minus-tag-text);'), '.minus-label must use --minus-tag-text');
+assert(css.includes('.team-pts-preview b {\n  color: var(--pts-preview-num);'), '.team-pts-preview b must use --pts-preview-num');
+assert(css.includes('.player-p-prefix {\n  font-family: var(--font-display);\n  font-size: 0.65rem;\n  font-weight: 800;\n  color: var(--prefix-tag-text);'), '.player-p-prefix must use --prefix-tag-text');
+console.log("✓ style.css component polish (theme button, modals blur & radius, table polish, zero red bleed in Cyber Blue) verified.");
 
 // 5. Test app.js JavaScript theme functions in DOM mock
 const domElements = {};

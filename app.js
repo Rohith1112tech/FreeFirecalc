@@ -1705,7 +1705,7 @@ function renderAutoMatchPreview(teamData) {
       <td style="font-weight: 800; color: #ffffff;">${escapeHtml(t.teamName)}</td>
       <td><span style="color: #38bdf8; font-weight: 700;">#${p || "-"}</span></td>
       <td>${placePts}</td>
-      <td><span style="color: #f87171; font-weight: 700;">${kills}</span></td>
+      <td><span style="color: var(--primary-accent); font-weight: 700;">${kills}</span></td>
       <td><span style="color: #34d399; font-weight: 800;">${total}</span></td>
     `;
     autoPreviewTbody.appendChild(tr);
@@ -3881,7 +3881,7 @@ function openTeamBreakdownModal(teamName) {
         <div class="modal-breakdown-details">
           <span>Rank: <b>#${mb.placement}</b> (${mb.placementPoints} pts)</span>
           <span>Kills: <b>${mb.kills}</b> (${mb.kills} pts)</span>
-          ${mb.minus > 0 ? `<span>Minus: <b style="color:#ef4444;">-${mb.minus}</b> (-${mb.minus} pts)</span>` : ""}
+          ${mb.minus > 0 ? `<span>Minus: <b style="color:var(--minus-tag-text);">-${mb.minus}</b> (-${mb.minus} pts)</span>` : ""}
         </div>
         <div class="modal-match-total">${mb.totalPoints} PTS</div>
       `;
@@ -3902,7 +3902,7 @@ function openTeamBreakdownModal(teamName) {
       <div>
         <div class="summary-stat-label">CUMULATIVE PLACEMENT PTS: <b>${teamStat.placementPoints}</b></div>
         <div class="summary-stat-label">CUMULATIVE ELIMINATION PTS: <b>${teamStat.eliminationPoints}</b></div>
-        ${teamStat.minusPoints > 0 ? `<div class="summary-stat-label" style="color:#fca5a5;">CUMULATIVE PENALTY / MINUS: <b>-${teamStat.minusPoints}</b></div>` : ""}
+        ${teamStat.minusPoints > 0 ? `<div class="summary-stat-label" style="color:var(--minus-tag-text);">CUMULATIVE PENALTY / MINUS: <b>-${teamStat.minusPoints}</b></div>` : ""}
         <div class="summary-stat-label">BOOYAHS WON: <b>${teamStat.booyahs}</b></div>
       </div>
       <div style="text-align: right;">
