@@ -3665,11 +3665,11 @@ body {
 .slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-12 { top: 85.11% !important; }
 
 .slot-team-name {
-  font-family: var(--font-tech), sans-serif !important;
-  font-weight: 700 !important;
-  font-size: clamp(7px, 1.05vw, 10.5px) !important;
+  font-family: 'Rajdhani', 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(5.5px, 0.85vw, 7.6px) !important;
   color: #ffffff !important;
-  letter-spacing: 0.35px !important;
+  letter-spacing: 0.25px !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -3695,9 +3695,9 @@ body {
 }
 
 .slot-empty-label {
-  font-family: var(--font-tech), sans-serif !important;
-  font-size: clamp(7px, 1.0vw, 10px) !important;
-  font-weight: 700 !important;
+  font-family: 'Rajdhani', 'Segoe UI', Arial, sans-serif !important;
+  font-size: clamp(5px, 0.78vw, 7px) !important;
+  font-weight: 600 !important;
   color: rgba(192, 132, 252, 0.4) !important;
   letter-spacing: 1.5px !important;
   text-transform: uppercase !important;
@@ -3804,7 +3804,7 @@ body {
   position: absolute !important;
   left: 10.8% !important;
   top: -1px !important;
-  font-size: clamp(7px, 1.1vw, 11px) !important;
+  font-size: clamp(6px, 0.85vw, 8.5px) !important;
   color: #ffeb3b !important;
   filter: drop-shadow(0 0 4px #ff1744) !important;
   pointer-events: none !important;
@@ -3821,11 +3821,11 @@ body {
   text-align: left !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  font-family: var(--font-tech), sans-serif !important;
-  font-weight: 700 !important;
-  font-size: clamp(6.5px, 1.05vw, 10px) !important;
+  font-family: 'Rajdhani', 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(5.5px, 0.85vw, 7.6px) !important;
   color: #ffffff !important;
-  letter-spacing: 0.25px !important;
+  letter-spacing: 0.2px !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -3841,8 +3841,8 @@ body {
   width: 12.0% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
-  font-weight: 700 !important;
-  font-size: clamp(7px, 1.1vw, 10.5px) !important;
+  font-weight: 600 !important;
+  font-size: clamp(5.5px, 0.88vw, 7.8px) !important;
   color: #fef08a !important;
   text-shadow: 0 0 6px rgba(254, 240, 138, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
@@ -3855,8 +3855,8 @@ body {
   width: 11.3% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
-  font-weight: 700 !important;
-  font-size: clamp(7px, 1.1vw, 10.5px) !important;
+  font-weight: 600 !important;
+  font-size: clamp(5.5px, 0.88vw, 7.8px) !important;
   color: #93c5fd !important;
   text-shadow: 0 0 6px rgba(147, 197, 253, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
@@ -3869,8 +3869,8 @@ body {
   width: 11.2% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
-  font-weight: 700 !important;
-  font-size: clamp(7px, 1.1vw, 10.5px) !important;
+  font-weight: 600 !important;
+  font-size: clamp(5.5px, 0.88vw, 7.8px) !important;
   color: #fca5a5 !important;
   text-shadow: 0 0 6px rgba(252, 165, 165, 0.8), 0 1px 3px rgba(0, 0, 0, 0.9) !important;
   line-height: 1 !important;
@@ -3883,8 +3883,8 @@ body {
   width: 15.5% !important;
   text-align: center !important;
   font-family: var(--font-display), monospace !important;
-  font-weight: 800 !important;
-  font-size: clamp(7.5px, 1.25vw, 11.5px) !important;
+  font-weight: 700 !important;
+  font-size: clamp(6px, 0.96vw, 8.6px) !important;
   color: #ffffff !important;
   letter-spacing: 0.4px !important;
   text-shadow: 0 0 8px rgba(255, 23, 68, 0.95), 0 2px 4px rgba(0, 0, 0, 0.95) !important;
@@ -4084,7 +4084,7 @@ body {
   left: 12.8% !important;
   transform: translateX(-50%) !important;
   top: -2px !important;
-  font-size: clamp(8px, 1.2vw, 12px) !important;
+  font-size: clamp(6px, 0.85vw, 8.5px) !important;
 }
 
 .scrims-exact-poster-container.theme-cyan .overlay-team-name {
@@ -4095,7 +4095,7 @@ body {
   text-align: left !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  font-size: clamp(6.5px, 1.05vw, 10px) !important;
+  font-size: clamp(5.5px, 0.85vw, 7.6px) !important;
 }
 
 .scrims-exact-poster-container.theme-cyan .overlay-position-val {
@@ -4176,7 +4176,7 @@ body {
   left: 11.2% !important;
   transform: translateX(-50%) !important;
   top: -1px !important;
-  font-size: clamp(8px, 1.2vw, 12px) !important;
+  font-size: clamp(6px, 0.85vw, 8.5px) !important;
 }
 
 /* Modern 847 columns alignment */
@@ -4192,7 +4192,7 @@ body {
   text-align: left !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  font-size: clamp(6.5px, 1.05vw, 10px) !important;
+  font-size: clamp(5.5px, 0.85vw, 7.6px) !important;
 }
 
 .scrims-exact-poster-container.theme-green .overlay-position-val,
@@ -4351,9 +4351,9 @@ body {
   text-align: center !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 600 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
   line-height: 1 !important;
 }
@@ -4365,11 +4365,11 @@ body {
   text-align: left !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 600 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
-  letter-spacing: 0.2px !important;
+  letter-spacing: 0.15px !important;
   text-shadow: none !important;
 }
 
@@ -4377,9 +4377,9 @@ body {
   left: 44.5% !important;
   width: 7.0% !important;
   text-align: center !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 600 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
   text-shadow: none !important;
 }
@@ -4391,9 +4391,9 @@ body {
   text-align: center !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 600 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
   line-height: 1 !important;
 }
@@ -4402,9 +4402,9 @@ body {
   left: 59.8% !important;
   width: 7.8% !important;
   text-align: center !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 600 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
   text-shadow: none !important;
 }
@@ -4413,9 +4413,9 @@ body {
   left: 68.0% !important;
   width: 7.6% !important;
   text-align: center !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 600 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
   text-shadow: none !important;
 }
@@ -4424,9 +4424,9 @@ body {
   left: 75.8% !important;
   width: 8.0% !important;
   text-align: center !important;
-  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
-  font-weight: 700 !important;
-  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(5px, 0.72vw, 6.8px) !important;
   color: #ffffff !important;
   text-shadow: none !important;
 }
@@ -6032,7 +6032,7 @@ body {
 
   /* Poster overlay text scale */
   .overlay-team-name {
-    font-size: clamp(6px, 1.1vw, 10px) !important;
+    font-size: clamp(5.2px, 0.82vw, 7.4px) !important;
   }
 
   /* Hero title */
@@ -7332,30 +7332,30 @@ body {
   }
 
   .slot-team-name {
-    font-size: clamp(6px, 0.56vw, 8px) !important;
+    font-size: clamp(5px, 0.46vw, 6.8px) !important;
   }
 
   .slot-empty-label {
-    font-size: clamp(5.5px, 0.52vw, 7.5px) !important;
+    font-size: clamp(4.8px, 0.42vw, 6.2px) !important;
   }
 
   .scrims-exact-poster-container[class*="theme-"] .overlay-team-name {
-    font-size: clamp(5.8px, 0.55vw, 7.8px) !important;
-    letter-spacing: 0.2px !important;
+    font-size: clamp(5px, 0.45vw, 6.6px) !important;
+    letter-spacing: 0.15px !important;
   }
 
   .scrims-exact-poster-container[class*="theme-"] .overlay-booyah-val,
   .scrims-exact-poster-container[class*="theme-"] .overlay-position-val,
   .scrims-exact-poster-container[class*="theme-"] .overlay-elimination-val {
-    font-size: clamp(6.2px, 0.6vw, 8.6px) !important;
+    font-size: clamp(5.2px, 0.48vw, 7px) !important;
   }
 
   .scrims-exact-poster-container[class*="theme-"] .overlay-total-val {
-    font-size: clamp(6.8px, 0.68vw, 9.6px) !important;
+    font-size: clamp(5.6px, 0.54vw, 7.8px) !important;
   }
 
   .scrims-exact-poster-container[class*="theme-"] .overlay-crown-icon {
-    font-size: clamp(5.5px, 0.52vw, 7.5px) !important;
+    font-size: clamp(5px, 0.44vw, 6.4px) !important;
   }
 
   .scrims-exact-poster-container.theme-nexis .overlay-rank-val,
@@ -7365,7 +7365,7 @@ body {
   .scrims-exact-poster-container.theme-nexis .overlay-position-val,
   .scrims-exact-poster-container.theme-nexis .overlay-elimination-val,
   .scrims-exact-poster-container.theme-nexis .overlay-total-val {
-    font-size: clamp(5.5px, 0.52vw, 7.4px) !important;
+    font-size: clamp(4.8px, 0.42vw, 6.2px) !important;
   }
 
   .leaderboard-bottom-export-panel,

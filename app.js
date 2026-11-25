@@ -3436,14 +3436,14 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     // Nexis Esports Scrims Template (819 x 1024 -> 1638 x 2048 at 2x Retina)
     const nexisSlotCenters = [389.5, 427.2, 464.9, 502.6, 540.4, 578.1, 615.8, 653.6, 691.3, 729.0, 766.8, 804.5];
     const pad2 = (n) => String(Math.max(0, parseInt(n, 10) || 0)).padStart(2, "0");
-    const fontSize = Math.round(canvas.width * 0.0168);
+    const fontSize = Math.round(canvas.width * 0.0124);
 
     cumulativeStats.forEach((t, i) => {
       if (i >= 12) return;
       const rowCenterY = canvas.height * (nexisSlotCenters[i] / 1024);
       const rank = i + 1;
 
-      ctx.font = `600 ${fontSize}px "Montserrat", "Rajdhani", "Segoe UI", sans-serif`;
+      ctx.font = `600 ${fontSize}px "Segoe UI", Arial, sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "transparent";
@@ -3479,7 +3479,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.fillText(pad2(t.eliminationPoints), canvas.width * (588 / 819), rowCenterY);
 
       // 7. Total
-      ctx.font = `700 ${fontSize}px "Montserrat", "Rajdhani", "Segoe UI", sans-serif`;
+      ctx.font = `700 ${fontSize}px "Segoe UI", Arial, sans-serif`;
       ctx.fillText(pad2(t.totalPoints), canvas.width * (653.5 / 819), rowCenterY);
     });
   } else if (isModern) {
@@ -3487,10 +3487,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     const modernSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
     const rowHeight = (canvas.height * (535 / 1024)) / 12;
 
-    const crownFontSize = Math.round(canvas.width * 0.019);
-    const teamFontSize = Math.round(canvas.width * 0.0172);
-    const numFontSize = Math.round(canvas.width * 0.0195);
-    const totalFontSize = Math.round(canvas.width * 0.0225);
+    const crownFontSize = Math.round(canvas.width * 0.0155);
+    const teamFontSize = Math.round(canvas.width * 0.014);
+    const numFontSize = Math.round(canvas.width * 0.0155);
+    const totalFontSize = Math.round(canvas.width * 0.0178);
 
     const posColor = themeConfig.posColor || "#4ade80";
     const elimColor = themeConfig.elimColor || "#fb923c";
@@ -3512,7 +3512,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       }
 
       // 1. Team Name (Left-aligned cleanly like Slot List)
-      ctx.font = `700 ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.font = `600 ${teamFontSize}px "Rajdhani", "Segoe UI", Arial, sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
@@ -3557,7 +3557,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.fillText(String(t.booyahs || 0), canvas.width * 0.7438, rowCenterY);
 
       // 5. Total Column (under colored trapezoids: center 88.08%)
-      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.font = `700 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = totalGlow;
       ctx.shadowBlur = 10;
@@ -3571,10 +3571,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     const cyanSlotCenters = [406.5, 443, 479.5, 516, 552.5, 589, 625.5, 662, 698.5, 735, 771.5, 808];
     const rowHeight = (canvas.height * (438 / 1024)) / 12;
 
-    const crownFontSize = Math.round(canvas.width * 0.0195);
-    const teamFontSize = Math.round(canvas.width * 0.0172);
-    const numFontSize = Math.round(canvas.width * 0.020);
-    const totalFontSize = Math.round(canvas.width * 0.023);
+    const crownFontSize = Math.round(canvas.width * 0.016);
+    const teamFontSize = Math.round(canvas.width * 0.014);
+    const numFontSize = Math.round(canvas.width * 0.0158);
+    const totalFontSize = Math.round(canvas.width * 0.018);
 
     cumulativeStats.forEach((t, i) => {
       if (i >= 12) return;
@@ -3591,7 +3591,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       }
 
       // 1. Team Name (Left-aligned cleanly like Slot List)
-      ctx.font = `700 ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.font = `600 ${teamFontSize}px "Rajdhani", "Segoe UI", Arial, sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
@@ -3636,7 +3636,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.fillText(String(t.booyahs || 0), canvas.width * 0.760, rowCenterY);
 
       // 5. Total Column (under cyan trapezoids: center 88.97%)
-      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.font = `700 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "rgba(6, 182, 212, 0.95)";
       ctx.shadowBlur = 10;
@@ -3650,10 +3650,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     const redSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
     const rowHeight = (canvas.height * (535 / 1024)) / 12;
 
-    const crownFontSize = Math.round(canvas.width * 0.019);
-    const teamFontSize = Math.round(canvas.width * 0.0172);
-    const numFontSize = Math.round(canvas.width * 0.0195);
-    const totalFontSize = Math.round(canvas.width * 0.0225);
+    const crownFontSize = Math.round(canvas.width * 0.0155);
+    const teamFontSize = Math.round(canvas.width * 0.014);
+    const numFontSize = Math.round(canvas.width * 0.0155);
+    const totalFontSize = Math.round(canvas.width * 0.0178);
 
     cumulativeStats.forEach((t, i) => {
       if (i >= 12) return;
@@ -3669,7 +3669,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       }
 
       // 1. Team Name (Left-aligned cleanly like Slot List)
-      ctx.font = `700 ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      ctx.font = `600 ${teamFontSize}px "Rajdhani", "Segoe UI", Arial, sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
@@ -3714,7 +3714,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.fillText(String(t.eliminationPoints), canvas.width * 0.740, rowCenterY);
 
       // 5. Total (center 87.8%)
-      ctx.font = `900 ${totalFontSize}px "Orbitron", sans-serif`;
+      ctx.font = `700 ${totalFontSize}px "Orbitron", sans-serif`;
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "rgba(255, 23, 68, 0.9)";
       ctx.shadowBlur = 10;
@@ -3988,8 +3988,8 @@ function drawSlotListCanvas(canvas, ctx, img) {
     ctx.textBaseline = "middle";
 
     if (teamName) {
-      // ONLY Team Name - vertically centered in the slot bar with neat refined size
-      ctx.font = "700 24px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      // ONLY Team Name - vertically centered in the slot bar with neat small size
+      ctx.font = "600 19px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = themeConfig.textColor || "#ffffff";
       ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
       ctx.shadowBlur = 8;
@@ -4002,7 +4002,7 @@ function drawSlotListCanvas(canvas, ctx, img) {
       }
       ctx.fillText(displayName, xLeft, yCenter);
     } else {
-      ctx.font = "italic 700 20px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      ctx.font = "italic 600 16px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = emptyColor;
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
