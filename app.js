@@ -3078,10 +3078,10 @@ const POSTER_THEMES = {
   nexis: {
     id: "nexis",
     name: "NEXIS SCRIMS",
-    src: "assets/nexis_esports_v2.jpg",
+    src: "assets/nexis_esports_v3.jpg",
     layout: "nexis_819",
     glowColor: "rgba(250, 204, 21, 0.85)",
-    baseWidth: 819,
+    baseWidth: 818,
     baseHeight: 1024
   }
 };
@@ -3433,9 +3433,9 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   if (isNexis) {
-    // Nexis Esports Scrims Template (819 x 1024 -> 1638 x 2048 at 2x Retina)
+    // Nexis Esports Scrims Template (818 x 1024 -> 1636 x 2048 at 2x Retina)
     // Leaves top space above first divider line (y=403) empty; places Ranks 01..12 down to last divider (y=857)
-    const nexisSlotCenters = [421.8, 459.8, 498.0, 536.0, 573.5, 611.0, 649.0, 687.0, 725.0, 762.8, 800.2, 838.0];
+    const nexisSlotCenters = [422.0, 459.5, 497.0, 535.0, 572.5, 610.0, 648.0, 686.0, 724.0, 762.0, 800.0, 838.0];
     const pad2 = (n) => String(Math.max(0, parseInt(n, 10) || 0)).padStart(2, "0");
     const fontSize = Math.round(canvas.width * 0.0124);
 
@@ -3452,7 +3452,7 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
 
       // 1. Rank (#)
       ctx.textAlign = "center";
-      ctx.fillText(pad2(rank), canvas.width * (165 / 819), rowCenterY);
+      ctx.fillText(pad2(rank), canvas.width * (165.5 / 818), rowCenterY);
 
       // 2. Team Name (left-aligned cleanly)
       ctx.textAlign = "left";
@@ -3461,27 +3461,27 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * (216 / 819), rowCenterY);
+      ctx.fillText(displayName, canvas.width * (216 / 818), rowCenterY);
 
       // 3. Booyah Column (blank when 0, zero-padded when > 0)
       ctx.textAlign = "center";
       if ((t.booyahs || 0) > 0) {
-        ctx.fillText(pad2(t.booyahs), canvas.width * (393 / 819), rowCenterY);
+        ctx.fillText(pad2(t.booyahs), canvas.width * (397.5 / 818), rowCenterY);
       }
 
       // 4. Matches Played
-      ctx.fillText(pad2(t.matchesPlayed || 0), canvas.width * (453.5 / 819), rowCenterY);
+      ctx.fillText(pad2(t.matchesPlayed || 0), canvas.width * (460.5 / 818), rowCenterY);
 
       // 5. Position
       const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : pad2(t.placementPoints);
-      ctx.fillText(posText, canvas.width * (521.5 / 819), rowCenterY);
+      ctx.fillText(posText, canvas.width * (528.0 / 818), rowCenterY);
 
       // 6. Finishes
-      ctx.fillText(pad2(t.eliminationPoints), canvas.width * (588 / 819), rowCenterY);
+      ctx.fillText(pad2(t.eliminationPoints), canvas.width * (593.5 / 818), rowCenterY);
 
       // 7. Total
       ctx.font = `700 ${fontSize}px "Segoe UI", Arial, sans-serif`;
-      ctx.fillText(pad2(t.totalPoints), canvas.width * (653.5 / 819), rowCenterY);
+      ctx.fillText(pad2(t.totalPoints), canvas.width * (653.5 / 818), rowCenterY);
     });
   } else if (isModern) {
     // Modern 847x1024 Templates (1694 x 2048 at 2x Retina): Green, Orange, Pink, Cyber Violet, Royal Indigo

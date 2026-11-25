@@ -34,7 +34,7 @@ const themesToTest = [
   { id: "pink", name: "NEON MAGENTA", file: "jack_sparrow_pink_template.jpg" },
   { id: "cyan-purple", name: "CYBER VIOLET", file: "jack_sparrow_cyan_purple_template.jpg" },
   { id: "purple-blue", name: "ROYAL INDIGO", file: "jack_sparrow_purple_blue_template.jpg" },
-  { id: "nexis", name: "NEXIS SCRIMS", file: "nexis_esports_v2.jpg" }
+  { id: "nexis", name: "NEXIS SCRIMS", file: "nexis_esports_v3.jpg" }
 ];
 
 // Step 1: Default theme is red
