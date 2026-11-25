@@ -3434,7 +3434,8 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
 
   if (isNexis) {
     // Nexis Esports Scrims Template (819 x 1024 -> 1638 x 2048 at 2x Retina)
-    const nexisSlotCenters = [389.5, 427.2, 464.9, 502.6, 540.4, 578.1, 615.8, 653.6, 691.3, 729.0, 766.8, 804.5];
+    // Leaves top space above first divider line (y=403) empty; places Ranks 01..12 down to last divider (y=857)
+    const nexisSlotCenters = [421.8, 459.8, 498.0, 536.0, 573.5, 611.0, 649.0, 687.0, 725.0, 762.8, 800.2, 838.0];
     const pad2 = (n) => String(Math.max(0, parseInt(n, 10) || 0)).padStart(2, "0");
     const fontSize = Math.round(canvas.width * 0.0124);
 
