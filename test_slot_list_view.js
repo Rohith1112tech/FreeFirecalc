@@ -14,7 +14,7 @@ assert(indexHtml.includes('id="slot-list-template-bg"'), 'Missing slot-list-temp
 assert(indexHtml.includes('assets/slot_list_template.jpg'), 'Missing assets/slot_list_template.jpg in index.html');
 assert(indexHtml.includes('id="slot-list-overlay-rows"'), 'Missing slot-list-overlay-rows in index.html');
 assert(indexHtml.includes('id="btn-download-slot-list"'), 'Missing btn-download-slot-list in index.html');
-assert(indexHtml.includes('id="btn-copy-slot-list"'), 'Missing btn-copy-slot-list in index.html');
+assert(indexHtml.includes('id="btn-copy-slot-list-bottom"'), 'Missing btn-copy-slot-list-bottom in index.html');
 console.log('✓ index.html structure verified with all Slot List UI elements.');
 
 // 2. Verify style.css contains styling for exact template and 12 slot rows
