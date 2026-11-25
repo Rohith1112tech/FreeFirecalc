@@ -11,8 +11,8 @@ const path = require('path');
 
 console.log('🛡️ RUNNING PHASE 1 SECURITY TESTS: BACKEND API HARDENING & ENDPOINTS...\n');
 
-const serverJs = fs.readFileSync('server.js', 'utf8');
-const googleServiceJs = fs.readFileSync('google_service.js', 'utf8');
+const serverJs = fs.readFileSync('server.js', 'utf8').replace(/\r\n/g, '\n');
+const googleServiceJs = fs.readFileSync('google_service.js', 'utf8').replace(/\r\n/g, '\n');
 
 // 1. Verify CORS Allowlists
 assert(serverJs.includes('const ALLOWED_ORIGINS = ['), 'server.js must define strict ALLOWED_ORIGINS');

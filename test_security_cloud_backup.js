@@ -10,7 +10,7 @@ const fs = require('fs');
 
 console.log('🛡️ RUNNING PHASE 1 SECURITY TESTS: CLOUD BACKUP & MULTI-LOBBY ISOLATION...\n');
 
-const appsScriptJs = fs.readFileSync('google_drive_apps_script.js', 'utf8');
+const appsScriptJs = fs.readFileSync('google_drive_apps_script.js', 'utf8').replace(/\r\n/g, '\n');
 
 // 1. Action Allowlisting
 assert(appsScriptJs.includes("const ALLOWED_ACTIONS = ['status', 'get_backup', 'get_all_lobbies', 'backup', 'append_sheet', 'poster']"), 'Apps Script must enforce strict ALLOWED_ACTIONS');

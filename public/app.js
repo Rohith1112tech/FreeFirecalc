@@ -482,66 +482,13 @@ const authRecoveryKey = document.getElementById("auth-recovery-key");
 const authRecoveryNewPass = document.getElementById("auth-recovery-new-pass");
 const authRecoveryStatus = document.getElementById("auth-recovery-status");
 
-function openAuthModal() {
-  if (modalAdminAuth) {
-    modalAdminAuth.style.display = "flex";
-    if (authAlertBox) {
-      authAlertBox.style.display = "none";
-      authAlertBox.textContent = "";
-    }
-    updateAuthUI();
-  }
-}
-
-function closeAuthModal() {
-  if (modalAdminAuth) {
-    modalAdminAuth.style.display = "none";
-  }
-}
-
-function updateAuthUI() {
-  if (typeof JSEAuth === "undefined") return;
-  const session = JSEAuth.getActiveSession();
-  const role = session && session.role ? session.role : "PUBLIC";
-
-  if (lobbyAuthStatusPill) {
-    lobbyAuthStatusPill.className = "lobby-auth-pill";
-    if (role === "SUPER_ADMIN") lobbyAuthStatusPill.classList.add("role-super");
-    else if (role === "TOURNAMENT_ADMIN") lobbyAuthStatusPill.classList.add("role-admin");
-    else if (role === "SCOREKEEPER") lobbyAuthStatusPill.classList.add("role-scorekeeper");
-  }
-
-  if (authRoleText) {
-    if (role === "SUPER_ADMIN") authRoleText.textContent = "SUPER ADMIN";
-    else if (role === "TOURNAMENT_ADMIN") authRoleText.textContent = "TOURNEY ADMIN";
-    else if (role === "SCOREKEEPER") authRoleText.textContent = "SCOREKEEPER";
-    else authRoleText.textContent = "PUBLIC";
-  }
-
-  if (btnAuthText) {
-    btnAuthText.textContent = session ? "LOGOUT" : "ADMIN LOGIN";
-  }
-  if (btnAuthIcon) {
-    btnAuthIcon.textContent = session ? "🚪" : "🔑";
-  }
-
-  if (authCurrentSessionBox && authLoginForm) {
-    if (session) {
-      authCurrentSessionBox.style.display = "block";
-      authLoginForm.style.display = "none";
-      if (authSessionUser) authSessionUser.textContent = session.displayName || session.username;
-      if (authSessionRoleBadge) authSessionRoleBadge.textContent = role.replace(/_/g, " ");
-    } else {
-      authCurrentSessionBox.style.display = "none";
-      authLoginForm.style.display = "block";
-    }
-  }
-}
+function openAuthModal() {}
+function closeAuthModal() {}
+function updateAuthUI() {}
 
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
   applyUiTheme(getSavedUiTheme());
-  updateAuthUI();
   const hasShared = checkForSharedResultsUrl();
   if (!hasShared) {
     const storedLobby = getActiveLobbyId();
@@ -1084,92 +1031,6 @@ function bindEvents() {
     themeBtn.addEventListener("click", toggleUiTheme);
   }
 
-  // Admin Auth Toggle & Modal Events (Phase 1 Security)
-  if (btnToggleAuthModal) {
-    btnToggleAuthModal.addEventListener("click", () => {
-      openAuthModal();
-    });
-  }
-  if (btnCloseAuthModal) {
-    btnCloseAuthModal.addEventListener("click", closeAuthModal);
-  }
-  if (btnAuthLogout) {
-    btnAuthLogout.addEventListener("click", () => {
-      if (typeof JSEAuth !== "undefined") {
-        JSEAuth.logout();
-        updateAuthUI();
-        closeAuthModal();
-        alert("🚪 Logged out successfully. You are now in PUBLIC (read-only) mode.");
-      }
-    });
-  }
-  if (authLoginForm) {
-    authLoginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (typeof JSEAuth === "undefined") return;
-      const u = (authInputUsername.value || "").trim();
-      const p = authInputPassword.value || "";
-      const btn = document.getElementById("btn-auth-submit-login");
-      if (btn) btn.disabled = true;
-
-      try {
-        const res = await JSEAuth.login(u, p);
-        if (res.success) {
-          updateAuthUI();
-          if (authAlertBox) {
-            authAlertBox.className = "auth-alert success";
-            authAlertBox.textContent = `✅ Welcome, ${res.session.displayName}! Authenticated as ${res.session.role}.`;
-            authAlertBox.style.display = "block";
-          }
-          setTimeout(() => {
-            closeAuthModal();
-            if (authInputPassword) authInputPassword.value = "";
-          }, 800);
-        } else {
-          if (authAlertBox) {
-            authAlertBox.className = "auth-alert error";
-            authAlertBox.textContent = `❌ ${res.error}`;
-            authAlertBox.style.display = "block";
-          }
-        }
-      } catch (err) {
-        if (authAlertBox) {
-          authAlertBox.className = "auth-alert error";
-          authAlertBox.textContent = `❌ ${err.message}`;
-          authAlertBox.style.display = "block";
-        }
-      } finally {
-        if (btn) btn.disabled = false;
-      }
-    });
-  }
-  if (btnExecuteRecovery) {
-    btnExecuteRecovery.addEventListener("click", async () => {
-      if (typeof JSEAuth === "undefined") return;
-      const key = (authRecoveryKey.value || "").trim();
-      const newPass = authRecoveryNewPass.value || "";
-      if (!key || !newPass) {
-        if (authRecoveryStatus) {
-          authRecoveryStatus.style.color = "#ef4444";
-          authRecoveryStatus.textContent = "Please enter both recovery key and new password.";
-        }
-        return;
-      }
-      const res = await JSEAuth.resetSuperAdminPasswordWithRecoveryKey(key, newPass);
-      if (res.success) {
-        if (authRecoveryStatus) {
-          authRecoveryStatus.style.color = "#10b981";
-          authRecoveryStatus.textContent = "✅ " + res.message;
-        }
-      } else {
-        if (authRecoveryStatus) {
-          authRecoveryStatus.style.color = "#ef4444";
-          authRecoveryStatus.textContent = "❌ " + res.error;
-        }
-      }
-    });
-  }
-
   // 3-Lobby Database Switcher Tabs
   if (btnLobby1) {
     btnLobby1.addEventListener("click", () => switchLobby("lobby1"));
@@ -1398,11 +1259,6 @@ function bindEvents() {
   // Back to setup button
   if (btnBackSetup) {
     btnBackSetup.addEventListener("click", () => {
-      if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("CONFIG_TOURNAMENT")) {
-        alert("🔒 Access Denied: Modifying tournament setup requires TOURNAMENT ADMIN or SUPER ADMIN privileges.\nPlease log in to continue.");
-        openAuthModal();
-        return;
-      }
       state.activeScreen = "setup";
       saveState();
       showSetupScreen();
@@ -1651,11 +1507,6 @@ function bindEvents() {
  * Handle Start Tournament Action & Validation
  */
 function handleStartTournament() {
-  if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("CONFIG_TOURNAMENT")) {
-    alert("🔒 Access Denied: Starting or reconfiguring tournaments requires TOURNAMENT ADMIN or SUPER ADMIN privileges.\nPlease log in to continue.");
-    openAuthModal();
-    return;
-  }
   clearError();
 
   const matches = parseInt(totalMatchesInput.value, 10);
@@ -2103,11 +1954,6 @@ function parseMatchResultsTable(text, targetMatchNum = null) {
  * Handle Parse and Save Auto Match Data
  */
 function handleParseAndSaveAutoMatch() {
-  if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("IMPORT_MATCHES")) {
-    alert("🔒 Access Denied: Importing match results requires SCOREKEEPER, TOURNAMENT ADMIN, or SUPER ADMIN privileges.\nPlease log in to continue.");
-    openAuthModal();
-    return;
-  }
   if (!autoMatchPasteInput) return;
   const rawText = autoMatchPasteInput.value.trim();
 
@@ -2712,11 +2558,6 @@ function checkPlacementConflicts() {
  * Automatically updates leaderboard with latest calculated cumulative data
  */
 function handleSaveMatchData() {
-  if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("RECORD_SCORES")) {
-    alert("🔒 Access Denied: Recording match scores requires SCOREKEEPER, TOURNAMENT ADMIN, or SUPER ADMIN privileges.\nPlease log in to continue.");
-    openAuthModal();
-    return;
-  }
   hideMatchAlerts();
   const currentMatch = state.matches[state.selectedMatchIndex];
   if (!currentMatch) return;
@@ -4273,11 +4114,6 @@ function escapeHtml(str) {
  * Reset Confirmation Modal Controls (Prompt 6)
  */
 function openResetConfirmationModal() {
-  if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("RESET_TOURNAMENT")) {
-    alert("🔒 Access Denied: Resetting tournament data requires SUPER ADMIN privileges.\nPlease log in with Super Admin credentials.");
-    openAuthModal();
-    return;
-  }
   if (!resetModalBackdrop) return;
 
   const savedCount = state.matches.filter((m) => m && m.isSaved).length;
@@ -4295,10 +4131,6 @@ function closeResetConfirmationModal() {
 }
 
 function handleExecuteTournamentReset() {
-  if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("RESET_TOURNAMENT")) {
-    alert("🔒 Access Denied: Resetting tournament data requires SUPER ADMIN privileges.");
-    return;
-  }
   const currentLobby = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
   const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: currentLobby.toUpperCase(), defaultTitle: `JACK SPARROW PAID SCRIMS - ${currentLobby.toUpperCase()}` };
 
@@ -6517,11 +6349,6 @@ function scheduleDebouncedDriveAutoSync(delayMs = 1200) {
  * Scenario A: Upload Tournament Backup JSON to Google Drive
  */
 async function handleCloudDriveBackup() {
-  if (typeof JSEAuth !== "undefined" && !JSEAuth.hasPermission("CLOUD_BACKUP")) {
-    alert("🔒 Access Denied: Triggering cloud backups requires TOURNAMENT ADMIN or SUPER ADMIN privileges.\nPlease log in to continue.");
-    openAuthModal();
-    return;
-  }
   if (!btnCloudBackup) return;
 
   const originalHtml = btnCloudBackup.innerHTML;
