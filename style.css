@@ -7443,6 +7443,365 @@ body {
   }
 }
 
+/* =====================================================================
+   ENTRY FLOW: WELCOME SPLASH + UIVERSE CIRCULAR LOGIN GATE
+===================================================================== */
+body.auth-gate-locked {
+  overflow: hidden;
+}
+
+body.auth-gate-locked .app-container {
+  display: none !important;
+}
+
+.jse-entry-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: radial-gradient(circle at center, #1f293a 0%, #111827 58%, #050b16 100%);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.jse-entry-gate * {
+  box-sizing: border-box;
+}
+
+/* Step 1: Welcome Splash Screen */
+.jse-welcome-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 680px;
+  text-align: center;
+  padding: 2rem 1.25rem;
+  animation: jseWelcomeFadeIn 0.45s ease forwards;
+}
+
+.jse-welcome-stage.fade-out {
+  animation: jseWelcomeFadeOut 0.35s ease forwards;
+}
+
+@keyframes jseWelcomeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes jseWelcomeFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.jse-welcome-inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.jse-welcome-badge {
+  font-family: var(--font-tech);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #0ef;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid rgba(0, 238, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(0, 238, 255, 0.08);
+  box-shadow: 0 0 18px rgba(0, 238, 255, 0.2);
+}
+
+.jse-welcome-heading {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 4vw, 2.35rem);
+  font-weight: 800;
+  line-height: 1.25;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
+}
+
+.jse-welcome-accent {
+  display: block;
+  margin-top: 0.3rem;
+  color: #0ef;
+  text-shadow: 0 0 18px rgba(0, 238, 255, 0.55);
+}
+
+.jse-welcome-sub {
+  font-family: var(--font-tech);
+  font-size: 0.82rem;
+  letter-spacing: 2.2px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.jse-welcome-progress {
+  width: min(280px, 80%);
+  height: 4px;
+  background: rgba(44, 71, 102, 0.7);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+
+.jse-welcome-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00c2ff, #0ef);
+  box-shadow: 0 0 10px #0ef;
+  animation: jseWelcomeProgress 2.5s linear forwards;
+}
+
+@keyframes jseWelcomeProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.jse-welcome-skip-btn {
+  margin-top: 0.35rem;
+  background: transparent;
+  border: 1px solid rgba(0, 238, 255, 0.35);
+  color: #0ef;
+  font-family: var(--font-tech);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  padding: 0.42rem 0.95rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.jse-welcome-skip-btn:hover {
+  background: rgba(0, 238, 255, 0.14);
+  border-color: #0ef;
+  box-shadow: 0 0 14px rgba(0, 238, 255, 0.3);
+}
+
+/* Step 2: Login Gate Container */
+.jse-login-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: jseWelcomeFadeIn 0.4s ease forwards;
+}
+
+/*
+ * From Uiverse.io by shadyeljokers - https://uiverse.io/shadyeljokers/ugly-horse-50
+ * MIT License, Copyright (c) shadyeljokers (شدشد)
+ */
+.jse-uiverse-ring {
+  position: relative;
+  width: 400px;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #1f293a;
+}
+
+.jse-uiverse-ring span {
+  position: absolute;
+  left: 0;
+  width: 32px;
+  height: 6px;
+  background: #2c4766;
+  border-radius: 80px;
+  transform-origin: 200px;
+  transform: rotate(calc(var(--i) * (360deg / 50)));
+  animation: jseUiverseBlink 3s linear infinite;
+  animation-delay: calc(var(--i) * (3s / 50));
+}
+
+@keyframes jseUiverseBlink {
+  0% {
+    background: #0ef;
+  }
+  25% {
+    background: #2c4766;
+  }
+}
+
+.jse-uiverse-login-box {
+  position: absolute;
+  width: 80%;
+  max-width: 300px;
+  z-index: 1;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+.jse-uiverse-form {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.jse-uiverse-title {
+  font-size: 1.8em;
+  color: #0ef;
+  text-align: center;
+  margin: 0 0 10px;
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-weight: 700;
+}
+
+.jse-uiverse-input-box {
+  position: relative;
+  margin: 15px 0;
+}
+
+.jse-uiverse-input {
+  width: 100%;
+  height: 45px;
+  background: transparent;
+  border: 2px solid #2c4766;
+  outline: none;
+  border-radius: 40px;
+  font-size: 1em;
+  color: #fff;
+  padding: 0 15px;
+  transition: 0.5s ease;
+}
+
+.jse-uiverse-input:focus {
+  border-color: #0ef;
+}
+
+.jse-uiverse-input[value]:not([value=""]) ~ .jse-uiverse-label,
+.jse-uiverse-input:not(:placeholder-shown) ~ .jse-uiverse-label,
+.jse-uiverse-input:focus ~ .jse-uiverse-label {
+  top: -10px;
+  font-size: 0.8em;
+  background: #1f293a;
+  padding: 0 6px;
+  color: #0ef;
+}
+
+.jse-uiverse-label {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  font-size: 1em;
+  pointer-events: none;
+  transition: 0.5s ease;
+  color: #fff;
+  margin: 0;
+}
+
+.jse-uiverse-error {
+  min-height: 16px;
+  margin: -6px 0 10px;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  text-align: center;
+  color: #ff6b81;
+  font-weight: 600;
+}
+
+.jse-uiverse-btn {
+  width: 100%;
+  height: 45px;
+  background: #0ef;
+  border: none;
+  outline: none;
+  border-radius: 40px;
+  cursor: pointer;
+  font-size: 1em;
+  color: #1f293a;
+  font-weight: 600;
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.jse-uiverse-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.jse-uiverse-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+@media (max-width: 440px) {
+  .jse-uiverse-ring {
+    width: 340px;
+    height: 340px;
+  }
+
+  .jse-uiverse-ring span {
+    width: 24px;
+    height: 5px;
+    transform-origin: 170px;
+  }
+
+  .jse-uiverse-login-box {
+    width: 82%;
+    max-width: 260px;
+    padding: 14px 12px;
+  }
+
+  .jse-uiverse-title {
+    font-size: 1.55em;
+    margin-bottom: 6px;
+  }
+
+  .jse-uiverse-input-box {
+    margin: 12px 0;
+  }
+
+  .jse-uiverse-input,
+  .jse-uiverse-btn {
+    height: 40px;
+    font-size: 0.92em;
+  }
+}
+
+.lobby-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.62rem;
+  font-family: var(--font-tech);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.lobby-logout-btn:hover {
+  color: #ffffff;
+  background: rgba(239, 68, 68, 0.28);
+  border-color: #f87171;
+}
+
 
 
 

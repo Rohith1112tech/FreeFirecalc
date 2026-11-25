@@ -61,8 +61,49 @@ const SERVER_USERS = {
     displayName: 'Official Scorekeeper',
     salt: 'c4d194820a1eb72948bc519023f87db2',
     hash: '7a9b0c2e3d4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b' // Scorekeeper@2026!
+  },
+  'js.suzie': {
+    username: 'Js.Suzie',
+    role: ROLES.SUPER_ADMIN,
+    displayName: 'Js.Suzie',
+    salt: process.env.CUSTOM_AUTH_SALT || '12b6cffb5a3037e6d2b65bbfc25c59dd',
+    hash: process.env.CUSTOM_AUTH_HASH || 'a9750f1aba2c45a095750f9bd57ca09c8fc6c47d6dd669cd16fede59b195edaf'
   }
 };
+
+// Optional custom server users from environment configuration (PBKDF2 salt/hash pairs)
+if (process.env.CUSTOM_AUTH_USERNAME && process.env.CUSTOM_AUTH_SALT && process.env.CUSTOM_AUTH_HASH) {
+  const envKey = String(process.env.CUSTOM_AUTH_USERNAME).toLowerCase().trim();
+  if (envKey) {
+    SERVER_USERS[envKey] = {
+      username: String(process.env.CUSTOM_AUTH_USERNAME).trim(),
+      role: ROLES.SUPER_ADMIN,
+      displayName: String(process.env.CUSTOM_AUTH_USERNAME).trim(),
+      salt: process.env.CUSTOM_AUTH_SALT,
+      hash: process.env.CUSTOM_AUTH_HASH
+    };
+  }
+}
+
+if (process.env.APP_CUSTOM_USERS_JSON) {
+  try {
+    const extraUsers = JSON.parse(process.env.APP_CUSTOM_USERS_JSON);
+    if (Array.isArray(extraUsers)) {
+      extraUsers.forEach((u) => {
+        if (u && u.username && u.salt && u.hash) {
+          const k = String(u.username).toLowerCase().trim();
+          SERVER_USERS[k] = {
+            username: String(u.username).trim(),
+            role: ROLES[u.role] || ROLES.SUPER_ADMIN,
+            displayName: String(u.displayName || u.username).trim(),
+            salt: String(u.salt),
+            hash: String(u.hash)
+          };
+        }
+      });
+    }
+  } catch (_) {}
+}
 
 // Brute-force tracking
 const loginAttempts = new Map();

@@ -95,12 +95,25 @@
 
   function getAuthEndpoint() {
     if (typeof window !== "undefined") {
-      const origin = window.location.origin;
+      const origin = window.location.origin || "";
+      const port = window.location.port || "";
       if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+        if (port === "8888") {
+          return "/.netlify/functions/auth";
+        }
         return "/api/auth";
       }
     }
     return "/.netlify/functions/auth";
+  }
+
+  async function fetchAuthEndpoint(options) {
+    const primary = getAuthEndpoint();
+    let response = await fetch(primary, options);
+    if (response.status === 404 && primary === "/api/auth") {
+      response = await fetch("/.netlify/functions/auth", options);
+    }
+    return response;
   }
 
   async function login(username, password) {
@@ -108,9 +121,8 @@
       return { success: false, error: "Username and password are required." };
     }
 
-    const endpoint = getAuthEndpoint();
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetchAuthEndpoint({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin", // Accepts HttpOnly session cookie
@@ -139,9 +151,8 @@
   }
 
   async function logout() {
-    const endpoint = getAuthEndpoint();
     try {
-      await fetch(endpoint, {
+      await fetchAuthEndpoint({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
@@ -154,9 +165,8 @@
   }
 
   async function checkSession() {
-    const endpoint = getAuthEndpoint();
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetchAuthEndpoint({
         method: "GET",
         headers: {
           "Accept": "application/json",

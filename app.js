@@ -482,9 +482,195 @@ const authRecoveryKey = document.getElementById("auth-recovery-key");
 const authRecoveryNewPass = document.getElementById("auth-recovery-new-pass");
 const authRecoveryStatus = document.getElementById("auth-recovery-status");
 
+// Entry Flow (Welcome Splash + Uiverse Login Gate) Elements
+const jseEntryGate = document.getElementById("jse-entry-gate");
+const jseWelcomeStage = document.getElementById("jse-welcome-stage");
+const jseLoginStage = document.getElementById("jse-login-stage");
+const btnWelcomeSkip = document.getElementById("btn-welcome-skip");
+const gateLoginForm = document.getElementById("gate-login-form");
+const gateLoginUsername = document.getElementById("gate-login-username");
+const gateLoginPassword = document.getElementById("gate-login-password");
+const gateLoginError = document.getElementById("gate-login-error");
+const btnGateLoginSubmit = document.getElementById("btn-gate-login-submit");
+const btnGateLogout = document.getElementById("btn-gate-logout");
+
+let welcomeTransitionTimer = null;
+let isGateUnlocked = false;
+
 function openAuthModal() {}
 function closeAuthModal() {}
 function updateAuthUI() {}
+
+function syncGateFloatingLabels() {
+  [gateLoginUsername, gateLoginPassword].forEach((inputEl) => {
+    if (!inputEl) return;
+    if (typeof inputEl.setAttribute === "function") {
+      inputEl.setAttribute("value", inputEl.value || "");
+    }
+  });
+}
+
+function showWelcomeStage() {
+  if (!jseEntryGate) return;
+  if (document.body && document.body.classList) {
+    document.body.classList.add("auth-gate-locked");
+  }
+  jseEntryGate.style.display = "flex";
+  if (jseWelcomeStage) {
+    jseWelcomeStage.classList.remove("fade-out");
+    jseWelcomeStage.style.display = "flex";
+  }
+  if (jseLoginStage) {
+    jseLoginStage.style.display = "none";
+  }
+  clearTimeout(welcomeTransitionTimer);
+  welcomeTransitionTimer = setTimeout(() => {
+    transitionWelcomeToLogin();
+  }, 2500);
+}
+
+function transitionWelcomeToLogin() {
+  clearTimeout(welcomeTransitionTimer);
+  if (isGateUnlocked) return;
+  if (!jseWelcomeStage || !jseLoginStage) {
+    showLoginStage();
+    return;
+  }
+  if (jseWelcomeStage.classList) {
+    jseWelcomeStage.classList.add("fade-out");
+  }
+  setTimeout(() => {
+    if (!isGateUnlocked) {
+      showLoginStage();
+    }
+  }, 300);
+}
+
+function showLoginStage() {
+  if (!jseEntryGate) return;
+  isGateUnlocked = false;
+  clearTimeout(welcomeTransitionTimer);
+  if (document.body && document.body.classList) {
+    document.body.classList.add("auth-gate-locked");
+  }
+  jseEntryGate.style.display = "flex";
+  if (jseWelcomeStage) {
+    jseWelcomeStage.style.display = "none";
+  }
+  if (jseLoginStage) {
+    jseLoginStage.style.display = "flex";
+  }
+  if (gateLoginError) {
+    gateLoginError.textContent = "";
+  }
+  syncGateFloatingLabels();
+  if (gateLoginUsername && typeof gateLoginUsername.focus === "function") {
+    gateLoginUsername.focus();
+  }
+}
+
+function unlockMainAppFromGate(shouldAutoCloudPull = false) {
+  isGateUnlocked = true;
+  clearTimeout(welcomeTransitionTimer);
+  if (document.body && document.body.classList) {
+    document.body.classList.remove("auth-gate-locked");
+  }
+  if (jseEntryGate) {
+    jseEntryGate.style.display = "none";
+  }
+  if (btnGateLogout) {
+    btnGateLogout.style.display = typeof JSEAuth !== "undefined" && JSEAuth.getActiveSession() ? "inline-flex" : "none";
+  }
+  if (shouldAutoCloudPull && typeof fetchTournamentFromCloud === "function") {
+    setTimeout(() => {
+      fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
+    }, 300);
+  }
+}
+
+async function handleGateLoginSubmit(e) {
+  if (e && typeof e.preventDefault === "function") {
+    e.preventDefault();
+  }
+  const username = gateLoginUsername ? gateLoginUsername.value.trim() : "";
+  const password = gateLoginPassword ? gateLoginPassword.value : "";
+
+  if (!username || !password) {
+    if (gateLoginError) {
+      gateLoginError.textContent = "Please enter both username and password.";
+    }
+    return;
+  }
+
+  if (btnGateLoginSubmit) {
+    btnGateLoginSubmit.disabled = true;
+    btnGateLoginSubmit.textContent = "Verifying...";
+  }
+  if (gateLoginError) {
+    gateLoginError.textContent = "";
+  }
+
+  try {
+    if (typeof JSEAuth === "undefined" || typeof JSEAuth.login !== "function") {
+      if (gateLoginError) {
+        gateLoginError.textContent = "Authentication service unavailable.";
+      }
+      return;
+    }
+
+    const res = await JSEAuth.login(username, password);
+    if (res && res.success) {
+      if (gateLoginPassword) gateLoginPassword.value = "";
+      syncGateFloatingLabels();
+      unlockMainAppFromGate(true);
+    } else if (gateLoginError) {
+      gateLoginError.textContent = (res && res.error) || "Invalid username or password.";
+    }
+  } catch (err) {
+    if (gateLoginError) {
+      gateLoginError.textContent = err && err.message ? err.message : "Unable to verify login right now.";
+    }
+  } finally {
+    if (btnGateLoginSubmit) {
+      btnGateLoginSubmit.disabled = false;
+      btnGateLoginSubmit.textContent = "Login";
+    }
+  }
+}
+
+async function handleGateLogout() {
+  if (typeof JSEAuth !== "undefined" && typeof JSEAuth.logout === "function") {
+    await JSEAuth.logout();
+  }
+  if (btnGateLogout) {
+    btnGateLogout.style.display = "none";
+  }
+  if (gateLoginUsername) gateLoginUsername.value = "";
+  if (gateLoginPassword) gateLoginPassword.value = "";
+  syncGateFloatingLabels();
+  showLoginStage();
+}
+
+async function initEntryGate(hasShared = false) {
+  if (hasShared) {
+    unlockMainAppFromGate(false);
+    return;
+  }
+
+  // Keep valid server sessions unlocked on page reload without re-prompting
+  if (typeof JSEAuth !== "undefined" && typeof JSEAuth.checkSession === "function") {
+    try {
+      const activeUser = await JSEAuth.checkSession();
+      if (activeUser && activeUser.username) {
+        unlockMainAppFromGate(true);
+        return;
+      }
+    } catch (_) {}
+  }
+
+  // Unauthenticated visitor: Welcome Splash (~2.5s) -> Uiverse Circular Login Gate
+  showWelcomeStage();
+}
 
 // Initialize application
 document.addEventListener("DOMContentLoaded", () => {
@@ -513,12 +699,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showSetupScreen();
   }
 
-  // Cross-device cloud sync: Automatically pull latest cloud backup for this lobby on load
-  if (!hasShared) {
-    setTimeout(() => {
-      fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
-    }, 600);
-  }
+  initEntryGate(hasShared);
 });
 
 /**
@@ -1025,6 +1206,28 @@ function updatePastePreviewUI() {
  * Event Bindings
  */
 function bindEvents() {
+  // Entry Flow: Welcome Skip, Uiverse Login Submit, Floating Labels & Logout
+  if (btnWelcomeSkip) {
+    btnWelcomeSkip.addEventListener("click", transitionWelcomeToLogin);
+  }
+  [gateLoginUsername, gateLoginPassword].forEach((inputEl) => {
+    if (!inputEl) return;
+    inputEl.addEventListener("input", () => {
+      if (typeof inputEl.setAttribute === "function") {
+        inputEl.setAttribute("value", inputEl.value || "");
+      }
+      if (gateLoginError) {
+        gateLoginError.textContent = "";
+      }
+    });
+  });
+  if (gateLoginForm) {
+    gateLoginForm.addEventListener("submit", handleGateLoginSubmit);
+  }
+  if (btnGateLogout) {
+    btnGateLogout.addEventListener("click", handleGateLogout);
+  }
+
   // One-Click UI Theme Toggle (Cyber Blue <-> Neon Crimson)
   const themeBtn = btnToggleUiTheme || document.getElementById("btn-toggle-ui-theme");
   if (themeBtn) {
@@ -6326,8 +6529,11 @@ let debouncedDriveAutoSyncTimer = null;
  * Seamlessly saves tournament state directly to Google Drive in the background.
  */
 async function autoSyncTournamentToDrive({ silent = true } = {}) {
-  // Prevent sync in shared read-only view
+  // Prevent sync in shared read-only view or while entry login gate is locked
   if (state.isSharedView) return { success: false, reason: "shared_view" };
+  if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("auth-gate-locked")) {
+    return { success: false, reason: "gate_locked" };
+  }
 
   if (isDriveAutoSyncing) {
     pendingDriveAutoSync = true;
