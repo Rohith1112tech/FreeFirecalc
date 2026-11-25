@@ -3078,7 +3078,7 @@ const POSTER_THEMES = {
   nexis: {
     id: "nexis",
     name: "NEXIS SCRIMS",
-    src: "assets/nexis_esports_template.jpg",
+    src: "assets/nexis_esports_v2.jpg",
     layout: "nexis_819",
     glowColor: "rgba(250, 204, 21, 0.85)",
     baseWidth: 819,
