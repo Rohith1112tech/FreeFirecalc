@@ -96,6 +96,7 @@ const state = {
   activeSubView: "view-match-input", // 'view-match-input' | 'view-leaderboard' | 'view-matrix'
   positionDisplayMode: "points", // 'points' (Cumulative Placement Points) | 'average' (Average Placement Rank)
   selectedPosterTheme: "red", // 'red' (Red Crimson) | 'cyan' (Cyan Storm)
+  selectedSlotListTheme: "crimson", // 'crimson' | 'cyan' | 'purple' | 'orange' | 'military'
   exportFormat: "jpg", // 'jpg' default
   selectedMatchIndex: 0, // 0-indexed (0 = Match 1)
   matchInputMode: "manual", // 'manual' | 'auto'
@@ -547,6 +548,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSavedState(storedLobby);
   }
   setPosterTheme(state.selectedPosterTheme || "red");
+  setSlotListTheme(state.selectedSlotListTheme || "crimson");
   initMatchesState();
   renderTeamInputs();
   bindEvents();
@@ -1521,7 +1523,7 @@ function bindEvents() {
   }
 
   // Poster Template Theme Switcher (All 7 Themes)
-  document.querySelectorAll(".theme-pill-btn").forEach((btn) => {
+  document.querySelectorAll(".theme-pill-btn[data-theme]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const theme = btn.dataset.theme;
       if (theme) setPosterTheme(theme);
@@ -1534,6 +1536,14 @@ function bindEvents() {
   if (btnThemePink) btnThemePink.addEventListener("click", () => setPosterTheme("pink"));
   if (btnThemeCyanPurple) btnThemeCyanPurple.addEventListener("click", () => setPosterTheme("cyan-purple"));
   if (btnThemePurpleBlue) btnThemePurpleBlue.addEventListener("click", () => setPosterTheme("purple-blue"));
+
+  // Slot List Theme Switcher (5 Switchable Scrims Banners)
+  document.querySelectorAll(".theme-pill-btn[data-slot-theme], #slot-list-theme-buttons .theme-pill-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const slotTheme = btn.dataset.slotTheme;
+      if (slotTheme) setSlotListTheme(slotTheme);
+    });
+  });
 
   // Download Results & Poster as Image (Prompt 5)
   if (btnDownloadResultsBottom) {
@@ -3232,7 +3242,7 @@ function setPosterTheme(theme) {
     posterTemplateBg.src = themeConfig.src;
   }
 
-  const buttons = document.querySelectorAll(".theme-pill-btn");
+  const buttons = document.querySelectorAll("#theme-buttons .theme-pill-btn, .theme-pill-btn[data-theme]");
   buttons.forEach((btn) => {
     if (btn.dataset.theme === theme) {
       btn.classList.add("active");
@@ -3801,7 +3811,110 @@ function fallbackCanvasExport(format = "jpg", filename = "FreeFire_Leaderboard.j
 }
 
 /**
- * Render the 12 Slot Rows directly overlaid on the purple SCRIMS SLOT LIST template
+ * Switchable Slot List Banner Registry (5 Themes)
+ */
+const SLOT_LIST_THEMES = {
+  crimson: {
+    id: "crimson",
+    name: "RED CRIMSON",
+    src: "assets/slot_list_crimson.jpg",
+    baseWidth: 935,
+    baseHeight: 1024,
+    xOffsetRatio: 280 / 935,
+    maxTextWidthRatio: 0.53,
+    textColor: "#ffffff",
+    rosterColor: "#fca5a5",
+    emptyColor: "rgba(255, 60, 80, 0.45)"
+  },
+  cyan: {
+    id: "cyan",
+    name: "CYAN STORM",
+    src: "assets/slot_list_cyan.jpg",
+    baseWidth: 935,
+    baseHeight: 1024,
+    xOffsetRatio: 280 / 935,
+    maxTextWidthRatio: 0.53,
+    textColor: "#ffffff",
+    rosterColor: "#7dd3fc",
+    emptyColor: "rgba(0, 240, 255, 0.45)"
+  },
+  purple: {
+    id: "purple",
+    name: "CYBER VIOLET",
+    src: "assets/slot_list_purple.jpg",
+    baseWidth: 935,
+    baseHeight: 1024,
+    xOffsetRatio: 280 / 935,
+    maxTextWidthRatio: 0.53,
+    textColor: "#ffffff",
+    rosterColor: "#d8b4fe",
+    emptyColor: "rgba(192, 132, 252, 0.45)"
+  },
+  orange: {
+    id: "orange",
+    name: "FLAME ORANGE",
+    src: "assets/slot_list_orange.jpg",
+    baseWidth: 935,
+    baseHeight: 1024,
+    xOffsetRatio: 280 / 935,
+    maxTextWidthRatio: 0.53,
+    textColor: "#ffffff",
+    rosterColor: "#fdba74",
+    emptyColor: "rgba(255, 136, 0, 0.45)"
+  },
+  military: {
+    id: "military",
+    name: "BATTLEGROUND",
+    src: "assets/slot_list_military.jpg",
+    baseWidth: 873,
+    baseHeight: 1024,
+    xOffsetRatio: 260 / 873,
+    maxTextWidthRatio: 0.54,
+    textColor: "#ffffff",
+    rosterColor: "#fca5a5",
+    emptyColor: "rgba(239, 68, 68, 0.45)"
+  }
+};
+
+/**
+ * Switch Slot List Template Theme ('crimson' | 'cyan' | 'purple' | 'orange' | 'military')
+ */
+function setSlotListTheme(themeKey) {
+  if (!SLOT_LIST_THEMES[themeKey]) {
+    themeKey = "crimson";
+  }
+  state.selectedSlotListTheme = themeKey;
+  const themeConfig = SLOT_LIST_THEMES[themeKey];
+
+  try {
+    localStorage.setItem("jse_slot_list_theme", themeKey);
+  } catch (_) {}
+
+  const captureEl = document.getElementById("slot-list-poster-capture");
+  if (captureEl) {
+    Object.keys(SLOT_LIST_THEMES).forEach((k) => {
+      captureEl.classList.remove(`slot-theme-${k}`);
+    });
+    captureEl.classList.add(`slot-theme-${themeKey}`);
+  }
+
+  const bgImg = document.getElementById("slot-list-template-bg");
+  if (bgImg && themeConfig && themeConfig.src) {
+    bgImg.src = themeConfig.src;
+  }
+
+  const buttons = document.querySelectorAll("#slot-list-theme-buttons .theme-pill-btn, .theme-pill-btn[data-slot-theme]");
+  buttons.forEach((btn) => {
+    if (btn.dataset.slotTheme === themeKey) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+/**
+ * Render the 12 Slot Rows directly overlaid on the SCRIMS SLOT LIST template
  */
 function renderSlotListRows() {
   if (!slotListOverlayRowsEl) return;
@@ -3852,8 +3965,8 @@ function renderSlotListRows() {
 }
 
 /**
- * Built-in Canvas Renderer for the Purple Scrims Slot List Template
- * Renders 100% pixel-accurate text directly onto the 935 x 1024 poster graphic at 2x Retina resolution
+ * Built-in Canvas Renderer for the Scrims Slot List Templates (5 Switchable Banners)
+ * Renders 100% pixel-accurate text directly onto the poster graphic at 2x Retina resolution
  */
 function drawSlotListCanvas(canvas, ctx, img) {
   const baseW = img.naturalWidth || 935;
@@ -3862,9 +3975,17 @@ function drawSlotListCanvas(canvas, ctx, img) {
   canvas.height = baseH * 2;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+  const activeThemeKey = state.selectedSlotListTheme || "crimson";
+  const themeConfig = SLOT_LIST_THEMES[activeThemeKey] || SLOT_LIST_THEMES.crimson;
+
   const slotYCenters = [343.5, 395.5, 446.0, 498.0, 548.5, 598.5, 648.5, 698.0, 747.0, 796.0, 846.0, 897.5];
   const teams = Array.isArray(state.teams) ? state.teams : [];
   const rosters = state.teamRosters || {};
+
+  const xRatio = themeConfig.xOffsetRatio || (280 / 935);
+  const maxTextRatio = themeConfig.maxTextWidthRatio || 0.53;
+  const rosterColor = themeConfig.rosterColor || "#fca5a5";
+  const emptyColor = themeConfig.emptyColor || "rgba(255, 60, 80, 0.45)";
 
   slotYCenters.forEach((yc, i) => {
     const teamName = (teams[i] || "").trim();
@@ -3872,16 +3993,16 @@ function drawSlotListCanvas(canvas, ctx, img) {
     const playerList = Array.isArray(rawRoster) ? rawRoster.filter((p) => p && p.trim()) : [];
     const rosterStr = playerList.join(" • ");
 
-    const xLeft = 280 * 2; // ~560px on 2x canvas
-    const yCenter = yc * 2;
-    const maxTextWidth = canvas.width * 0.53;
+    const xLeft = xRatio * canvas.width;
+    const yCenter = (yc / 1024) * canvas.height;
+    const maxTextWidth = canvas.width * maxTextRatio;
 
     if (teamName && rosterStr) {
       // 2 lines: Team name on top, players below
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.font = "800 28px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = themeConfig.textColor || "#ffffff";
       ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
       ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 1;
@@ -3894,7 +4015,7 @@ function drawSlotListCanvas(canvas, ctx, img) {
       ctx.fillText(displayName, xLeft, yCenter - 14);
 
       ctx.font = "600 20px 'Chakra Petch', 'Segoe UI', monospace";
-      ctx.fillStyle = "#d8b4fe";
+      ctx.fillStyle = rosterColor;
       ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
       ctx.shadowBlur = 6;
       let displayRoster = rosterStr;
@@ -3907,7 +4028,7 @@ function drawSlotListCanvas(canvas, ctx, img) {
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.font = "800 32px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = themeConfig.textColor || "#ffffff";
       ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
       ctx.shadowBlur = 8;
       ctx.shadowOffsetX = 1;
@@ -3922,7 +4043,7 @@ function drawSlotListCanvas(canvas, ctx, img) {
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.font = "italic 700 22px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
-      ctx.fillStyle = "rgba(192, 132, 252, 0.4)";
+      ctx.fillStyle = emptyColor;
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
       ctx.fillText("— AVAILABLE SLOT —", xLeft, yCenter);
@@ -3955,6 +4076,10 @@ async function handleDownloadSlotList(format = "jpg") {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
+    const activeThemeKey = state.selectedSlotListTheme || "crimson";
+    const themeConfig = SLOT_LIST_THEMES[activeThemeKey] || SLOT_LIST_THEMES.crimson;
+    const targetSrc = (bgImg && bgImg.src) ? bgImg.src : (themeConfig.src || "assets/slot_list_crimson.jpg");
+
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
@@ -3984,7 +4109,7 @@ async function handleDownloadSlotList(format = "jpg") {
       if (btnTextEl) btnTextEl.textContent = originalText;
       if (btnDownloadSlotList) btnDownloadSlotList.classList.remove("downloading");
     };
-    img.src = (bgImg && bgImg.src) ? bgImg.src : "assets/slot_list_template.jpg";
+    img.src = targetSrc;
   } catch (err) {
     console.error("Export error:", err);
     if (slotListStatusMessage) {
@@ -4207,6 +4332,8 @@ function handleExecuteTournamentReset() {
   state.selectedMatchIndex = 0;
   state.positionDisplayMode = "points";
   state.selectedPosterTheme = "red";
+  state.selectedSlotListTheme = "crimson";
+  setSlotListTheme("crimson");
   state.exportFormat = "jpg";
   state.matches = [];
 
@@ -4284,6 +4411,7 @@ function saveState(options = {}) {
       selectedMatchIndex: state.selectedMatchIndex,
       positionDisplayMode: state.positionDisplayMode,
       selectedPosterTheme: state.selectedPosterTheme || "red",
+      selectedSlotListTheme: state.selectedSlotListTheme || "crimson",
       exportFormat: state.exportFormat,
       matches: state.matches
     };
@@ -4341,6 +4469,7 @@ function loadSavedState(targetLobbyId) {
       state.selectedMatchIndex = parsed.selectedMatchIndex !== undefined ? parsed.selectedMatchIndex : 0;
       state.positionDisplayMode = parsed.positionDisplayMode || "points";
       state.selectedPosterTheme = parsed.selectedPosterTheme || "red";
+      state.selectedSlotListTheme = parsed.selectedSlotListTheme || "crimson";
       state.exportFormat = parsed.exportFormat || "jpg";
       state.matches = Array.isArray(parsed.matches) ? parsed.matches : [];
     } else {
@@ -4354,6 +4483,8 @@ function loadSavedState(targetLobbyId) {
       state.selectedMatchIndex = 0;
       state.positionDisplayMode = "points";
       state.selectedPosterTheme = "red";
+  state.selectedSlotListTheme = "crimson";
+  setSlotListTheme("crimson");
       state.exportFormat = "jpg";
       state.matches = [];
       initMatchesState();
@@ -6507,7 +6638,9 @@ if (typeof module !== "undefined" && module.exports) {
     escapeHtml,
     openAuthModal,
     closeAuthModal,
-    updateAuthUI
+    updateAuthUI,
+    SLOT_LIST_THEMES,
+    setSlotListTheme
   };
 }
 

@@ -42,14 +42,39 @@ assert(appJs.includes('handleCopySlotListToClipboard'), 'Missing handleCopySlotL
 assert(appJs.includes('switchSubView("view-slot-list")') || appJs.includes('viewId === "view-slot-list"'), 'Missing view-slot-list handling in switchSubView');
 console.log('✓ app.js functions, event bindings, and subview switches verified.');
 
-// 4. Verify template asset file
-const assetPath = path.join(__dirname, 'assets', 'slot_list_template.jpg');
-assert(fs.existsSync(assetPath), 'Template asset file assets/slot_list_template.jpg does not exist');
-const stats = fs.statSync(assetPath);
-assert(stats.size > 50000, `Asset size ${stats.size} is unusually small`);
-console.log(`✓ Template asset verified: assets/slot_list_template.jpg (${stats.size} bytes).`);
+// 4. Verify template asset files (Legacy + 5 Switchable Scrims Banners)
+const legacyAssetPath = path.join(__dirname, 'assets', 'slot_list_template.jpg');
+assert(fs.existsSync(legacyAssetPath), 'Template asset file assets/slot_list_template.jpg does not exist');
+const legacyStats = fs.statSync(legacyAssetPath);
+assert(legacyStats.size > 50000, `Asset size ${legacyStats.size} is unusually small`);
 
-// 5. Test slot list text formatting logic
+const expectedBanners = [
+  { key: 'crimson', filename: 'slot_list_crimson.jpg' },
+  { key: 'cyan', filename: 'slot_list_cyan.jpg' },
+  { key: 'purple', filename: 'slot_list_purple.jpg' },
+  { key: 'orange', filename: 'slot_list_orange.jpg' },
+  { key: 'military', filename: 'slot_list_military.jpg' }
+];
+
+expectedBanners.forEach(({ key, filename }) => {
+  const bPath = path.join(__dirname, 'assets', filename);
+  assert(fs.existsSync(bPath), `Banner assets/${filename} (${key}) does not exist`);
+  const bStats = fs.statSync(bPath);
+  assert(bStats.size > 100000, `Banner ${filename} size ${bStats.size} is unusually small`);
+  console.log(`✓ Slot list banner asset verified: assets/${filename} (${bStats.size} bytes).`);
+});
+
+// 5. Verify Slot List Theme Selector & CSS Theme Rules
+assert(indexHtml.includes('id="slot-list-theme-buttons"'), 'Missing slot-list-theme-buttons in index.html');
+['crimson', 'cyan', 'purple', 'orange', 'military'].forEach((thm) => {
+  assert(indexHtml.includes(`data-slot-theme="${thm}"`), `Missing data-slot-theme="${thm}" in index.html`);
+  assert(styleCss.includes(`.slot-theme-${thm}`), `Missing .slot-theme-${thm} in style.css`);
+});
+assert(appJs.includes('SLOT_LIST_THEMES'), 'Missing SLOT_LIST_THEMES in app.js');
+assert(appJs.includes('setSlotListTheme'), 'Missing setSlotListTheme in app.js');
+console.log('✓ All 5 Slot List switchable themes (Crimson, Cyan, Purple, Orange, Military) verified in HTML, CSS & JS.');
+
+// 6. Test slot list text formatting logic
 const testTeams = ['TOTAL GAMING', 'GODLIKE ESPORTS', 'TSM FTX', 'EVOS PHOENIX'];
 const testRosters = {
   0: ['Mafia', 'Fozy', 'Delete', 'Javagamer'],

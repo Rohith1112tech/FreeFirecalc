@@ -3429,10 +3429,114 @@ body {
   overflow: hidden !important;
   box-shadow: 
     0 25px 60px rgba(0, 0, 0, 0.95),
-    0 0 35px rgba(168, 85, 247, 0.45) !important;
-  border: 2px solid #a855f7 !important;
+    0 0 35px rgba(255, 30, 66, 0.45) !important;
+  border: 2px solid #ff1e42 !important;
   background: #000000 !important;
   display: block !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+}
+
+/* Slot List Theme Overrides */
+.slot-list-exact-poster-container.slot-theme-crimson {
+  border-color: #ff1e42 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(255, 30, 66, 0.45) !important;
+}
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row:hover {
+  background: rgba(255, 30, 66, 0.15) !important;
+}
+.slot-list-exact-poster-container.slot-theme-crimson .slot-team-roster {
+  color: #fca5a5 !important;
+}
+.slot-list-exact-poster-container.slot-theme-crimson .slot-empty-label {
+  color: rgba(255, 120, 140, 0.45) !important;
+}
+
+.slot-list-exact-poster-container.slot-theme-cyan {
+  border-color: #00c2ff !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(0, 194, 255, 0.45) !important;
+}
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row:hover {
+  background: rgba(0, 194, 255, 0.15) !important;
+}
+.slot-list-exact-poster-container.slot-theme-cyan .slot-team-roster {
+  color: #7dd3fc !important;
+}
+.slot-list-exact-poster-container.slot-theme-cyan .slot-empty-label {
+  color: rgba(0, 194, 255, 0.45) !important;
+}
+
+.slot-list-exact-poster-container.slot-theme-purple {
+  border-color: #a855f7 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(168, 85, 247, 0.45) !important;
+}
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row:hover {
+  background: rgba(168, 85, 247, 0.15) !important;
+}
+.slot-list-exact-poster-container.slot-theme-purple .slot-team-roster {
+  color: #d8b4fe !important;
+}
+.slot-list-exact-poster-container.slot-theme-purple .slot-empty-label {
+  color: rgba(192, 132, 252, 0.45) !important;
+}
+
+.slot-list-exact-poster-container.slot-theme-orange {
+  border-color: #f97316 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(249, 115, 22, 0.45) !important;
+}
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row:hover {
+  background: rgba(249, 115, 22, 0.15) !important;
+}
+.slot-list-exact-poster-container.slot-theme-orange .slot-team-roster {
+  color: #fed7aa !important;
+}
+.slot-list-exact-poster-container.slot-theme-orange .slot-empty-label {
+  color: rgba(249, 115, 22, 0.45) !important;
+}
+
+.slot-list-exact-poster-container.slot-theme-military {
+  border-color: #ef4444 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(239, 68, 68, 0.45) !important;
+}
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+.slot-list-exact-poster-container.slot-theme-military .slot-team-roster {
+  color: #fca5a5 !important;
+}
+.slot-list-exact-poster-container.slot-theme-military .slot-empty-label {
+  color: rgba(239, 68, 68, 0.45) !important;
+}
+
+/* Active Slot List Theme Button Overrides */
+.theme-pill-btn.active[data-slot-theme="crimson"] {
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.35) 0%, rgba(153, 27, 27, 0.5) 100%) !important;
+  border-color: #ff1e42 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(255, 30, 66, 0.5) !important;
+}
+.theme-pill-btn.active[data-slot-theme="cyan"] {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.35) 0%, rgba(14, 116, 144, 0.5) 100%) !important;
+  border-color: #00c2ff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(0, 194, 255, 0.5) !important;
+}
+.theme-pill-btn.active[data-slot-theme="purple"] {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(126, 34, 206, 0.5) 100%) !important;
+  border-color: #a855f7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.5) !important;
+}
+.theme-pill-btn.active[data-slot-theme="orange"] {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.35) 0%, rgba(194, 65, 12, 0.5) 100%) !important;
+  border-color: #f97316 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.5) !important;
+}
+.theme-pill-btn.active[data-slot-theme="military"] {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.35) 0%, rgba(185, 28, 28, 0.5) 100%) !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5) !important;
 }
 
 .slot-list-template-bg {
