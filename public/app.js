@@ -569,6 +569,31 @@ function showLoginStage() {
   }
 }
 
+function canResetTournament() {
+  if (typeof JSEAuth === "undefined" || typeof JSEAuth.hasPermission !== "function") {
+    return true;
+  }
+  return JSEAuth.hasPermission("RESET_TOURNAMENT");
+}
+
+function updateRoleBasedControls() {
+  const allowReset = canResetTournament();
+  const setupResetEl = document.getElementById("btn-setup-reset");
+  if (setupResetEl) {
+    setupResetEl.style.display = allowReset ? "" : "none";
+  }
+  if (btnResetTournament) {
+    btnResetTournament.style.display = allowReset && state.activeScreen === "tournament" ? "inline-flex" : "none";
+  }
+  const activeUser = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+    ? JSEAuth.getActiveSession()
+    : null;
+  if (btnGateLogout && activeUser) {
+    const roleLabel = activeUser.role === "SUPER_ADMIN" ? "Super Admin" : "Admin";
+    btnGateLogout.title = `Signed in as ${activeUser.username} (${roleLabel}) — Click to Logout`;
+  }
+}
+
 function unlockMainAppFromGate(shouldAutoCloudPull = false) {
   isGateUnlocked = true;
   clearTimeout(welcomeTransitionTimer);
@@ -581,6 +606,7 @@ function unlockMainAppFromGate(shouldAutoCloudPull = false) {
   if (btnGateLogout) {
     btnGateLogout.style.display = typeof JSEAuth !== "undefined" && JSEAuth.getActiveSession() ? "inline-flex" : "none";
   }
+  updateRoleBasedControls();
   if (shouldAutoCloudPull && typeof fetchTournamentFromCloud === "function") {
     setTimeout(() => {
       fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
@@ -1779,6 +1805,7 @@ function showSetupScreen() {
   setupScreen.classList.add("active");
   if (btnBackSetup) btnBackSetup.style.display = "none";
   if (btnResetTournament) btnResetTournament.style.display = "none";
+  if (typeof updateRoleBasedControls === "function") updateRoleBasedControls();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1790,7 +1817,10 @@ function showTournamentScreen() {
   setupScreen.classList.remove("active");
   tournamentScreen.classList.add("active");
   if (btnBackSetup) btnBackSetup.style.display = "inline-flex";
-  if (btnResetTournament) btnResetTournament.style.display = "inline-flex";
+  if (btnResetTournament) {
+    btnResetTournament.style.display = canResetTournament() ? "inline-flex" : "none";
+  }
+  if (typeof updateRoleBasedControls === "function") updateRoleBasedControls();
 
   activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
   displayTotalMatchesEl.textContent = state.totalMatches;
@@ -4447,6 +4477,11 @@ function escapeHtml(str) {
  * Reset Confirmation Modal Controls (Prompt 6)
  */
 function openResetConfirmationModal() {
+  if (!canResetTournament()) {
+    showError("Only Super Admin (Js.Suzie) can reset tournament data.");
+    setTimeout(() => clearError(), 4000);
+    return;
+  }
   if (!resetModalBackdrop) return;
 
   const savedCount = state.matches.filter((m) => m && m.isSaved).length;
@@ -4464,8 +4499,22 @@ function closeResetConfirmationModal() {
 }
 
 function handleExecuteTournamentReset() {
+  if (!canResetTournament()) {
+    closeResetConfirmationModal();
+    showError("Only Super Admin (Js.Suzie) can reset tournament data.");
+    setTimeout(() => clearError(), 4000);
+    return;
+  }
   const currentLobby = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
   const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: currentLobby.toUpperCase(), defaultTitle: `JACK SPARROW PAID SCRIMS - ${currentLobby.toUpperCase()}` };
+
+  // 0. Clear active lobby row in Supabase if signed in as Super Admin
+  const sbResetClient = typeof JSEAuth !== "undefined" && typeof JSEAuth.getSupabaseClient === "function"
+    ? JSEAuth.getSupabaseClient()
+    : null;
+  if (sbResetClient && typeof JSEAuth.getActiveSession === "function" && JSEAuth.getActiveSession()) {
+    sbResetClient.from("lobby_states").delete().eq("lobby_id", currentLobby).then(() => {}, () => {});
+  }
 
   // 1. Clear from browser localStorage for active lobby ONLY
   try {
@@ -4536,7 +4585,11 @@ function flashAutoSaveIndicator() {
   autoSaveTimeout = setTimeout(() => {
     if (autosaveStatusPill && autosaveText) {
       autosaveStatusPill.classList.remove("saving");
-      if (getDriveWebhookUrl() || getBrowserOAuthToken()) {
+      const hasSbSession = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function" && JSEAuth.getActiveSession() && typeof JSEAuth.getSupabaseClient === "function" && JSEAuth.getSupabaseClient();
+      if (hasSbSession) {
+        autosaveStatusPill.classList.add("drive-synced");
+        autosaveText.textContent = "☁️ SAVED TO SUPABASE & BROWSER";
+      } else if (getDriveWebhookUrl() || getBrowserOAuthToken()) {
         autosaveStatusPill.classList.add("drive-synced");
         autosaveText.textContent = "☁️ AUTO-SAVED TO DRIVE & BROWSER";
       } else {
@@ -5768,39 +5821,69 @@ async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = f
     const lobbyInfo = LOBBY_CONFIGS[targetLobby] || { label: targetLobby.toUpperCase() };
 
     let cloudData = null;
+    let cloudSourceLabel = "Google Drive";
+    let sbQueryHandled = false;
 
-    try {
-      const json = await dispatchCloudProxyRequest({
-        action: "get_backup",
-        lobbyId: targetLobby
-      });
-      if (json && json.success && json.found && json.backupData) {
-        cloudData = json.backupData;
-      }
-    } catch (proxyErr) {
-      console.warn("[Cloud Proxy Pull Attempt]:", proxyErr.message);
-      // Fallback for direct webhook URL if configured
-      const webhookUrl = getDriveWebhookUrl();
-      if (webhookUrl && !proxyErr.message.includes("UNAUTHORIZED")) {
-        try {
-          const res = await fetch(webhookUrl, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ action: "get_backup", lobbyId: targetLobby })
-          });
-          if (res.ok) {
-            const json = await res.json();
-            if (json && json.success && json.found && json.backupData) {
-              cloudData = json.backupData;
-            }
+    // 0. Primary Authenticated Route: Supabase ff-scrims Postgres (`lobby_states`)
+    const sbClient = typeof JSEAuth !== "undefined" && typeof JSEAuth.getSupabaseClient === "function"
+      ? JSEAuth.getSupabaseClient()
+      : null;
+    const sbSession = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+      ? JSEAuth.getActiveSession()
+      : null;
+    if (sbClient && sbSession) {
+      try {
+        const { data: sbRow, error: sbErr } = await sbClient
+          .from("lobby_states")
+          .select("state_json, updated_at")
+          .eq("lobby_id", targetLobby)
+          .maybeSingle();
+        if (!sbErr) {
+          sbQueryHandled = true;
+          if (sbRow && sbRow.state_json && typeof sbRow.state_json === "object" && sbRow.state_json.tournamentTitle) {
+            cloudData = sbRow.state_json;
+            cloudSourceLabel = "Supabase";
           }
-        } catch (_) {}
+        }
+      } catch (sbPullErr) {
+        console.warn("[Supabase Cloud Pull Notice]:", sbPullErr.message);
+      }
+    }
+
+    if (!cloudData && !sbQueryHandled) {
+      try {
+        const json = await dispatchCloudProxyRequest({
+          action: "get_backup",
+          lobbyId: targetLobby
+        });
+        if (json && json.success && json.found && json.backupData) {
+          cloudData = json.backupData;
+        }
+      } catch (proxyErr) {
+        console.warn("[Cloud Proxy Pull Attempt]:", proxyErr.message);
+        // Fallback for direct webhook URL if configured
+        const webhookUrl = getDriveWebhookUrl();
+        if (webhookUrl && !proxyErr.message.includes("UNAUTHORIZED")) {
+          try {
+            const res = await fetch(webhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({ action: "get_backup", lobbyId: targetLobby })
+            });
+            if (res.ok) {
+              const json = await res.json();
+              if (json && json.success && json.found && json.backupData) {
+                cloudData = json.backupData;
+              }
+            }
+          } catch (_) {}
+        }
       }
     }
 
     if (!cloudData) {
       if (!silent) {
-        showError(`No cloud backup found on Drive for ${lobbyInfo.label} yet. Save a match first!`);
+        showError(`No cloud backup found in ${sbClient && sbSession ? "Supabase" : "Drive"} for ${lobbyInfo.label} yet. Save a match first!`);
         setTimeout(() => clearError(), 4000);
       }
       return { success: true, updated: false };
@@ -5852,10 +5935,10 @@ async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = f
 
       if (autosaveStatusPill && autosaveText) {
         autosaveStatusPill.classList.add("drive-synced");
-        autosaveText.textContent = `☁️ SYNCED FROM DRIVE (${lobbyInfo.label})`;
+        autosaveText.textContent = `☁️ SYNCED FROM ${cloudSourceLabel.toUpperCase()} (${lobbyInfo.label})`;
       }
 
-      const msg = `✅ ${lobbyInfo.label} synced from Google Drive!`;
+      const msg = `✅ ${lobbyInfo.label} synced from ${cloudSourceLabel}!`;
       if (!silent) {
         showError(msg);
         setTimeout(() => clearError(), 4000);
@@ -5865,7 +5948,7 @@ async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = f
       return { success: true, updated: true };
     } else {
       if (!silent) {
-        showError(`✅ ${lobbyInfo.label} is already up to date with Google Drive.`);
+        showError(`✅ ${lobbyInfo.label} is already up to date with ${cloudSourceLabel}.`);
         setTimeout(() => clearError(), 3000);
       }
       return { success: true, updated: false };
@@ -6542,8 +6625,14 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
 
   const webhookUrl = getDriveWebhookUrl();
   const browserToken = getBrowserOAuthToken();
+  const sbSyncClient = typeof JSEAuth !== "undefined" && typeof JSEAuth.getSupabaseClient === "function"
+    ? JSEAuth.getSupabaseClient()
+    : null;
+  const sbSyncUser = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+    ? JSEAuth.getActiveSession()
+    : null;
 
-  if (!webhookUrl && !browserToken) {
+  if (!sbSyncClient && !webhookUrl && !browserToken) {
     // Keep autosave pill indicating local browser save
     if (autosaveStatusPill && autosaveText) {
       autosaveStatusPill.classList.remove("syncing-drive", "saving");
@@ -6557,7 +6646,7 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
   if (autosaveStatusPill && autosaveText) {
     autosaveStatusPill.classList.add("syncing-drive");
     autosaveStatusPill.classList.remove("saving", "drive-synced");
-    autosaveText.textContent = "☁️ SYNCING TO DRIVE...";
+    autosaveText.textContent = sbSyncClient && sbSyncUser ? "☁️ SYNCING TO SUPABASE..." : "☁️ SYNCING TO DRIVE...";
   }
 
   try {
@@ -6580,6 +6669,38 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       savedAt: new Date().toISOString(),
       autoSavedToDrive: true
     };
+
+    // 0. Primary Authenticated Cloud Route: Supabase Postgres (`lobby_states`)
+    if (sbSyncClient && sbSyncUser) {
+      try {
+        const { error: sbUpsertErr } = await sbSyncClient.from("lobby_states").upsert({
+          lobby_id: lobbyId,
+          tournament_title: state.tournamentTitle || lobbyInfo.label,
+          total_matches: parseInt(state.totalMatches, 10) || 3,
+          state_json: backupData,
+          updated_by: sbSyncUser.id || null,
+          updated_by_username: sbSyncUser.username || null,
+          updated_at: backupData.savedAt
+        }, { onConflict: "lobby_id" });
+
+        if (!sbUpsertErr) {
+          const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          if (autosaveStatusPill && autosaveText) {
+            autosaveStatusPill.classList.remove("syncing-drive", "saving");
+            autosaveStatusPill.classList.add("drive-synced");
+            autosaveText.textContent = "☁️ SAVED TO SUPABASE & BROWSER";
+            autosaveStatusPill.title = `Synced ${lobbyInfo.label} to Supabase ff-scrims at ${timeStr} by ${sbSyncUser.username}`;
+          }
+          if (!webhookUrl && !browserToken) {
+            return { success: true, method: "supabase" };
+          }
+        } else {
+          console.warn("[Supabase Sync Notice]:", sbUpsertErr.message);
+        }
+      } catch (sbSyncErr) {
+        console.warn("[Supabase Sync Notice]:", sbSyncErr.message);
+      }
+    }
 
     // 1. Primary Authenticated Route: Netlify Cloud Proxy Gateway
     try {

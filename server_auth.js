@@ -68,8 +68,36 @@ const SERVER_USERS = {
     displayName: 'Js.Suzie',
     salt: process.env.CUSTOM_AUTH_SALT || '12b6cffb5a3037e6d2b65bbfc25c59dd',
     hash: process.env.CUSTOM_AUTH_HASH || 'a9750f1aba2c45a095750f9bd57ca09c8fc6c47d6dd669cd16fede59b195edaf'
+  },
+  'js.culprit': {
+    username: 'Js.Culprit',
+    role: ROLES.TOURNAMENT_ADMIN,
+    displayName: 'Js.Culprit',
+    salt: '40bf5ea4240ed6d94781f9e7914a1735',
+    hash: '042a61975511d1401835ca83ee4d9103850fe038edaaae74bfb6e2b5850eddf0'
+  },
+  'js.pokemon': {
+    username: 'Js.Pokemon',
+    role: ROLES.TOURNAMENT_ADMIN,
+    displayName: 'Js.Pokemon',
+    salt: '8299dd0c186bac5d2279e7bafdac2529',
+    hash: '81ee88563f18658d339fb2f30c25c7541d77466f785e1d6b6c2c23391344b402'
+  },
+  'js.alien': {
+    username: 'Js.Alien',
+    role: ROLES.TOURNAMENT_ADMIN,
+    displayName: 'Js.Alien',
+    salt: 'ba11f65160af8248f5489fba6acb2c30',
+    hash: '446f09c2e70dd4430b6e3f768423b7c9f1a5ffd57e1a5de91afcbc9f496382d3'
   }
 };
+
+// Restrict default test credentials in production deployments
+if (process.env.NODE_ENV === 'production' || process.env.DISABLE_DEFAULT_USERS === 'true') {
+  delete SERVER_USERS.superadmin;
+  delete SERVER_USERS.tourneyadmin;
+  delete SERVER_USERS.scorekeeper;
+}
 
 // Optional custom server users from environment configuration (PBKDF2 salt/hash pairs)
 if (process.env.CUSTOM_AUTH_USERNAME && process.env.CUSTOM_AUTH_SALT && process.env.CUSTOM_AUTH_HASH) {

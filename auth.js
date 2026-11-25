@@ -88,10 +88,62 @@
 
   // =========================================================================
   // BROWSER CLIENT-SIDE IMPLEMENTATION (ZERO PASSWORDS, ZERO HASHES)
+  // Primary: Supabase Auth (ff-scrims); Fallback: Server / Netlify Function
   // =========================================================================
 
+  const SUPABASE_URL = "https://fajjslwudnzpvwywotbi.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_iJH3YL62yZSc5yO4U1knFQ_2E-jlwd9";
+
+  let supabaseClientInstance = null;
   let inMemoryUser = null;
   let inMemoryToken = null;
+
+  function getSupabaseClient() {
+    if (supabaseClientInstance) return supabaseClientInstance;
+    if (
+      typeof window !== "undefined" &&
+      window.supabase &&
+      typeof window.supabase.createClient === "function"
+    ) {
+      supabaseClientInstance = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false
+          }
+        }
+      );
+      return supabaseClientInstance;
+    }
+    return null;
+  }
+
+  function resolveSupabaseLoginEmail(username) {
+    const clean = String(username || "").trim().toLowerCase();
+    if (!clean) return "";
+    if (clean.includes("@")) return clean;
+    return `${clean}@ffscrims.app`;
+  }
+
+  function mapSupabaseUser(sbUser) {
+    if (!sbUser) return null;
+    // Security rule: Read role strictly from immutable app_metadata, NEVER user_metadata
+    const appMeta = sbUser.app_metadata || {};
+    const resolvedRole = ROLES[appMeta.role] || ROLES.PUBLIC;
+    const rawEmail = sbUser.email || "";
+    const resolvedUsername = appMeta.username || (rawEmail ? rawEmail.split("@")[0] : "Admin");
+    return {
+      id: sbUser.id,
+      email: rawEmail,
+      username: resolvedUsername,
+      role: resolvedRole,
+      displayName: resolvedUsername,
+      provider: "supabase"
+    };
+  }
 
   function getAuthEndpoint() {
     if (typeof window !== "undefined") {
@@ -119,6 +171,30 @@
   async function login(username, password) {
     if (!username || !password) {
       return { success: false, error: "Username and password are required." };
+    }
+
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        const email = resolveSupabaseLoginEmail(username);
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+          return { success: false, error: error.message || "Invalid username or password." };
+        }
+        if (data && data.user && data.session) {
+          const mappedUser = mapSupabaseUser(data.user);
+          inMemoryUser = mappedUser;
+          inMemoryToken = data.session.access_token;
+          return {
+            success: true,
+            session: mappedUser,
+            user: mappedUser,
+            token: inMemoryToken
+          };
+        }
+      } catch (sbErr) {
+        console.warn("[Supabase Auth Login Fallback]:", sbErr.message);
+      }
     }
 
     try {
@@ -151,6 +227,12 @@
   }
 
   async function logout() {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        await sb.auth.signOut();
+      } catch (_) {}
+    }
     try {
       await fetchAuthEndpoint({
         method: "POST",
@@ -165,6 +247,22 @@
   }
 
   async function checkSession() {
+    const sb = getSupabaseClient();
+    if (sb) {
+      try {
+        const { data: sessionData } = await sb.auth.getSession();
+        if (sessionData && sessionData.session) {
+          const { data: userData, error: userErr } = await sb.auth.getUser();
+          if (!userErr && userData && userData.user) {
+            inMemoryUser = mapSupabaseUser(userData.user);
+            inMemoryToken = sessionData.session.access_token;
+            return inMemoryUser;
+          }
+          await sb.auth.signOut().catch(() => {});
+        }
+      } catch (_) {}
+    }
+
     try {
       const response = await fetchAuthEndpoint({
         method: "GET",
@@ -184,6 +282,7 @@
       }
     } catch (_) {}
     inMemoryUser = null;
+    inMemoryToken = null;
     return null;
   }
 
@@ -222,6 +321,7 @@
     getActiveSession,
     getCurrentRole,
     getAuthToken,
+    getSupabaseClient,
     hasPermission,
     enforcePermission
   };
