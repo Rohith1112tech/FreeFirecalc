@@ -3366,10 +3366,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     const modernSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
     const rowHeight = (canvas.height * (535 / 1024)) / 12;
 
-    const crownFontSize = Math.round(canvas.width * 0.021);
-    const teamFontSize = Math.round(canvas.width * 0.022);
-    const numFontSize = Math.round(canvas.width * 0.023);
-    const totalFontSize = Math.round(canvas.width * 0.027);
+    const crownFontSize = Math.round(canvas.width * 0.019);
+    const teamFontSize = Math.round(canvas.width * 0.0172);
+    const numFontSize = Math.round(canvas.width * 0.0195);
+    const totalFontSize = Math.round(canvas.width * 0.0225);
 
     const posColor = themeConfig.posColor || "#4ade80";
     const elimColor = themeConfig.elimColor || "#fb923c";
@@ -3390,10 +3390,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillText("👑", canvas.width * 0.112, rowCenterY - rowHeight * 0.42);
       }
 
-      // 1. Team Name (Slot: centered at 31.9%)
-      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      // 1. Team Name (Left-aligned cleanly like Slot List)
+      ctx.font = `700 ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
+      ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(0,0,0,0.95)";
       ctx.shadowBlur = 4;
@@ -3401,11 +3401,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.238;
+      const maxTextWidth = canvas.width * 0.236;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.319, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.204, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
@@ -3450,10 +3450,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     const cyanSlotCenters = [406.5, 443, 479.5, 516, 552.5, 589, 625.5, 662, 698.5, 735, 771.5, 808];
     const rowHeight = (canvas.height * (438 / 1024)) / 12;
 
-    const crownFontSize = Math.round(canvas.width * 0.022);
-    const teamFontSize = Math.round(canvas.width * 0.022);
-    const numFontSize = Math.round(canvas.width * 0.024);
-    const totalFontSize = Math.round(canvas.width * 0.028);
+    const crownFontSize = Math.round(canvas.width * 0.0195);
+    const teamFontSize = Math.round(canvas.width * 0.0172);
+    const numFontSize = Math.round(canvas.width * 0.020);
+    const totalFontSize = Math.round(canvas.width * 0.023);
 
     cumulativeStats.forEach((t, i) => {
       if (i >= 12) return;
@@ -3469,10 +3469,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillText("👑", canvas.width * 0.128, rowCenterY - rowHeight * 0.42);
       }
 
-      // 1. Team Name (Slot: centered at 34.25%)
-      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      // 1. Team Name (Left-aligned cleanly like Slot List)
+      ctx.font = `700 ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
+      ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(0,0,0,0.95)";
       ctx.shadowBlur = 4;
@@ -3480,11 +3480,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.255;
+      const maxTextWidth = canvas.width * 0.246;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.3425, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.222, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
@@ -3529,10 +3529,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
     const redSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
     const rowHeight = (canvas.height * (535 / 1024)) / 12;
 
-    const crownFontSize = Math.round(canvas.width * 0.021);
-    const teamFontSize = Math.round(canvas.width * 0.022);
-    const numFontSize = Math.round(canvas.width * 0.023);
-    const totalFontSize = Math.round(canvas.width * 0.026);
+    const crownFontSize = Math.round(canvas.width * 0.019);
+    const teamFontSize = Math.round(canvas.width * 0.0172);
+    const numFontSize = Math.round(canvas.width * 0.0195);
+    const totalFontSize = Math.round(canvas.width * 0.0225);
 
     cumulativeStats.forEach((t, i) => {
       if (i >= 12) return;
@@ -3547,10 +3547,10 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
         ctx.fillText("👑", canvas.width * 0.108, rowCenterY - rowHeight * 0.42);
       }
 
-      // 1. Team Name (Slot: centered at 31.9%)
-      ctx.font = `bold ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
+      // 1. Team Name (Left-aligned cleanly like Slot List)
+      ctx.font = `700 ${teamFontSize}px "Chakra Petch", "Rajdhani", sans-serif`;
       ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
+      ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = 4;
@@ -3558,11 +3558,11 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
       ctx.shadowOffsetY = 1;
 
       let displayName = t.teamName.toUpperCase();
-      const maxTextWidth = canvas.width * 0.238;
+      const maxTextWidth = canvas.width * 0.236;
       while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
         displayName = displayName.slice(0, -1);
       }
-      ctx.fillText(displayName, canvas.width * 0.319, rowCenterY);
+      ctx.fillText(displayName, canvas.width * 0.204, rowCenterY);
 
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
@@ -3867,8 +3867,8 @@ function drawSlotListCanvas(canvas, ctx, img) {
     ctx.textBaseline = "middle";
 
     if (teamName) {
-      // ONLY Team Name - vertically centered in the slot bar with refined size
-      ctx.font = "800 27px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      // ONLY Team Name - vertically centered in the slot bar with neat refined size
+      ctx.font = "700 24px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = themeConfig.textColor || "#ffffff";
       ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
       ctx.shadowBlur = 8;
