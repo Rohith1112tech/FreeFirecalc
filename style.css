@@ -5990,8 +5990,8 @@ body {
 
 .lobby-selector-bar {
   margin: 0.5rem 0 1.25rem;
-  background: linear-gradient(180deg, rgba(20, 24, 34, 0.95) 0%, rgba(12, 15, 22, 0.98) 100%);
-  border: 1px solid rgba(255, 51, 68, 0.28);
+  background: var(--bg-card-gradient);
+  border: var(--card-border);
   border-radius: 8px;
   padding: 0.6rem 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -6414,202 +6414,424 @@ body {
     display: none;
   }
   .lobby-actions-group {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-/* Security & Admin Auth Header Elements (Removed / Hidden per user request) */
-.lobby-auth-pill,
-.lobby-auth-btn,
-#modal-admin-auth {
-  display: none !important;
-}
-
-/* Auth Modal Styles */
-.auth-modal-card {
-  max-width: 480px;
-  width: 90%;
-  background: var(--bg-card);
-  border: var(--primary-border);
-  box-shadow: 0 0 35px var(--card-border-glow);
-  border-radius: var(--modal-radius);
-  padding: 1.5rem;
-  color: var(--text-white);
-}
-
-.auth-modal-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.auth-desc-text {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-  line-height: 1.4;
-}
-
-.auth-alert {
-  padding: 0.6rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  margin-bottom: 0.9rem;
-  line-height: 1.35;
-}
-
-.auth-alert.error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid #ef4444;
-  color: #fca5a5;
-}
-
-.auth-alert.success {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid #10b981;
-  color: #6ee7b7;
-}
-
-.auth-roles-reference {
-  margin-top: 1rem;
-  padding: 0.75rem;
-  background: var(--bg-slot);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.roles-ref-title {
-  display: block;
-  font-weight: 800;
-  color: var(--primary-accent);
-  margin-bottom: 0.35rem;
-}
-
-.role-ref-item {
-  margin-bottom: 0.25rem;
-}
-
-.auth-recovery-details {
-  margin-top: 0.9rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.auth-recovery-details summary {
-  cursor: pointer;
-  color: var(--text-gold);
-  font-weight: 700;
-}
-
-.recovery-box {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 190, 11, 0.25);
-  border-radius: 6px;
-}
-
-.lobby-cloud-sync-btn {
-  background: rgba(16, 24, 38, 0.95);
-  border: 1px solid rgba(0, 255, 204, 0.45);
-  color: #00ffcc;
-  font-family: var(--font-header, 'Montserrat', sans-serif);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  padding: 0.35rem 0.8rem;
-  border-radius: 5px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.22s ease;
-  user-select: none;
-}
-
-.lobby-cloud-sync-btn:hover {
-  background: rgba(0, 255, 204, 0.15);
-  border-color: #00ffcc;
-  color: #ffffff;
-  box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
-  transform: translateY(-1px);
-}
-
-.lobby-reset-btn {
-  background: var(--btn-danger-bg);
-  border: var(--btn-danger-border);
-  color: var(--btn-danger-text);
-  font-family: var(--font-header, 'Montserrat', sans-serif);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  padding: 0.35rem 0.8rem;
-  border-radius: 5px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.22s ease;
-  user-select: none;
-}
-
-.lobby-reset-btn:hover {
-  background: var(--btn-danger-hover-bg);
-  border-color: var(--btn-danger-hover-border);
-  color: var(--btn-danger-hover-text);
-  box-shadow: var(--btn-danger-glow);
-  transform: translateY(-1px);
-}
-
-.lobby-back-setup-btn {
-  background: rgba(20, 24, 34, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #d1d5db;
-  font-family: var(--font-header, 'Montserrat', sans-serif);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  padding: 0.35rem 0.8rem;
-  border-radius: 5px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.22s ease;
-  user-select: none;
-}
-
-.lobby-back-setup-btn:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--primary-accent);
-  color: #ffffff;
-  box-shadow: var(--primary-accent-glow-subtle);
-  transform: translateY(-1px);
-}
-
-.sync-spin-icon {
-  display: inline-block;
-  font-size: 0.85rem;
-  transition: transform 0.3s ease;
-}
-
-.sync-spin-icon.spinning {
-  animation: spinIcon 1s linear infinite;
-}
-
-@keyframes spinIcon {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.lobby-sync-tag {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .lobby-sync-tag {
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   WIDESCREEN DESKTOP COMMAND-CENTER VIEW (>= 1025px)
+   Mobile & tablet viewing (<= 1024px) remains strictly unchanged above.
+   ========================================================================== */
+@media (min-width: 1025px) {
+  .app-container {
+    max-width: min(1480px, 96vw);
+    padding: 0.85rem 1.25rem 2.25rem;
+  }
+
+  /* Slim Panoramic Header Banner without cropping hero artwork */
+  .scrims-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .scrims-header-img-wrap {
+    position: relative;
+    height: 175px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #030916;
+    overflow: hidden;
+  }
+
+  [data-ui-theme="crimson"] .scrims-header-img-wrap {
+    background: #100306;
+  }
+
+  .scrims-header-img-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -24px;
+    background-image: url("assets/header_banner_blue.jpg");
+    background-size: cover;
+    background-position: center;
+    filter: blur(26px) brightness(0.58) saturate(1.35);
+    opacity: 0.88;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  [data-ui-theme="crimson"] .scrims-header-img-wrap::before {
+    background-image: url("assets/header_banner_red.jpg");
+  }
+
+  .scrims-header-banner-img {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  }
+
+  /* Single-Row Desktop Lobby Bar: Info & Action Pills on Left, Lobby Tabs on Right */
+  .lobby-selector-bar {
+    margin: 0 0 0.75rem;
+    padding: 0.44rem 0.85rem;
+  }
+
+  .lobby-bar-inner {
+    flex-wrap: wrap;
+    gap: 0.45rem 0.65rem;
+  }
+
+  .lobby-bar-label {
+    order: 1;
+    flex-shrink: 0;
+    gap: 0.35rem;
+  }
+
+  .lobby-label-title {
+    font-size: 0.74rem;
+    letter-spacing: 1px;
+  }
+
+  .lobby-label-sub {
+    display: none;
+  }
+
+  .lobby-actions-group {
+    order: 2;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .lobby-ui-theme-btn,
+  .lobby-cloud-sync-btn,
+  .lobby-back-setup-btn,
+  .lobby-reset-btn {
+    padding: 0.28rem 0.56rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .lobby-sync-tag {
+    padding: 0.26rem 0.52rem;
+    font-size: 0.64rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .lobby-tabs-group {
+    order: 3;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    gap: 0.35rem;
+  }
+
+  .lobby-tab-btn {
+    padding: 0.32rem 0.68rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.7px;
+    gap: 0.38rem;
+    white-space: nowrap;
+  }
+
+  .lobby-tab-db-tag {
+    font-size: 0.58rem;
+    padding: 1px 4px;
+  }
+
+  /* Compact Section Badge Bar */
+  .section-badge-bar {
+    margin-bottom: 0.7rem;
+  }
+
+  /* Screen 1: Compact Balanced Widescreen Setup Layout */
+  .setup-grid {
+    grid-template-columns: 365px 1fr;
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .setup-sidebar {
+    gap: 0.75rem;
+  }
+
+  .setup-grid .card-header {
+    padding: 0.58rem 0.95rem;
+  }
+
+  .setup-grid .card-header h2 {
+    font-size: 0.9rem;
+    letter-spacing: 1.1px;
+  }
+
+  .setup-grid .card-body {
+    padding: 0.72rem 0.95rem;
+  }
+
+  .setup-sidebar .form-group {
+    margin-bottom: 0.65rem;
+  }
+
+  .setup-sidebar .form-group label {
+    font-size: 0.72rem;
+    margin-bottom: 0.28rem;
+  }
+
+  .setup-sidebar .cyber-input {
+    padding: 0.42rem 0.68rem;
+    font-size: 0.84rem;
+  }
+
+  .setup-sidebar .cyber-input.num-input {
+    font-size: 1.08rem;
+    padding: 0.32rem 0.68rem;
+  }
+
+  .setup-sidebar .quick-match-chips {
+    gap: 0.35rem;
+    margin-top: 0.38rem;
+  }
+
+  .setup-sidebar .chip-btn {
+    padding: 0.3rem 0.2rem;
+    font-size: 0.7rem;
+  }
+
+  .setup-sidebar .field-hint {
+    font-size: 0.65rem;
+    margin-top: 0.22rem;
+  }
+
+  .scoring-preset-box {
+    padding: 0.52rem 0.68rem;
+    margin-bottom: 0;
+  }
+
+  .preset-title {
+    font-size: 0.7rem;
+    margin-bottom: 0.35rem;
+    padding-bottom: 0.2rem;
+  }
+
+  .preset-summary {
+    gap: 0.2rem 0.4rem;
+    font-size: 0.69rem;
+  }
+
+  .rule-chip {
+    display: flow-root;
+    padding: 0.14rem 0.42rem;
+  }
+
+  .rule-chip .v {
+    float: right;
+  }
+
+  .rule-chip.kill-rule .v {
+    float: none;
+  }
+
+  .paste-roster-sidebar-card .card-header {
+    padding: 0.54rem 0.9rem;
+  }
+
+  .paste-roster-sidebar-card .card-header h2 {
+    font-size: 0.82rem;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+  }
+
+  .paste-roster-sidebar-card .importer-sample-link {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    padding: 0.22rem 0.55rem;
+  }
+
+  .paste-roster-sidebar-card .card-body {
+    padding: 0.7rem 0.95rem;
+  }
+
+  .importer-card-hint {
+    font-size: 0.71rem;
+    line-height: 1.3;
+    margin-bottom: 0.42rem;
+  }
+
+  .messy-slot-textarea {
+    min-height: 92px;
+    height: 98px;
+    max-height: 200px;
+    font-size: 0.73rem;
+    padding: 0.48rem 0.65rem;
+    line-height: 1.35;
+  }
+
+  .importer-sidebar-actions {
+    margin-top: 0.5rem;
+    gap: 0.4rem;
+  }
+
+  .importer-clean-btn {
+    font-size: 0.72rem;
+    padding: 0.48rem 0.7rem;
+    letter-spacing: 0.8px;
+  }
+
+  .importer-sidebar-status {
+    margin-top: 0.38rem;
+    font-size: 0.66rem;
+  }
+
+  /* Right Main Panel: 12 Teams with 4 Horizontal Players Per Team Card */
+  .teams-instructions {
+    font-size: 0.76rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .teams-input-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.52rem 0.75rem;
+  }
+
+  .team-slot-card {
+    background: var(--bg-card-gradient);
+    border: var(--card-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.45);
+  }
+
+  .team-slot-top-row {
+    height: 35px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .slot-badge {
+    width: 44px;
+    height: 35px;
+    padding-right: 8px;
+  }
+
+  .slot-badge .crown-slot-icon {
+    font-size: 0.55rem;
+    margin-bottom: 0;
+  }
+
+  .slot-badge .slot-num {
+    font-size: 0.85rem;
+  }
+
+  .slot-input-wrap {
+    padding: 0.1rem 0.5rem;
+  }
+
+  .team-name-input {
+    font-size: 0.84rem;
+    padding: 0.2rem 0.15rem;
+  }
+
+  .team-players-section {
+    padding: 0.28rem 0.55rem 0.36rem;
+    background: rgba(4, 9, 20, 0.5);
+  }
+
+  .team-players-label {
+    font-size: 0.6rem;
+    margin-bottom: 0.22rem;
+    letter-spacing: 0.9px;
+  }
+
+  .team-players-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+  }
+
+  .player-input-wrap {
+    background: var(--bg-input);
+    padding: 0.12rem 0.3rem;
+    min-width: 0;
+  }
+
+  .player-p-prefix {
+    font-size: 0.58rem;
+    margin-right: 0.2rem;
+    flex-shrink: 0;
+  }
+
+  .player-name-input {
+    font-size: 0.7rem;
+    padding: 0.12rem 0;
+    min-width: 0;
+  }
+
+  .start-action-wrapper {
+    margin-top: 0.95rem;
+    gap: 0.5rem;
+  }
+
+  .primary-start-btn {
+    padding: 0.78rem 2.85rem;
+    font-size: 1rem;
+    letter-spacing: 2px;
+  }
+
+  /* Screen 2: Desktop Tournament Dashboard Refinements */
+  .tournament-top-bar {
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  #active-tournament-title {
+    font-size: 1.35rem;
+  }
+
+  .tournament-nav-tabs {
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+  }
+
+  .match-input-card {
+    padding: 1.15rem;
+  }
+
+  .match-team-form-card {
+    padding: 0.72rem 0.85rem;
+    gap: 0.5rem;
+  }
+
+  .match-teams-grid {
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .setup-grid {
+    grid-template-columns: 395px 1fr;
+    gap: 1.15rem;
+  }
+
+  /* 3x4 Grid for Match Data Input on Wide Desktops */
+  .match-teams-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+}
+
 
 
 
