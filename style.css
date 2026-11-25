@@ -6433,7 +6433,7 @@ body {
 @media (min-width: 1025px) {
   .app-container {
     max-width: min(1480px, 96vw);
-    padding: 0.85rem 1.25rem 2.25rem;
+    padding: 0.75rem 1.25rem 1rem;
   }
 
   /* Full-Width Panoramic Header Banner */
@@ -7165,6 +7165,134 @@ body {
   .save-match-btn {
     padding: 0.68rem 2.5rem;
     font-size: 0.96rem;
+  }
+
+  /* Screen 2 Subviews: Leaderboard Poster, Slot List & Matrix (Desktop Fit) */
+  .poster-theme-selector,
+  .slot-list-theme-selector {
+    max-width: 1040px;
+    margin: 0 auto 0.5rem;
+    padding: 0.38rem 0.85rem;
+    background: var(--bg-card-gradient);
+    border: var(--card-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  }
+
+  .theme-select-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .theme-select-buttons {
+    gap: 0.32rem;
+  }
+
+  .theme-pill-btn {
+    font-size: 0.66rem;
+    padding: 0.22rem 0.52rem;
+    border-radius: 999px;
+    background: var(--bg-input);
+    border: var(--card-border);
+  }
+
+  .mvp-showcase-panel {
+    max-width: 1040px;
+    margin: 0 auto 0.5rem;
+    padding: 0.45rem 0.85rem;
+  }
+
+  .scrims-exact-poster-container,
+  .slot-list-exact-poster-container {
+    max-width: clamp(350px, 39vh, 480px) !important;
+    margin: 0 auto 0.45rem !important;
+  }
+
+  .slot-team-name {
+    font-size: clamp(6.4px, 0.68vw, 9px) !important;
+  }
+
+  .slot-empty-label {
+    font-size: clamp(5.8px, 0.6vw, 8px) !important;
+  }
+
+  .overlay-team-name {
+    font-size: clamp(6.4px, 0.68vw, 9.2px) !important;
+  }
+
+  .overlay-booyah-val,
+  .overlay-position-val,
+  .overlay-elimination-val {
+    font-size: clamp(6.6px, 0.72vw, 9.5px) !important;
+  }
+
+  .overlay-total-val {
+    font-size: clamp(7.2px, 0.82vw, 10.6px) !important;
+  }
+
+  .overlay-crown-icon {
+    font-size: clamp(5.8px, 0.58vw, 8.5px) !important;
+  }
+
+  .leaderboard-bottom-export-panel,
+  .slot-list-bottom-export-panel {
+    max-width: clamp(350px, 39vh, 480px) !important;
+    margin: 0.35rem auto 0.25rem !important;
+    padding: 0.38rem 0.65rem !important;
+    background: var(--bg-card-gradient) !important;
+    border: var(--card-border) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), var(--primary-accent-glow-subtle) !important;
+  }
+
+  .uiverse-download-btn {
+    height: 2.3rem;
+    padding: 0 1.45rem;
+    font-size: 0.82rem;
+    background: var(--bg-slot);
+    border: var(--primary-border);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45), var(--primary-accent-glow-subtle);
+  }
+
+  .uiverse-download-btn::before {
+    background: var(--primary-btn-grad);
+  }
+
+  .uiverse-download-btn:hover {
+    color: var(--primary-accent-text);
+    box-shadow: var(--primary-accent-glow);
+  }
+
+  .matrix-card .card-header {
+    padding: 0.62rem 1rem;
+  }
+
+  .matrix-card .card-body {
+    padding: 0.75rem 1rem;
+  }
+
+  .matrix-rules-banner {
+    padding: 0.5rem 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .matrix-rules-title {
+    font-size: 0.74rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .matrix-rules-grid {
+    font-size: 0.72rem;
+    gap: 0.25rem 0.85rem;
+  }
+
+  .cyber-matrix-table th {
+    padding: 0.55rem 0.45rem;
+    font-size: 0.75rem;
+  }
+
+  .cyber-matrix-table td {
+    padding: 0.44rem 0.45rem;
+    font-size: 0.8rem;
   }
 }
 
