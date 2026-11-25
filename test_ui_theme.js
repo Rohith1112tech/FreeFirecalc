@@ -145,7 +145,7 @@ app.toggleUiTheme();
 assert.strictEqual(mockDocElement.getAttribute('data-ui-theme'), undefined, 'data-ui-theme attribute must be removed for default blue');
 assert.strictEqual(document.getElementById('ui-theme-btn-text').textContent, 'UI: CYBER BLUE', 'Button text must update to UI: CYBER BLUE');
 assert.strictEqual(localStorage.getItem('jse_ui_theme'), 'blue', 'localStorage jse_ui_theme must be blue');
-assert.strictEqual(document.getElementById('header-banner-img').src, 'assets/header_banner_blue.jpg', 'header-banner-img must switch to blue banner in blue theme');
+assert.strictEqual(document.getElementById('header-banner-img').src, 'assets/header_banner_blue_v2.jpg', 'header-banner-img must switch to blue banner in blue theme');
 console.log("✓ toggleUiTheme() correctly switches back to Cyber Blue and persists state.");
 
 // Test toggleUiTheme() from blue to crimson

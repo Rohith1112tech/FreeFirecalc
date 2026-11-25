@@ -188,7 +188,7 @@ function applyUiTheme(theme) {
 
   const headerBannerImg = typeof document !== "undefined" ? document.getElementById("header-banner-img") : null;
   if (headerBannerImg) {
-    headerBannerImg.src = isCrimson ? "assets/header_banner_red.jpg" : "assets/header_banner_blue.jpg";
+    headerBannerImg.src = isCrimson ? "assets/header_banner_red.jpg" : "assets/header_banner_blue_v2.jpg";
   }
 }
 
