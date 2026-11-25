@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin User Manager | Jack Sparrow Esports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=19">
+</head>
+<body class="admin-page-body">
+  <div class="ambient-glow glow-top-left"></div>
+  <div class="ambient-glow glow-top-right"></div>
+  <div class="ambient-glow glow-bottom-center"></div>
+  <div class="cyber-grid-overlay"></div>
+
+  <div class="admin-page-container">
+    <header class="cyber-card admin-top-bar">
+      <div class="admin-top-bar-left">
+        <div class="badge-tag">SUPER ADMIN CONTROL CENTER</div>
+        <h1 class="admin-page-heading">USERNAMES, PASSWORDS &amp; ACCESS CONTROL</h1>
+        <div class="admin-session-meta">
+          <span class="active-dot"></span>
+          <span id="admin-session-pill">Checking session...</span>
+        </div>
+      </div>
+      <div class="admin-top-bar-actions">
+        <button type="button" id="btn-admin-back" class="lobby-back-setup-btn" title="Return to Scrims Calculator">
+          <span>&larr; BACK TO SCRIMS</span>
+        </button>
+        <button type="button" id="btn-admin-logout" class="lobby-logout-btn" title="Sign out and return to Login">
+          <svg class="logout-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>LOGOUT</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Loading Verification State -->
+    <section id="admin-loading-state" class="cyber-card admin-state-card">
+      <div class="card-body admin-state-body">
+        <span class="sync-spin-icon spinning" aria-hidden="true">🔄</span>
+        <p>Verifying Super Admin credentials...</p>
+      </div>
+    </section>
+
+    <!-- Access Denied State (Non-Super Admin) -->
+    <section id="admin-denied-state" class="cyber-card admin-state-card" style="display: none;">
+      <div class="card-body admin-state-body">
+        <div class="admin-denied-icon" aria-hidden="true">🔒</div>
+        <h2>ACCESS RESTRICTED — SUPER ADMIN ONLY</h2>
+        <p id="admin-denied-reason">Only the Super Admin account (Js.Suzie) can create, edit, or delete user accounts.</p>
+        <button type="button" id="btn-denied-back" class="cyber-btn primary-start-btn admin-inline-btn">
+          <span>&larr; RETURN TO SCRIMS CALCULATOR</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Active Super Admin Workspace -->
+    <main id="admin-workspace" class="admin-workspace" style="display: none;">
+      <div id="admin-status-alert" class="match-alert-box" role="status" aria-live="polite" style="display: none; margin-bottom: 1rem;">
+        <span class="alert-icon" id="admin-status-icon">✅</span>
+        <span id="admin-status-text"></span>
+      </div>
+
+      <div class="admin-workspace-grid">
+        <!-- Create New User Account Card -->
+        <section class="cyber-card admin-create-card" aria-labelledby="admin-create-heading">
+          <div class="card-header">
+            <span class="card-icon">➕</span>
+            <h2 id="admin-create-heading">CREATE NEW USER</h2>
+          </div>
+          <div class="card-body">
+            <form id="admin-create-form" novalidate>
+              <div class="form-group">
+                <label for="admin-new-username">USERNAME <span class="required-star">*</span></label>
+                <div class="cyber-input-wrap">
+                  <input type="text" id="admin-new-username" class="cyber-input" placeholder="e.g. Js.NewAdmin" autocomplete="off" minlength="3" maxlength="32" required>
+                </div>
+                <p class="field-hint">3–32 characters (letters, numbers, <code>.</code>, <code>_</code>, <code>-</code>). Used directly on Login screen.</p>
+              </div>
+
+              <div class="form-group">
+                <label for="admin-new-password">PASSWORD <span class="required-star">*</span></label>
+                <div class="cyber-input-wrap admin-password-wrap">
+                  <input type="password" id="admin-new-password" class="cyber-input jse-password-input" placeholder="Minimum 6 characters" autocomplete="new-password" minlength="6" maxlength="128" required>
+                  <button type="button" id="btn-toggle-new-password" class="admin-eye-btn" aria-label="Show password" aria-pressed="false" title="Show / Hide Password">
+                    <svg class="jse-eye-icon jse-eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg class="jse-eye-icon jse-eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="admin-new-role">ACCOUNT ROLE <span class="required-star">*</span></label>
+                <select id="admin-new-role" class="cyber-select admin-role-select">
+                  <option value="TOURNAMENT_ADMIN">Admin (Scores, Teams, Posters, Sync — No Reset)</option>
+                  <option value="SCOREKEEPER">Scorekeeper (Match Entry &amp; Sync Only)</option>
+                  <option value="SUPER_ADMIN">Super Admin (Full Control + Reset + User Manager)</option>
+                </select>
+              </div>
+
+              <div id="admin-create-error" class="admin-form-error" role="alert" aria-live="polite"></div>
+
+              <button type="submit" id="btn-admin-create-submit" class="cyber-btn primary-start-btn admin-submit-btn">
+                <span class="btn-content">
+                  <span id="btn-create-user-label">➕ CREATE USER ACCOUNT</span>
+                </span>
+              </button>
+
+              <p class="admin-kb-hint">⌨️ Keyboard Friendly: Press <b>Enter</b> to advance through fields (<b>Shift+Enter</b> to go back).</p>
+            </form>
+          </div>
+        </section>
+
+        <!-- Registered Accounts List Card -->
+        <section class="cyber-card admin-list-card" aria-labelledby="admin-list-heading">
+          <div class="card-header card-header-split">
+            <div class="header-title-group">
+              <span class="card-icon">👥</span>
+              <h2 id="admin-list-heading">REGISTERED ACCOUNTS</h2>
+            </div>
+            <div class="admin-list-controls">
+              <span class="roster-counter"><span id="admin-users-count">0</span> ACCOUNTS</span>
+              <button type="button" id="btn-admin-refresh" class="lobby-back-setup-btn" title="Reload account list from Supabase">
+                <span>🔄 REFRESH</span>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="admin-search-row">
+              <input type="search" id="admin-user-search" class="cyber-input admin-search-input" placeholder="Search by username or role... (Enter focuses first Edit)" aria-label="Search accounts">
+            </div>
+
+            <div class="admin-table-wrap">
+              <table class="cyber-matrix-table admin-users-table" aria-label="Registered user accounts">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>USERNAME</th>
+                    <th>ROLE</th>
+                    <th>LAST SIGN-IN</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-tbody">
+                  <tr>
+                    <td colspan="5" style="text-align:center; padding: 1.5rem; color: var(--text-muted);">Loading accounts...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal: Edit Username / Reset Password / Change Role -->
+  <div id="admin-edit-modal-backdrop" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="admin-edit-modal-title">
+    <div class="modal-card admin-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-crown">✏️</span>
+          <h3 id="admin-edit-modal-title">EDIT USER &amp; PASSWORD</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-edit-modal" aria-label="Close Edit Modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="admin-edit-form" novalidate>
+          <input type="hidden" id="edit-user-id" value="">
+
+          <div class="form-group">
+            <label for="edit-user-username">USERNAME</label>
+            <div class="cyber-input-wrap">
+              <input type="text" id="edit-user-username" class="cyber-input" minlength="3" maxlength="32" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-user-password">NEW PASSWORD <span class="field-optional-tag">(Leave blank to keep current)</span></label>
+            <div class="cyber-input-wrap admin-password-wrap">
+              <input type="password" id="edit-user-password" class="cyber-input jse-password-input" placeholder="Enter new password (min 6 chars)" autocomplete="new-password" maxlength="128">
+              <button type="button" id="btn-toggle-edit-password" class="admin-eye-btn" aria-label="Show password" aria-pressed="false" title="Show / Hide Password">
+                <svg class="jse-eye-icon jse-eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="jse-eye-icon jse-eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: none;">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-user-role">ROLE</label>
+            <select id="edit-user-role" class="cyber-select admin-role-select">
+              <option value="TOURNAMENT_ADMIN">Admin (Scores, Teams, Posters, Sync)</option>
+              <option value="SCOREKEEPER">Scorekeeper (Match Entry Only)</option>
+              <option value="SUPER_ADMIN">Super Admin (Full Control)</option>
+            </select>
+          </div>
+
+          <div id="admin-edit-error" class="admin-form-error" role="alert" aria-live="polite"></div>
+
+          <div class="reset-dialog-actions" style="margin-top: 1rem;">
+            <button type="button" id="btn-cancel-edit-user" class="cyber-btn secondary-btn">
+              <span>CANCEL</span>
+            </button>
+            <button type="submit" id="btn-save-edit-user" class="cyber-btn primary-start-btn">
+              <span>💾 SAVE CHANGES</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Delete User Confirmation -->
+  <div id="admin-delete-modal-backdrop" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="admin-delete-modal-title">
+    <div class="modal-card reset-dialog-card admin-modal-card">
+      <div class="modal-header reset-dialog-header">
+        <div class="modal-title-group">
+          <span class="warning-icon">⚠️</span>
+          <h3 id="admin-delete-modal-title">DELETE USER ACCOUNT?</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-delete-modal" aria-label="Close Delete Modal">✕</button>
+      </div>
+      <div class="modal-body reset-dialog-body">
+        <p class="reset-warning-text">
+          This will permanently remove account <b id="delete-target-username">--</b> from Supabase Auth. They will no longer be able to sign in.
+        </p>
+        <div id="admin-delete-error" class="admin-form-error" role="alert" aria-live="polite"></div>
+        <div class="reset-dialog-actions">
+          <button type="button" id="btn-cancel-delete-user" class="cyber-btn secondary-btn">
+            <span>CANCEL</span>
+          </button>
+          <button type="button" id="btn-confirm-delete-user" class="cyber-btn danger-btn reset-execute-btn">
+            <span>🗑️ DELETE USER</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/supabase.min.js"></script>
+  <script src="auth.js?v=14"></script>
+  <script src="admin.js?v=1"></script>
+</body>
+</html>

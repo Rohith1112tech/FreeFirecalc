@@ -19,7 +19,7 @@ if (!fs.existsSync(assetsDir)) {
 }
 
 // Files to copy to public root
-const rootFiles = ['index.html', 'style.css', 'app.js', 'auth.js'];
+const rootFiles = ['index.html', 'admin.html', 'admin.js', 'style.css', 'app.js', 'auth.js'];
 rootFiles.forEach((file) => {
   const src = path.join(rootDir, file);
   const dest = path.join(publicDir, file);

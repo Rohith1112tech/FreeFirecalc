@@ -490,8 +490,10 @@ const btnWelcomeSkip = document.getElementById("btn-welcome-skip");
 const gateLoginForm = document.getElementById("gate-login-form");
 const gateLoginUsername = document.getElementById("gate-login-username");
 const gateLoginPassword = document.getElementById("gate-login-password");
+const btnToggleGatePassword = document.getElementById("btn-toggle-gate-password");
 const gateLoginError = document.getElementById("gate-login-error");
 const btnGateLoginSubmit = document.getElementById("btn-gate-login-submit");
+const btnOpenAdminPanel = document.getElementById("btn-open-admin-panel");
 const btnGateLogout = document.getElementById("btn-gate-logout");
 
 let welcomeTransitionTimer = null;
@@ -564,9 +566,14 @@ function showLoginStage() {
     gateLoginError.textContent = "";
   }
   syncGateFloatingLabels();
-  if (gateLoginUsername && typeof gateLoginUsername.focus === "function") {
-    gateLoginUsername.focus();
+  if (typeof JSEAuth !== "undefined" && typeof JSEAuth.resetPasswordToggle === "function") {
+    JSEAuth.resetPasswordToggle(gateLoginPassword, btnToggleGatePassword);
   }
+  setTimeout(() => {
+    if (gateLoginUsername && typeof gateLoginUsername.focus === "function") {
+      gateLoginUsername.focus();
+    }
+  }, 20);
 }
 
 function canResetTournament() {
@@ -574,6 +581,14 @@ function canResetTournament() {
     return true;
   }
   return JSEAuth.hasPermission("RESET_TOURNAMENT");
+}
+
+function canManageUsers() {
+  return (
+    typeof JSEAuth !== "undefined" &&
+    typeof JSEAuth.hasPermission === "function" &&
+    JSEAuth.hasPermission("MANAGE_CREDENTIALS")
+  );
 }
 
 function updateRoleBasedControls() {
@@ -585,6 +600,12 @@ function updateRoleBasedControls() {
   if (btnResetTournament) {
     btnResetTournament.style.display = allowReset && state.activeScreen === "tournament" ? "inline-flex" : "none";
   }
+  if (btnOpenAdminPanel) {
+    const activeUser = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+      ? JSEAuth.getActiveSession()
+      : null;
+    btnOpenAdminPanel.style.display = activeUser && canManageUsers() ? "inline-flex" : "none";
+  }
   const activeUser = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
     ? JSEAuth.getActiveSession()
     : null;
@@ -592,6 +613,31 @@ function updateRoleBasedControls() {
     const roleLabel = activeUser.role === "SUPER_ADMIN" ? "Super Admin" : "Admin";
     btnGateLogout.title = `Signed in as ${activeUser.username} (${roleLabel}) — Click to Logout`;
   }
+}
+
+function focusActiveScreenPrimaryInput() {
+  if (!isGateUnlocked || typeof document === "undefined") return;
+  if (document.body && document.body.classList && document.body.classList.contains("auth-gate-locked")) return;
+  setTimeout(() => {
+    if (state.activeScreen === "tournament") {
+      if (state.activeSubView === "view-match-input") {
+        if (state.matchInputMode === "auto" && autoMatchPasteInput && autoMatchPasteInput.offsetParent !== null) {
+          autoMatchPasteInput.focus();
+          return;
+        }
+        const firstSelect = matchTeamsGridContainer
+          ? matchTeamsGridContainer.querySelector(".placement-select:not([disabled])")
+          : null;
+        if (firstSelect && firstSelect.offsetParent !== null && typeof firstSelect.focus === "function") {
+          firstSelect.focus();
+        }
+      }
+      return;
+    }
+    if (tournamentNameInput && tournamentNameInput.offsetParent !== null && typeof tournamentNameInput.focus === "function") {
+      tournamentNameInput.focus();
+    }
+  }, 40);
 }
 
 function unlockMainAppFromGate(shouldAutoCloudPull = false) {
@@ -607,6 +653,7 @@ function unlockMainAppFromGate(shouldAutoCloudPull = false) {
     btnGateLogout.style.display = typeof JSEAuth !== "undefined" && JSEAuth.getActiveSession() ? "inline-flex" : "none";
   }
   updateRoleBasedControls();
+  focusActiveScreenPrimaryInput();
   if (shouldAutoCloudPull && typeof fetchTournamentFromCloud === "function") {
     setTimeout(() => {
       fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
@@ -647,6 +694,9 @@ async function handleGateLoginSubmit(e) {
     const res = await JSEAuth.login(username, password);
     if (res && res.success) {
       if (gateLoginPassword) gateLoginPassword.value = "";
+      if (typeof JSEAuth.resetPasswordToggle === "function") {
+        JSEAuth.resetPasswordToggle(gateLoginPassword, btnToggleGatePassword);
+      }
       syncGateFloatingLabels();
       unlockMainAppFromGate(true);
     } else if (gateLoginError) {
@@ -668,11 +718,17 @@ async function handleGateLogout() {
   if (typeof JSEAuth !== "undefined" && typeof JSEAuth.logout === "function") {
     await JSEAuth.logout();
   }
+  if (btnOpenAdminPanel) {
+    btnOpenAdminPanel.style.display = "none";
+  }
   if (btnGateLogout) {
     btnGateLogout.style.display = "none";
   }
   if (gateLoginUsername) gateLoginUsername.value = "";
   if (gateLoginPassword) gateLoginPassword.value = "";
+  if (typeof JSEAuth !== "undefined" && typeof JSEAuth.resetPasswordToggle === "function") {
+    JSEAuth.resetPasswordToggle(gateLoginPassword, btnToggleGatePassword);
+  }
   syncGateFloatingLabels();
   showLoginStage();
 }
@@ -1250,9 +1306,20 @@ function bindEvents() {
   if (gateLoginForm) {
     gateLoginForm.addEventListener("submit", handleGateLoginSubmit);
   }
+  if (typeof JSEAuth !== "undefined" && typeof JSEAuth.bindPasswordToggle === "function") {
+    JSEAuth.bindPasswordToggle(gateLoginPassword, btnToggleGatePassword);
+  }
+  if (btnOpenAdminPanel) {
+    btnOpenAdminPanel.addEventListener("click", () => {
+      if (!canManageUsers()) return;
+      window.location.href = "admin.html";
+    });
+  }
   if (btnGateLogout) {
     btnGateLogout.addEventListener("click", handleGateLogout);
   }
+
+  initKeyboardNavigation();
 
   // One-Click UI Theme Toggle (Cyber Blue <-> Neon Crimson)
   const themeBtn = btnToggleUiTheme || document.getElementById("btn-toggle-ui-theme");
@@ -1806,6 +1873,7 @@ function showSetupScreen() {
   if (btnBackSetup) btnBackSetup.style.display = "none";
   if (btnResetTournament) btnResetTournament.style.display = "none";
   if (typeof updateRoleBasedControls === "function") updateRoleBasedControls();
+  focusActiveScreenPrimaryInput();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1834,6 +1902,7 @@ function showTournamentScreen() {
     renderSlotListRows();
   }
   switchSubView(state.activeSubView || "view-match-input");
+  focusActiveScreenPrimaryInput();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -2640,6 +2709,7 @@ function renderMatchTeamForms() {
         minusBtn.className = "btn-kill-step";
         minusBtn.textContent = "-";
         minusBtn.title = "Decrease kill";
+        minusBtn.tabIndex = -1;
 
         const killInput = document.createElement("input");
         killInput.type = "number";
@@ -2656,6 +2726,7 @@ function renderMatchTeamForms() {
         plusBtn.className = "btn-kill-step";
         plusBtn.textContent = "+";
         plusBtn.title = "Increase kill";
+        plusBtn.tabIndex = -1;
 
         const updatePlayerKillsAndSum = (newVal) => {
           if (newVal < 0) newVal = 0;
@@ -4490,6 +4561,121 @@ function openResetConfirmationModal() {
   if (resetDialogSavedCount) resetDialogSavedCount.textContent = `${savedCount} of ${state.totalMatches} matches recorded`;
 
   resetModalBackdrop.style.display = "flex";
+  if (btnCancelReset && typeof btnCancelReset.focus === "function") {
+    setTimeout(() => btnCancelReset.focus(), 20);
+  }
+}
+
+/**
+ * Full Keyboard Navigation (Enter -> next field, Shift+Enter -> previous field, Arrows on tabs, Esc closes modals)
+ */
+function initKeyboardNavigation() {
+  if (typeof document === "undefined") return;
+
+  if (typeof JSEAuth !== "undefined" && typeof JSEAuth.bindEnterNavigation === "function") {
+    if (gateLoginForm) {
+      JSEAuth.bindEnterNavigation(gateLoginForm, {
+        finishSelector: "#btn-gate-login-submit",
+        submitOnLastEnter: true
+      });
+    }
+    if (setupScreen) {
+      JSEAuth.bindEnterNavigation(setupScreen, {
+        finishSelector: "#btn-start-tournament",
+        submitOnLastEnter: false
+      });
+    }
+    if (manualMatchContainer) {
+      JSEAuth.bindEnterNavigation(manualMatchContainer, {
+        finishSelector: "#btn-save-match-data",
+        submitOnLastEnter: false
+      });
+    }
+  }
+
+  // Ctrl+Enter shortcuts inside multiline paste textareas
+  if (messySlotTextarea && btnCleanParseSlots) {
+    messySlotTextarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        btnCleanParseSlots.click();
+      }
+    });
+  }
+  if (autoMatchPasteInput && btnParseAutoMatch) {
+    autoMatchPasteInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        btnParseAutoMatch.click();
+      }
+    });
+  }
+  if (pasteLineupTextarea && btnConfirmImportLineup) {
+    pasteLineupTextarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        btnConfirmImportLineup.click();
+      }
+    });
+  }
+
+  // Auto-select numeric inputs on focus so replacing '0' needs zero Backspace
+  document.addEventListener("focusin", (e) => {
+    const t = e.target;
+    if (!t || t.tagName !== "INPUT") return;
+    if (t.type === "number" || t.classList.contains("kills-input") || t.classList.contains("minus-input") || t.classList.contains("player-kill-input")) {
+      setTimeout(() => {
+        if (document.activeElement === t && typeof t.select === "function") {
+          try { t.select(); } catch (_) {}
+        }
+      }, 0);
+    }
+  });
+
+  // Left/Right arrow navigation inside horizontal tab/chip/theme/modal action strips
+  document.addEventListener("keydown", (e) => {
+    const activeEl = document.activeElement;
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft" || e.key === "Home" || e.key === "End") {
+      const group = activeEl && typeof activeEl.closest === "function"
+        ? activeEl.closest(".lobby-tabs-group, .tournament-nav-tabs, .match-tabs-strip, .theme-select-buttons, .quick-match-chips, .match-mode-btns, .reset-dialog-actions")
+        : null;
+      if (group && activeEl.tagName === "BUTTON") {
+        const btns = Array.from(group.querySelectorAll("button:not([disabled])")).filter((b) => b.offsetParent !== null);
+        const idx = btns.indexOf(activeEl);
+        if (idx !== -1 && btns.length > 1) {
+          e.preventDefault();
+          let nextIdx = idx;
+          if (e.key === "ArrowRight") nextIdx = (idx + 1) % btns.length;
+          else if (e.key === "ArrowLeft") nextIdx = (idx - 1 + btns.length) % btns.length;
+          else if (e.key === "Home") nextIdx = 0;
+          else if (e.key === "End") nextIdx = btns.length - 1;
+          btns[nextIdx].focus();
+        }
+      }
+    }
+
+    // Welcome screen Enter/Space skips straight to Login
+    if (!isGateUnlocked && jseWelcomeStage && jseWelcomeStage.style.display !== "none") {
+      if (e.key === "Enter" || e.key === " ") {
+        if (activeEl !== btnWelcomeSkip) {
+          e.preventDefault();
+          transitionWelcomeToLogin();
+        }
+      }
+      return;
+    }
+
+    // Escape closes active modals
+    if (e.key === "Escape") {
+      if (resetModalBackdrop && resetModalBackdrop.style.display !== "none") {
+        closeResetConfirmationModal();
+      } else if (teamModalBackdrop && teamModalBackdrop.style.display !== "none") {
+        if (typeof closeTeamBreakdownModal === "function") closeTeamBreakdownModal();
+      } else if (pasteLineupModalBackdrop && pasteLineupModalBackdrop.style.display !== "none") {
+        pasteLineupModalBackdrop.style.display = "none";
+      }
+    }
+  });
 }
 
 function closeResetConfirmationModal() {
