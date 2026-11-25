@@ -1746,7 +1746,9 @@ function showTournamentScreen() {
   updateProgressBadge();
   renderLeaderboardRows();
   renderMatrixTable();
-  renderSlotListRows();
+  if (slotListOverlayRowsEl) {
+    renderSlotListRows();
+  }
   switchSubView(state.activeSubView || "view-match-input");
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1768,7 +1770,9 @@ function switchSubView(viewId) {
   if (viewMatrix) viewMatrix.classList.toggle("active", viewId === "view-matrix");
 
   if (viewId === "view-slot-list") {
+    if (slotListOverlayRowsEl) {
     renderSlotListRows();
+  }
   } else if (viewId === "view-leaderboard") {
     renderLeaderboardRows(); // Automatically pulls latest calculated cumulative data
   } else if (viewId === "view-matrix") {
@@ -2185,7 +2189,9 @@ function handleParseAndSaveAutoMatch() {
   updateProgressBadge();
   renderLeaderboardRows();
   renderMatrixTable();
-  renderSlotListRows();
+  if (slotListOverlayRowsEl) {
+    renderSlotListRows();
+  }
   saveState();
 
   showAutoMatchFeedback(`✅ Match ${matchNum} parsed and saved successfully! Scores sent to Leaderboard.`, "success");
@@ -3820,11 +3826,11 @@ const SLOT_LIST_THEMES = {
     src: "assets/slot_list_crimson.jpg",
     baseWidth: 935,
     baseHeight: 1024,
-    xOffsetRatio: 280 / 935,
+    xOffsetRatio: 285 / 935,
     maxTextWidthRatio: 0.53,
     textColor: "#ffffff",
-    rosterColor: "#fca5a5",
-    emptyColor: "rgba(255, 60, 80, 0.45)"
+    emptyColor: "rgba(255, 60, 80, 0.45)",
+    slotYCenters: [377.0, 424.0, 471.0, 518.5, 566.0, 613.5, 661.0, 708.5, 756.0, 803.0, 851.0, 899.0]
   },
   cyan: {
     id: "cyan",
@@ -3832,11 +3838,11 @@ const SLOT_LIST_THEMES = {
     src: "assets/slot_list_cyan.jpg",
     baseWidth: 935,
     baseHeight: 1024,
-    xOffsetRatio: 280 / 935,
+    xOffsetRatio: 285 / 935,
     maxTextWidthRatio: 0.53,
     textColor: "#ffffff",
-    rosterColor: "#7dd3fc",
-    emptyColor: "rgba(0, 240, 255, 0.45)"
+    emptyColor: "rgba(0, 240, 255, 0.45)",
+    slotYCenters: [422.5, 465.0, 507.5, 550.5, 593.0, 636.5, 678.5, 722.0, 764.0, 806.5, 849.5, 893.0]
   },
   purple: {
     id: "purple",
@@ -3844,11 +3850,11 @@ const SLOT_LIST_THEMES = {
     src: "assets/slot_list_purple.jpg",
     baseWidth: 935,
     baseHeight: 1024,
-    xOffsetRatio: 280 / 935,
+    xOffsetRatio: 285 / 935,
     maxTextWidthRatio: 0.53,
     textColor: "#ffffff",
-    rosterColor: "#d8b4fe",
-    emptyColor: "rgba(192, 132, 252, 0.45)"
+    emptyColor: "rgba(192, 132, 252, 0.45)",
+    slotYCenters: [401.5, 444.5, 488.5, 532.5, 576.5, 621.5, 666.0, 710.5, 754.5, 798.5, 842.5, 888.0]
   },
   orange: {
     id: "orange",
@@ -3856,11 +3862,11 @@ const SLOT_LIST_THEMES = {
     src: "assets/slot_list_orange.jpg",
     baseWidth: 935,
     baseHeight: 1024,
-    xOffsetRatio: 280 / 935,
+    xOffsetRatio: 285 / 935,
     maxTextWidthRatio: 0.53,
     textColor: "#ffffff",
-    rosterColor: "#fdba74",
-    emptyColor: "rgba(255, 136, 0, 0.45)"
+    emptyColor: "rgba(255, 136, 0, 0.45)",
+    slotYCenters: [417.5, 459.5, 501.5, 543.5, 586.5, 628.5, 671.0, 713.0, 755.0, 798.0, 840.5, 883.0]
   },
   military: {
     id: "military",
@@ -3868,11 +3874,11 @@ const SLOT_LIST_THEMES = {
     src: "assets/slot_list_military.jpg",
     baseWidth: 873,
     baseHeight: 1024,
-    xOffsetRatio: 260 / 873,
+    xOffsetRatio: 255 / 873,
     maxTextWidthRatio: 0.54,
     textColor: "#ffffff",
-    rosterColor: "#fca5a5",
-    emptyColor: "rgba(239, 68, 68, 0.45)"
+    emptyColor: "rgba(239, 68, 68, 0.45)",
+    slotYCenters: [387.5, 431.5, 475.0, 519.5, 563.5, 607.5, 651.0, 695.0, 739.0, 782.0, 827.0, 871.5]
   }
 };
 
@@ -3911,28 +3917,52 @@ function setSlotListTheme(themeKey) {
       btn.classList.remove("active");
     }
   });
+
+  if (slotListOverlayRowsEl) {
+    renderSlotListRows();
+  }
 }
 
 /**
  * Render the 12 Slot Rows directly overlaid on the SCRIMS SLOT LIST template
+ * Displays ONLY Team Names (no player rosters) with exact pixel-aligned slot coordinates
  */
 function renderSlotListRows() {
   if (!slotListOverlayRowsEl) return;
   slotListOverlayRowsEl.innerHTML = "";
 
+  const activeThemeKey = state.selectedSlotListTheme || "crimson";
+  const themeConfig = SLOT_LIST_THEMES[activeThemeKey] || SLOT_LIST_THEMES.crimson;
+  const slotYCenters = themeConfig.slotYCenters || [401.5, 444.5, 488.5, 532.5, 576.5, 621.5, 666.0, 710.5, 754.5, 798.5, 842.5, 888.0];
+  const baseH = themeConfig.baseHeight || 1024;
+  const leftPercent = ((themeConfig.xOffsetRatio || (285 / 935)) * 100).toFixed(2);
+  const widthPercent = ((themeConfig.maxTextWidthRatio || 0.53) * 100).toFixed(2);
+
   const teams = Array.isArray(state.teams) ? state.teams : [];
-  const rosters = state.teamRosters || {};
   let registeredCount = 0;
 
   for (let i = 0; i < 12; i++) {
     const slotNum = i + 1;
     const teamName = (teams[i] || "").trim();
-    const rawRoster = rosters[i] || [];
-    const playerList = Array.isArray(rawRoster) ? rawRoster.filter((p) => p && p.trim()) : [];
-    const rosterStr = playerList.join(" • ");
 
     const row = document.createElement("div");
     row.className = `slot-overlay-row slot-${slotNum}`;
+
+    // Exactly align row center to template slot badge center
+    const topPercent = ((slotYCenters[i] / baseH) * 100).toFixed(2);
+    if (row.style) {
+      if (typeof row.style.setProperty === "function") {
+        row.style.setProperty("top", `${topPercent}%`, "important");
+        row.style.setProperty("left", `${leftPercent}%`, "important");
+        row.style.setProperty("width", `${widthPercent}%`, "important");
+        row.style.setProperty("transform", "translateY(-50%)", "important");
+      } else {
+        row.style.top = `${topPercent}%`;
+        row.style.left = `${leftPercent}%`;
+        row.style.width = `${widthPercent}%`;
+        row.style.transform = "translateY(-50%)";
+      }
+    }
 
     if (teamName) {
       registeredCount++;
@@ -3941,14 +3971,6 @@ function renderSlotListRows() {
       nameEl.textContent = teamName;
       nameEl.title = teamName;
       row.appendChild(nameEl);
-
-      if (rosterStr) {
-        const rosterEl = document.createElement("div");
-        rosterEl.className = "slot-team-roster";
-        rosterEl.textContent = rosterStr;
-        rosterEl.title = rosterStr;
-        row.appendChild(rosterEl);
-      }
     } else {
       const emptyEl = document.createElement("div");
       emptyEl.className = "slot-empty-label";
@@ -3966,68 +3988,38 @@ function renderSlotListRows() {
 
 /**
  * Built-in Canvas Renderer for the Scrims Slot List Templates (5 Switchable Banners)
- * Renders 100% pixel-accurate text directly onto the poster graphic at 2x Retina resolution
+ * Renders ONLY Team Names (no player names) accurately centered onto each slot bar
  */
 function drawSlotListCanvas(canvas, ctx, img) {
-  const baseW = img.naturalWidth || 935;
-  const baseH = img.naturalHeight || 1024;
+  const activeThemeKey = state.selectedSlotListTheme || "crimson";
+  const themeConfig = SLOT_LIST_THEMES[activeThemeKey] || SLOT_LIST_THEMES.crimson;
+
+  const baseW = img.naturalWidth || themeConfig.baseWidth || 935;
+  const baseH = img.naturalHeight || themeConfig.baseHeight || 1024;
   canvas.width = baseW * 2;
   canvas.height = baseH * 2;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  const activeThemeKey = state.selectedSlotListTheme || "crimson";
-  const themeConfig = SLOT_LIST_THEMES[activeThemeKey] || SLOT_LIST_THEMES.crimson;
-
-  const slotYCenters = [343.5, 395.5, 446.0, 498.0, 548.5, 598.5, 648.5, 698.0, 747.0, 796.0, 846.0, 897.5];
+  const slotYCenters = themeConfig.slotYCenters || [401.5, 444.5, 488.5, 532.5, 576.5, 621.5, 666.0, 710.5, 754.5, 798.5, 842.5, 888.0];
   const teams = Array.isArray(state.teams) ? state.teams : [];
-  const rosters = state.teamRosters || {};
 
-  const xRatio = themeConfig.xOffsetRatio || (280 / 935);
+  const xRatio = themeConfig.xOffsetRatio || (285 / 935);
   const maxTextRatio = themeConfig.maxTextWidthRatio || 0.53;
-  const rosterColor = themeConfig.rosterColor || "#fca5a5";
   const emptyColor = themeConfig.emptyColor || "rgba(255, 60, 80, 0.45)";
 
   slotYCenters.forEach((yc, i) => {
     const teamName = (teams[i] || "").trim();
-    const rawRoster = rosters[i] || [];
-    const playerList = Array.isArray(rawRoster) ? rawRoster.filter((p) => p && p.trim()) : [];
-    const rosterStr = playerList.join(" • ");
 
     const xLeft = xRatio * canvas.width;
-    const yCenter = (yc / 1024) * canvas.height;
+    const yCenter = (yc / themeConfig.baseHeight) * canvas.height;
     const maxTextWidth = canvas.width * maxTextRatio;
 
-    if (teamName && rosterStr) {
-      // 2 lines: Team name on top, players below
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.font = "800 28px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
-      ctx.fillStyle = themeConfig.textColor || "#ffffff";
-      ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
 
-      let displayName = teamName.toUpperCase();
-      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
-        displayName = displayName.slice(0, -1);
-      }
-      ctx.fillText(displayName, xLeft, yCenter - 14);
-
-      ctx.font = "600 20px 'Chakra Petch', 'Segoe UI', monospace";
-      ctx.fillStyle = rosterColor;
-      ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
-      ctx.shadowBlur = 6;
-      let displayRoster = rosterStr;
-      while (ctx.measureText(displayRoster).width > maxTextWidth && displayRoster.length > 3) {
-        displayRoster = displayRoster.slice(0, -1);
-      }
-      ctx.fillText(displayRoster, xLeft, yCenter + 15);
-    } else if (teamName) {
-      // 1 line centered vertically
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.font = "800 32px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+    if (teamName) {
+      // ONLY Team Name - vertically centered in the slot bar!
+      ctx.font = "800 34px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = themeConfig.textColor || "#ffffff";
       ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
       ctx.shadowBlur = 8;
@@ -4040,9 +4032,7 @@ function drawSlotListCanvas(canvas, ctx, img) {
       }
       ctx.fillText(displayName, xLeft, yCenter);
     } else {
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.font = "italic 700 22px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      ctx.font = "italic 700 24px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = emptyColor;
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;

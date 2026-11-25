@@ -17,7 +17,7 @@ assert(html.includes('UI: CYBER BLUE'), 'index.html must default to UI: CYBER BL
 console.log("✓ index.html theme toggle button and label verified.");
 
 // 2. Verify style.css contains Cyber Blue variables on :root
-const css = fs.readFileSync(path.join(__dirname, 'style.css'), 'utf-8');
+const css = fs.readFileSync(path.join(__dirname, 'style.css'), 'utf-8').replace(/\r\n/g, '\n');
 assert(css.includes('--bg-dark: #050b16'), 'style.css :root must define Cyber Blue --bg-dark: #050b16');
 assert(css.includes('--bg-card: #0a162b'), 'style.css :root must define Cyber Blue --bg-card: #0a162b');
 assert(css.includes('--bg-input: #0d1e3a'), 'style.css :root must define Cyber Blue --bg-input: #0d1e3a');

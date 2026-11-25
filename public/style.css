@@ -3562,7 +3562,7 @@ body {
 /* Individual Slot Rows mapped to the 12 template slots */
 .slot-overlay-row {
   position: absolute !important;
-  left: 28.5% !important;
+  left: 30.5% !important;
   width: 53.5% !important;
   height: 4.1% !important;
   display: flex !important;
@@ -3574,6 +3574,7 @@ body {
   padding-left: 6px !important;
   padding-right: 4px !important;
   border-radius: 3px !important;
+  transform: translateY(-50%) !important;
   transition: background 0.15s ease !important;
   cursor: default !important;
 }
@@ -3582,23 +3583,91 @@ body {
   background: rgba(168, 85, 247, 0.12) !important;
 }
 
-.slot-overlay-row.slot-1  { top: 31.74% !important; }
-.slot-overlay-row.slot-2  { top: 36.82% !important; }
-.slot-overlay-row.slot-3  { top: 41.70% !important; }
-.slot-overlay-row.slot-4  { top: 46.78% !important; }
-.slot-overlay-row.slot-5  { top: 51.76% !important; }
-.slot-overlay-row.slot-6  { top: 56.64% !important; }
-.slot-overlay-row.slot-7  { top: 61.52% !important; }
-.slot-overlay-row.slot-8  { top: 66.31% !important; }
-.slot-overlay-row.slot-9  { top: 71.09% !important; }
-.slot-overlay-row.slot-10 { top: 75.88% !important; }
-.slot-overlay-row.slot-11 { top: 80.76% !important; }
-.slot-overlay-row.slot-12 { top: 85.64% !important; }
+/* Default Slot Row Vertical Centering */
+.slot-overlay-row.slot-1  { top: 36.82% !important; }
+.slot-overlay-row.slot-2  { top: 41.41% !important; }
+.slot-overlay-row.slot-3  { top: 46.00% !important; }
+.slot-overlay-row.slot-4  { top: 50.63% !important; }
+.slot-overlay-row.slot-5  { top: 55.27% !important; }
+.slot-overlay-row.slot-6  { top: 59.91% !important; }
+.slot-overlay-row.slot-7  { top: 64.55% !important; }
+.slot-overlay-row.slot-8  { top: 69.19% !important; }
+.slot-overlay-row.slot-9  { top: 73.83% !important; }
+.slot-overlay-row.slot-10 { top: 78.42% !important; }
+.slot-overlay-row.slot-11 { top: 83.11% !important; }
+.slot-overlay-row.slot-12 { top: 87.79% !important; }
+
+/* Exact Per-Theme Banner Slot Alignments */
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-1  { top: 39.21% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-2  { top: 43.41% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-3  { top: 47.71% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-4  { top: 52.00% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-5  { top: 56.30% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-6  { top: 60.69% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-7  { top: 65.04% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-8  { top: 69.38% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-9  { top: 73.68% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-10 { top: 77.98% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-11 { top: 82.28% !important; }
+.slot-list-exact-poster-container.slot-theme-purple .slot-overlay-row.slot-12 { top: 86.72% !important; }
+
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-1  { top: 36.82% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-2  { top: 41.41% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-3  { top: 46.00% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-4  { top: 50.63% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-5  { top: 55.27% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-6  { top: 59.91% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-7  { top: 64.55% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-8  { top: 69.19% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-9  { top: 73.83% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-10 { top: 78.42% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-11 { top: 83.11% !important; }
+.slot-list-exact-poster-container.slot-theme-crimson .slot-overlay-row.slot-12 { top: 87.79% !important; }
+
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-1  { top: 41.26% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-2  { top: 45.41% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-3  { top: 49.56% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-4  { top: 53.76% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-5  { top: 57.91% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-6  { top: 62.16% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-7  { top: 66.26% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-8  { top: 70.51% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-9  { top: 74.61% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-10 { top: 78.76% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-11 { top: 82.96% !important; }
+.slot-list-exact-poster-container.slot-theme-cyan .slot-overlay-row.slot-12 { top: 87.21% !important; }
+
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-1  { top: 40.77% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-2  { top: 44.87% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-3  { top: 48.97% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-4  { top: 53.08% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-5  { top: 57.28% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-6  { top: 61.38% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-7  { top: 65.53% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-8  { top: 69.63% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-9  { top: 73.73% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-10 { top: 77.93% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-11 { top: 82.08% !important; }
+.slot-list-exact-poster-container.slot-theme-orange .slot-overlay-row.slot-12 { top: 86.23% !important; }
+
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row { left: 29.2% !important; width: 54.0% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-1  { top: 37.84% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-2  { top: 42.14% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-3  { top: 46.39% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-4  { top: 50.73% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-5  { top: 55.03% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-6  { top: 59.33% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-7  { top: 63.57% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-8  { top: 67.87% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-9  { top: 72.17% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-10 { top: 76.37% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-11 { top: 80.76% !important; }
+.slot-list-exact-poster-container.slot-theme-military .slot-overlay-row.slot-12 { top: 85.11% !important; }
 
 .slot-team-name {
   font-family: var(--font-tech), sans-serif !important;
   font-weight: 800 !important;
-  font-size: clamp(8px, 1.35vw, 13px) !important;
+  font-size: clamp(10px, 1.55vw, 15px) !important;
   color: #ffffff !important;
   letter-spacing: 0.5px !important;
   text-transform: uppercase !important;
@@ -3611,6 +3680,7 @@ body {
 }
 
 .slot-team-roster {
+  display: none !important;
   font-family: var(--font-display), monospace !important;
   font-weight: 600 !important;
   font-size: clamp(6.5px, 0.95vw, 9.5px) !important;
