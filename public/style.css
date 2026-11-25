@@ -4000,6 +4000,11 @@ body {
   box-shadow: 0 0 6px #8b5cf6;
 }
 
+.nexis-circle {
+  background: linear-gradient(135deg, #facc15 0%, #6d28d9 100%);
+  box-shadow: 0 0 6px #facc15;
+}
+
 .theme-pill-btn:hover {
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.35);
@@ -4053,6 +4058,13 @@ body {
   border-color: #8b5cf6;
   color: #ffffff;
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+}
+
+.theme-pill-btn.active[data-theme="nexis"] {
+  background: linear-gradient(135deg, rgba(109, 40, 217, 0.45) 0%, rgba(250, 204, 21, 0.3) 100%);
+  border-color: #facc15;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.45);
 }
 
 /* --- CYAN THEME EXACT POSTER OVERRIDES (725x1024) --- */
@@ -4312,6 +4324,111 @@ body {
 }
 .scrims-exact-poster-container.theme-purple-blue .overlay-total-val {
   text-shadow: 0 0 10px rgba(139, 92, 246, 0.95), 0 2px 4px rgba(0, 0, 0, 0.95) !important;
+}
+
+/* --- NEXIS ESPORTS SCRIMS THEME OVERRIDES (819x1024) --- */
+.scrims-exact-poster-container.theme-nexis {
+  border-color: #facc15 !important;
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.95),
+    0 0 30px rgba(250, 204, 21, 0.32),
+    0 0 25px rgba(109, 40, 217, 0.45) !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .poster-overlay-slots {
+  top: 36.19% !important;
+  bottom: 19.59% !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-row:hover {
+  background: rgba(250, 204, 21, 0.12) !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-rank-val {
+  position: absolute !important;
+  left: 17.9% !important;
+  width: 4.5% !important;
+  text-align: center !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-team-name {
+  left: 26.37% !important;
+  width: 19.5% !important;
+  padding-left: 0 !important;
+  text-align: left !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  letter-spacing: 0.2px !important;
+  text-shadow: none !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-booyah-val {
+  left: 44.5% !important;
+  width: 7.0% !important;
+  text-align: center !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-matches-val {
+  position: absolute !important;
+  left: 51.8% !important;
+  width: 7.2% !important;
+  text-align: center !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-position-val {
+  left: 59.8% !important;
+  width: 7.8% !important;
+  text-align: center !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-elimination-val {
+  left: 68.0% !important;
+  width: 7.6% !important;
+  text-align: center !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 600 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.scrims-exact-poster-container.theme-nexis .overlay-total-val {
+  left: 75.8% !important;
+  width: 8.0% !important;
+  text-align: center !important;
+  font-family: 'Montserrat', var(--font-tech), sans-serif !important;
+  font-weight: 700 !important;
+  font-size: clamp(6px, 1.02vw, 9.5px) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
 }
 
 /* =====================================================================
@@ -7176,7 +7293,7 @@ body {
   /* Screen 2 Subviews: Leaderboard Poster, Slot List & Matrix (Desktop Fit) */
   .poster-theme-selector,
   .slot-list-theme-selector {
-    max-width: 1040px;
+    max-width: 1180px;
     margin: 0 auto 0.5rem;
     padding: 0.38rem 0.85rem;
     background: var(--bg-card-gradient);
@@ -7241,6 +7358,16 @@ body {
     font-size: clamp(5.5px, 0.52vw, 7.5px) !important;
   }
 
+  .scrims-exact-poster-container.theme-nexis .overlay-rank-val,
+  .scrims-exact-poster-container.theme-nexis .overlay-team-name,
+  .scrims-exact-poster-container.theme-nexis .overlay-booyah-val,
+  .scrims-exact-poster-container.theme-nexis .overlay-matches-val,
+  .scrims-exact-poster-container.theme-nexis .overlay-position-val,
+  .scrims-exact-poster-container.theme-nexis .overlay-elimination-val,
+  .scrims-exact-poster-container.theme-nexis .overlay-total-val {
+    font-size: clamp(5.5px, 0.52vw, 7.4px) !important;
+  }
+
   .leaderboard-bottom-export-panel,
   .slot-list-bottom-export-panel {
     max-width: clamp(350px, 39vh, 480px) !important;
@@ -7255,13 +7382,15 @@ body {
     height: 2.3rem;
     padding: 0 1.45rem;
     font-size: 0.82rem;
-    background: var(--bg-slot);
+    background: var(--primary-btn-grad);
+    color: var(--primary-accent-text);
     border: var(--primary-border);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45), var(--primary-accent-glow-subtle);
   }
 
   .uiverse-download-btn::before {
     background: var(--primary-btn-grad);
+    filter: brightness(1.12);
   }
 
   .uiverse-download-btn:hover {

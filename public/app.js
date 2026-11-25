@@ -2957,10 +2957,11 @@ function updateMVPDisplay() {
 /**
  * Animate a numeric element counting up dynamically from 0 to target
  */
-function animateCountUp(element, target, duration = 800) {
+function animateCountUp(element, target, duration = 800, padZero = false) {
+  const formatNum = (n) => (padZero ? String(n).padStart(2, "0") : String(n));
   const targetNum = parseInt(target, 10);
   if (isNaN(targetNum) || targetNum === 0) {
-    element.textContent = "0";
+    element.textContent = formatNum(0);
     return;
   }
   if (targetNum < 0) {
@@ -2979,12 +2980,12 @@ function animateCountUp(element, target, duration = 800) {
     // Ease out cubic
     const easeProgress = 1 - Math.pow(1 - progress, 3);
     const currentVal = Math.round(easeProgress * targetNum);
-    element.textContent = currentVal;
+    element.textContent = formatNum(currentVal);
 
     if (progress < 1) {
       requestAnimationFrame(updateCount);
     } else {
-      element.textContent = targetNum;
+      element.textContent = formatNum(targetNum);
       if (badgeParent) badgeParent.classList.remove("counting");
     }
   }
@@ -3073,6 +3074,15 @@ const POSTER_THEMES = {
     booyahColor: "#fef08a",
     baseWidth: 847,
     baseHeight: 1024
+  },
+  nexis: {
+    id: "nexis",
+    name: "NEXIS SCRIMS",
+    src: "assets/nexis_esports_template.jpg",
+    layout: "nexis_819",
+    glowColor: "rgba(250, 204, 21, 0.85)",
+    baseWidth: 819,
+    baseHeight: 1024
   }
 };
 
@@ -3126,6 +3136,9 @@ function renderLeaderboardRows(animate = true) {
     headerPositionLabel.textContent = state.positionDisplayMode === "average" ? "AVG RANK" : "POSITION";
   }
 
+  const isNexis = state.selectedPosterTheme === "nexis";
+  const pad2 = (n) => String(Math.max(0, parseInt(n, 10) || 0)).padStart(2, "0");
+
   cumulativeStats.forEach((t, index) => {
     const rank = index + 1;
 
@@ -3144,56 +3157,113 @@ function renderLeaderboardRows(animate = true) {
       openTeamBreakdownModal(t.teamName);
     });
 
-    // Rank 1 Crown Icon on top of rank 01 badge
-    if (rank === 1) {
-      const crown = document.createElement("span");
-      crown.className = "overlay-crown-icon";
-      crown.textContent = "👑";
-      row.appendChild(crown);
-    }
+    if (isNexis) {
+      // Rank (# column: 01..12)
+      const rankValEl = document.createElement("span");
+      rankValEl.className = "overlay-rank-val";
+      rankValEl.textContent = pad2(rank);
+      row.appendChild(rankValEl);
 
-    // 1. Team Name (precisely aligned over metal slot)
-    const teamNameEl = document.createElement("span");
-    teamNameEl.className = "overlay-team-name";
-    teamNameEl.textContent = t.teamName;
+      // 1. Team Name
+      const teamNameEl = document.createElement("span");
+      teamNameEl.className = "overlay-team-name";
+      teamNameEl.textContent = t.teamName;
 
-    // 2. Booyah Column (number of 1st place finishes)
-    const booyahValEl = document.createElement("span");
-    booyahValEl.className = "overlay-booyah-val";
-    booyahValEl.textContent = t.booyahs || 0;
+      // 2. Booyah Icon Column (blank when 0, zero-padded when > 0)
+      const booyahValEl = document.createElement("span");
+      booyahValEl.className = "overlay-booyah-val";
+      booyahValEl.textContent = t.booyahs > 0 ? pad2(t.booyahs) : "";
 
-    // 3. Position Column (placement points or avg placement)
-    const posValEl = document.createElement("span");
-    posValEl.className = "overlay-position-val";
-    posValEl.textContent = state.positionDisplayMode === "average" ? t.averagePlacement : t.placementPoints;
+      // 3. Matches Played Column (zero-padded)
+      const matchesValEl = document.createElement("span");
+      matchesValEl.className = "overlay-matches-val";
+      matchesValEl.textContent = pad2(t.matchesPlayed || 0);
 
-    // 4. Elimination Column (total cumulative kills)
-    const elimValEl = document.createElement("span");
-    elimValEl.className = "overlay-elimination-val";
-    elimValEl.textContent = t.eliminationPoints;
+      // 4. Position Column
+      const posValEl = document.createElement("span");
+      posValEl.className = "overlay-position-val";
+      posValEl.textContent = state.positionDisplayMode === "average" ? String(t.averagePlacement) : pad2(t.placementPoints);
 
-    // 5. Total Column (centered directly in right red badge with count-up)
-    const totalValEl = document.createElement("span");
-    totalValEl.className = "overlay-total-val";
+      // 5. Finishes / Eliminations Column
+      const elimValEl = document.createElement("span");
+      elimValEl.className = "overlay-elimination-val";
+      elimValEl.textContent = pad2(t.eliminationPoints);
 
-    const numSpan = document.createElement("span");
-    numSpan.className = "count-up-number";
-    totalValEl.appendChild(numSpan);
+      // 6. Total Column
+      const totalValEl = document.createElement("span");
+      totalValEl.className = "overlay-total-val";
 
-    if (animate && t.totalPoints > 0) {
-      numSpan.textContent = "0";
-      setTimeout(() => {
-        animateCountUp(numSpan, t.totalPoints, 750);
-      }, index * 55 + 100);
+      const numSpan = document.createElement("span");
+      numSpan.className = "count-up-number";
+      totalValEl.appendChild(numSpan);
+
+      if (animate && t.totalPoints > 0) {
+        numSpan.textContent = "00";
+        setTimeout(() => {
+          animateCountUp(numSpan, t.totalPoints, 750, true);
+        }, index * 55 + 100);
+      } else {
+        numSpan.textContent = pad2(t.totalPoints);
+      }
+
+      row.appendChild(teamNameEl);
+      row.appendChild(booyahValEl);
+      row.appendChild(matchesValEl);
+      row.appendChild(posValEl);
+      row.appendChild(elimValEl);
+      row.appendChild(totalValEl);
     } else {
-      numSpan.textContent = t.totalPoints;
-    }
+      // Rank 1 Crown Icon on top of rank 01 badge
+      if (rank === 1) {
+        const crown = document.createElement("span");
+        crown.className = "overlay-crown-icon";
+        crown.textContent = "👑";
+        row.appendChild(crown);
+      }
 
-    row.appendChild(teamNameEl);
-    row.appendChild(booyahValEl);
-    row.appendChild(posValEl);
-    row.appendChild(elimValEl);
-    row.appendChild(totalValEl);
+      // 1. Team Name (precisely aligned over metal slot)
+      const teamNameEl = document.createElement("span");
+      teamNameEl.className = "overlay-team-name";
+      teamNameEl.textContent = t.teamName;
+
+      // 2. Booyah Column (number of 1st place finishes)
+      const booyahValEl = document.createElement("span");
+      booyahValEl.className = "overlay-booyah-val";
+      booyahValEl.textContent = t.booyahs || 0;
+
+      // 3. Position Column (placement points or avg placement)
+      const posValEl = document.createElement("span");
+      posValEl.className = "overlay-position-val";
+      posValEl.textContent = state.positionDisplayMode === "average" ? t.averagePlacement : t.placementPoints;
+
+      // 4. Elimination Column (total cumulative kills)
+      const elimValEl = document.createElement("span");
+      elimValEl.className = "overlay-elimination-val";
+      elimValEl.textContent = t.eliminationPoints;
+
+      // 5. Total Column (centered directly in right red badge with count-up)
+      const totalValEl = document.createElement("span");
+      totalValEl.className = "overlay-total-val";
+
+      const numSpan = document.createElement("span");
+      numSpan.className = "count-up-number";
+      totalValEl.appendChild(numSpan);
+
+      if (animate && t.totalPoints > 0) {
+        numSpan.textContent = "0";
+        setTimeout(() => {
+          animateCountUp(numSpan, t.totalPoints, 750);
+        }, index * 55 + 100);
+      } else {
+        numSpan.textContent = t.totalPoints;
+      }
+
+      row.appendChild(teamNameEl);
+      row.appendChild(booyahValEl);
+      row.appendChild(posValEl);
+      row.appendChild(elimValEl);
+      row.appendChild(totalValEl);
+    }
 
     scrimsLeaderboardRowsEl.appendChild(row);
   });
@@ -3355,13 +3425,64 @@ function drawPosterCanvas(canvas, ctx, img, theme = "red") {
   const themeConfig = POSTER_THEMES[theme] || POSTER_THEMES.red;
   const isCyan = themeConfig.layout === "cyan_725";
   const isModern = themeConfig.layout === "modern_847";
+  const isNexis = themeConfig.layout === "nexis_819";
   const cumulativeStats = calculateCumulativeStats();
 
   canvas.width = (img.naturalWidth || themeConfig.baseWidth) * 2;
   canvas.height = (img.naturalHeight || themeConfig.baseHeight) * 2;
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  if (isModern) {
+  if (isNexis) {
+    // Nexis Esports Scrims Template (819 x 1024 -> 1638 x 2048 at 2x Retina)
+    const nexisSlotCenters = [389.5, 427.2, 464.9, 502.6, 540.4, 578.1, 615.8, 653.6, 691.3, 729.0, 766.8, 804.5];
+    const pad2 = (n) => String(Math.max(0, parseInt(n, 10) || 0)).padStart(2, "0");
+    const fontSize = Math.round(canvas.width * 0.0168);
+
+    cumulativeStats.forEach((t, i) => {
+      if (i >= 12) return;
+      const rowCenterY = canvas.height * (nexisSlotCenters[i] / 1024);
+      const rank = i + 1;
+
+      ctx.font = `600 ${fontSize}px "Montserrat", "Rajdhani", "Segoe UI", sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.textBaseline = "middle";
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+
+      // 1. Rank (#)
+      ctx.textAlign = "center";
+      ctx.fillText(pad2(rank), canvas.width * (165 / 819), rowCenterY);
+
+      // 2. Team Name (left-aligned cleanly)
+      ctx.textAlign = "left";
+      let displayName = (t.teamName || "").toUpperCase();
+      const maxTextWidth = canvas.width * 0.195;
+      while (ctx.measureText(displayName).width > maxTextWidth && displayName.length > 3) {
+        displayName = displayName.slice(0, -1);
+      }
+      ctx.fillText(displayName, canvas.width * (216 / 819), rowCenterY);
+
+      // 3. Booyah Column (blank when 0, zero-padded when > 0)
+      ctx.textAlign = "center";
+      if ((t.booyahs || 0) > 0) {
+        ctx.fillText(pad2(t.booyahs), canvas.width * (393 / 819), rowCenterY);
+      }
+
+      // 4. Matches Played
+      ctx.fillText(pad2(t.matchesPlayed || 0), canvas.width * (453.5 / 819), rowCenterY);
+
+      // 5. Position
+      const posText = state.positionDisplayMode === "average" ? String(t.averagePlacement) : pad2(t.placementPoints);
+      ctx.fillText(posText, canvas.width * (521.5 / 819), rowCenterY);
+
+      // 6. Finishes
+      ctx.fillText(pad2(t.eliminationPoints), canvas.width * (588 / 819), rowCenterY);
+
+      // 7. Total
+      ctx.font = `700 ${fontSize}px "Montserrat", "Rajdhani", "Segoe UI", sans-serif`;
+      ctx.fillText(pad2(t.totalPoints), canvas.width * (653.5 / 819), rowCenterY);
+    });
+  } else if (isModern) {
     // Modern 847x1024 Templates (1694 x 2048 at 2x Retina): Green, Orange, Pink, Cyber Violet, Royal Indigo
     const modernSlotCenters = [378, 422.5, 467, 511.5, 556, 600.5, 645, 689.5, 734, 778.5, 823, 868];
     const rowHeight = (canvas.height * (535 / 1024)) / 12;
