@@ -6498,18 +6498,20 @@ body {
 
   .lobby-bar-inner {
     flex-wrap: wrap;
-    gap: 0.45rem 0.65rem;
+    justify-content: flex-start;
+    gap: 0.4rem 0.5rem;
   }
 
   .lobby-bar-label {
     order: 1;
     flex-shrink: 0;
-    gap: 0.35rem;
+    gap: 0.32rem;
   }
 
   .lobby-label-title {
-    font-size: 0.74rem;
-    letter-spacing: 1px;
+    font-size: 0.7rem;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
   }
 
   .lobby-label-sub {
@@ -6518,24 +6520,24 @@ body {
 
   .lobby-actions-group {
     order: 2;
-    flex-wrap: wrap;
-    gap: 0.35rem;
+    flex-wrap: nowrap;
+    gap: 0.32rem;
   }
 
   .lobby-ui-theme-btn,
   .lobby-cloud-sync-btn,
   .lobby-back-setup-btn,
   .lobby-reset-btn {
-    padding: 0.28rem 0.56rem;
-    font-size: 0.66rem;
-    letter-spacing: 0.5px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.64rem;
+    letter-spacing: 0.4px;
     white-space: nowrap;
   }
 
   .lobby-sync-tag {
-    padding: 0.26rem 0.52rem;
-    font-size: 0.64rem;
-    letter-spacing: 0.5px;
+    padding: 0.24rem 0.46rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.4px;
     white-space: nowrap;
   }
 
@@ -6544,20 +6546,19 @@ body {
     margin-left: auto;
     flex-wrap: nowrap;
     flex-shrink: 0;
-    gap: 0.35rem;
+    gap: 0.32rem;
   }
 
   .lobby-tab-btn {
-    padding: 0.32rem 0.68rem;
-    font-size: 0.72rem;
-    letter-spacing: 0.7px;
-    gap: 0.38rem;
+    padding: 0.28rem 0.58rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.6px;
+    gap: 0.32rem;
     white-space: nowrap;
   }
 
   .lobby-tab-db-tag {
-    font-size: 0.58rem;
-    padding: 1px 4px;
+    display: none;
   }
 
   /* Compact Section Badge Bar */
@@ -6795,33 +6796,375 @@ body {
     letter-spacing: 2px;
   }
 
-  /* Screen 2: Desktop Tournament Dashboard Refinements */
+  /* Screen 2: Compact Widescreen Desktop Tournament Dashboard */
   .tournament-top-bar {
-    padding: 0.85rem 1.25rem;
-    margin-bottom: 1rem;
+    padding: 0.48rem 1rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .active-tourney-meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 0.65rem;
+    flex-wrap: nowrap;
   }
 
   #active-tournament-title {
-    font-size: 1.35rem;
+    order: 1;
+    font-size: 0.94rem;
+    letter-spacing: 0.9px;
+    white-space: nowrap;
+    margin: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meta-pills-row {
+    order: 2;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    gap: 0.35rem;
+  }
+
+  .live-pill,
+  .lobby-pill,
+  .autosave-pill {
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-size: 0.66rem;
+    padding: 0.14rem 0.48rem;
+  }
+
+  .meta-stats {
+    order: 3;
+    margin-left: auto;
+    font-size: 0.7rem;
+    gap: 0.4rem;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .tournament-nav-tabs {
-    margin-bottom: 1rem;
-    padding-bottom: 0.6rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.55rem;
+    margin-bottom: 0.72rem;
+    padding-bottom: 0.52rem;
+    border-bottom: var(--primary-border);
+  }
+
+  .tourney-nav-btn {
+    justify-content: center;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+  }
+
+  .tourney-nav-btn.active {
+    border-color: var(--primary-accent);
+    box-shadow: var(--primary-accent-glow);
   }
 
   .match-input-card {
-    padding: 1.15rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.55rem 1rem;
+    padding: 0.82rem 1rem;
+  }
+
+  .match-input-card > * {
+    grid-column: 1 / -1;
+  }
+
+  .match-selector-header {
+    grid-column: 1;
+    grid-row: 1;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 0.9rem;
+  }
+
+  .selector-icon {
+    font-size: 1.25rem;
+  }
+
+  .selector-title {
+    font-size: 0.95rem;
+    letter-spacing: 1.4px;
+    margin: 0;
+  }
+
+  .selector-subtitle {
+    display: none;
+  }
+
+  .match-dropdown-wrap {
+    gap: 0.45rem;
+  }
+
+  .match-dropdown-wrap label {
+    font-size: 0.72rem;
+    color: var(--primary-accent);
+  }
+
+  .cyber-select {
+    padding: 0.34rem 0.65rem;
+    font-size: 0.8rem;
+    background: var(--bg-input);
+    border: var(--card-border);
+  }
+
+  .match-mode-tabs-bar {
+    grid-column: 2;
+    grid-row: 1;
+    margin-bottom: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    justify-content: flex-end;
+  }
+
+  .match-mode-label {
+    display: none;
+  }
+
+  .match-mode-btns {
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+  }
+
+  .match-mode-btn {
+    padding: 0.42rem 0.95rem;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  .match-tabs-strip {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    overflow-x: auto;
+  }
+
+  .match-tab-btn {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 0.44rem 0.75rem;
+    font-size: 0.78rem;
+    letter-spacing: 1px;
+    min-width: 110px;
+  }
+
+  /* 2-Column Side-by-Side Team Rows (Slots 01-06 Left, 07-12 Right) */
+  .match-teams-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-template-rows: repeat(var(--match-col-rows, 6), auto);
+    gap: 0.42rem 0.85rem;
+    margin-bottom: 0.85rem;
   }
 
   .match-team-form-card {
-    padding: 0.72rem 0.85rem;
-    gap: 0.5rem;
+    background: var(--bg-card-gradient);
+    border: var(--card-border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 4px 12px rgba(0, 0, 0, 0.45);
+    display: grid;
+    grid-template-columns: minmax(115px, 1.15fr) minmax(135px, 1.1fr) auto auto auto;
+    align-items: center;
+    gap: 0.28rem 0.45rem;
+    padding: 0.36rem 0.55rem;
   }
 
-  .match-teams-grid {
+  .card-team-header {
+    display: contents;
+  }
+
+  .team-meta-group {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    gap: 0.42rem;
+  }
+
+  .team-mini-badge {
+    padding: 0.22rem 0.6rem 0.22rem 0.4rem;
+    font-size: 0.76rem;
+    flex-shrink: 0;
+  }
+
+  .team-label-name {
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-inputs-row {
+    display: contents;
+  }
+
+  .card-inputs-row .field-block:first-child {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .card-inputs-row .field-block:first-child label {
+    display: none;
+  }
+
+  .placement-select {
+    height: 31px;
+    padding: 0.2rem 0.42rem;
+    font-size: 0.78rem;
+    background: var(--bg-input);
+    border: var(--card-border);
+  }
+
+  .card-inputs-row .field-block:nth-child(2) {
+    grid-column: 3;
+    grid-row: 1;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.28rem;
+  }
+
+  .card-inputs-row .field-block:nth-child(2) label {
+    display: none;
+  }
+
+  .card-inputs-row .field-block:nth-child(2)::before {
+    content: "KILLS";
+    font-family: var(--font-tech);
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+
+  .kills-input-wrap {
+    width: 62px;
+  }
+
+  .skull-prefix {
+    left: 0.36rem;
+    font-size: 0.7rem;
+  }
+
+  .kills-input {
+    height: 31px;
+    padding: 0.2rem 0.3rem 0.2rem 1.38rem;
+    font-size: 0.86rem;
+    background: var(--bg-input);
+    border: var(--card-border);
+  }
+
+  .card-minus-row {
+    grid-column: 4;
+    grid-row: 1;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .minus-field-block {
+    justify-content: flex-start;
+    gap: 0.28rem;
+  }
+
+  .minus-field-block .minus-label {
+    display: none;
+  }
+
+  .minus-field-block::before {
+    content: "PENALTY";
+    font-family: var(--font-tech);
+    font-size: 0.63rem;
+    font-weight: 800;
+    color: var(--minus-tag-text);
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+
+  .minus-input-wrap {
+    width: 60px;
+  }
+
+  .minus-prefix {
+    left: 0.36rem;
+    font-size: 0.68rem;
+  }
+
+  .minus-input {
+    height: 31px;
+    padding: 0.2rem 0.3rem 0.2rem 1.35rem;
+    font-size: 0.85rem;
+  }
+
+  .team-pts-preview {
+    grid-column: 5;
+    grid-row: 1;
+    justify-self: end;
+    font-size: 0.68rem;
+    padding: 0.2rem 0.42rem;
+    white-space: nowrap;
+  }
+
+  .team-pts-preview b {
+    font-size: 0.84rem;
+  }
+
+  .team-pts-preview > span {
+    display: none;
+  }
+
+  .card-team-players-bar {
+    grid-column: 1 / -1;
+    margin-top: 0.08rem;
+    padding: 0.2rem 0.45rem;
+    border-left-color: var(--primary-accent);
+  }
+
+  .card-player-kills-section {
+    grid-column: 1 / -1;
+    margin-top: 0.06rem;
+    padding: 0.32rem 0.48rem;
+  }
+
+  .player-kills-title {
+    margin-bottom: 0.22rem;
+    font-size: 0.65rem;
+  }
+
+  .player-kills-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+  }
+
+  .conflict-warning-tag {
+    grid-column: 1 / -1;
+    margin-top: 0.08rem;
+  }
+
+  .match-save-footer {
+    padding-top: 0.72rem;
     gap: 0.75rem;
-    margin-bottom: 1.25rem;
+  }
+
+  .save-match-btn {
+    padding: 0.68rem 2.5rem;
+    font-size: 0.96rem;
   }
 }
 
@@ -6831,10 +7174,8 @@ body {
     gap: 1.15rem;
   }
 
-  /* 3x4 Grid for Match Data Input on Wide Desktops */
   .match-teams-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
+    gap: 0.45rem 1rem;
   }
 }
 

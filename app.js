@@ -2194,6 +2194,10 @@ function renderMatchTeamForms() {
   if (!currentMatch) return;
 
   const totalTeamsCount = state.teams.length;
+  const halfRows = Math.max(1, Math.ceil(totalTeamsCount / 2));
+  if (matchTeamsGridContainer.style && typeof matchTeamsGridContainer.style.setProperty === "function") {
+    matchTeamsGridContainer.style.setProperty("--match-col-rows", String(halfRows));
+  }
 
   state.teams.forEach((teamName, teamIdx) => {
     const slotNumber = String(teamIdx + 1).padStart(2, "0");
@@ -2563,6 +2567,10 @@ function handleSaveMatchData() {
   if (!currentMatch) return;
 
   const totalTeamsCount = state.teams.length;
+  const halfRows = Math.max(1, Math.ceil(totalTeamsCount / 2));
+  if (matchTeamsGridContainer.style && typeof matchTeamsGridContainer.style.setProperty === "function") {
+    matchTeamsGridContainer.style.setProperty("--match-col-rows", String(halfRows));
+  }
 
   // 1. Check for missing placements
   const unplacedTeams = [];
