@@ -4018,8 +4018,8 @@ function drawSlotListCanvas(canvas, ctx, img) {
     ctx.textBaseline = "middle";
 
     if (teamName) {
-      // ONLY Team Name - vertically centered in the slot bar!
-      ctx.font = "800 34px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      // ONLY Team Name - vertically centered in the slot bar with refined size
+      ctx.font = "800 27px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = themeConfig.textColor || "#ffffff";
       ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
       ctx.shadowBlur = 8;
@@ -4032,7 +4032,7 @@ function drawSlotListCanvas(canvas, ctx, img) {
       }
       ctx.fillText(displayName, xLeft, yCenter);
     } else {
-      ctx.font = "italic 700 24px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
+      ctx.font = "italic 700 20px 'Rajdhani', 'Segoe UI', Arial, sans-serif";
       ctx.fillStyle = emptyColor;
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
