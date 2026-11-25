@@ -6650,7 +6650,8 @@ body {
   .lobby-ui-theme-btn,
   .lobby-cloud-sync-btn,
   .lobby-back-setup-btn,
-  .lobby-reset-btn {
+  .lobby-reset-btn,
+  .lobby-logout-btn {
     padding: 0.25rem 0.5rem;
     font-size: 0.64rem;
     letter-spacing: 0.4px;
@@ -7781,25 +7782,33 @@ body.auth-gate-locked .app-container {
 .lobby-logout-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.28rem 0.62rem;
-  font-family: var(--font-tech);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.7px;
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  border-radius: 999px;
+  gap: 0.35rem;
+  padding: 0.35rem 0.72rem;
+  font-family: var(--font-header, 'Montserrat', sans-serif);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #cbd5e1;
+  background: rgba(20, 24, 34, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.22s ease;
+  user-select: none;
   white-space: nowrap;
+}
+
+.lobby-logout-btn .logout-icon {
+  flex-shrink: 0;
+  opacity: 0.88;
 }
 
 .lobby-logout-btn:hover {
   color: #ffffff;
-  background: rgba(239, 68, 68, 0.28);
-  border-color: #f87171;
+  background: var(--bg-card-hover);
+  border-color: var(--primary-accent);
+  box-shadow: var(--primary-accent-glow-subtle);
+  transform: translateY(-1px);
 }
 
 
