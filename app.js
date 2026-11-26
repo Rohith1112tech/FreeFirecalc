@@ -241,6 +241,15 @@ function updateLobbyUI() {
 function switchLobby(newLobbyId) {
   if (!newLobbyId || newLobbyId === state.activeLobby) return;
 
+  // If user has no edit rights for this lobby, allow VIEW (read-only load) but show a notice
+  const editable = canEditLobby(newLobbyId);
+  if (!editable) {
+    // Still load it so they can see the data, but mark UI as read-only
+    if (typeof showMatchAlert === "function") {
+      showMatchAlert(`👁 Viewing ${(LOBBY_CONFIGS[newLobbyId] || {}).label || newLobbyId.toUpperCase()} — Read Only`, "info");
+    }
+  }
+
   // Clear any pending debounced Drive auto-sync timer
   if (typeof debouncedDriveAutoSyncTimer !== "undefined" && debouncedDriveAutoSyncTimer) {
     clearTimeout(debouncedDriveAutoSyncTimer);
@@ -576,6 +585,63 @@ function showLoginStage() {
   }, 20);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// LOBBY ASSIGNMENT: which lobbies each user may EDIT
+// Super Admin (Js.Suzie) can edit all. Others are locked to one lobby.
+// All users can VIEW all lobbies (read-only tabs still visible but grayed).
+// ─────────────────────────────────────────────────────────────────────────────
+const LOBBY_ASSIGNMENTS = {
+  "Js.Suzie":   ["lobby1", "lobby2", "lobby3"],
+  "Js.Culprit": ["lobby1"],
+  "Js.Pokemon": ["lobby2"],
+  "Js.Alien":   ["lobby3"]
+};
+
+/** Returns the lobbies the current user may edit, or all if unknown. */
+function getUserEditableLobbies() {
+  const session = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+    ? JSEAuth.getActiveSession() : null;
+  if (!session || !session.username) return ["lobby1", "lobby2", "lobby3"];
+  const assigned = LOBBY_ASSIGNMENTS[session.username];
+  return Array.isArray(assigned) && assigned.length ? assigned : ["lobby1", "lobby2", "lobby3"];
+}
+
+/** Returns true if the current user can EDIT the given lobby. */
+function canEditLobby(lobbyId) {
+  return getUserEditableLobbies().includes(lobbyId);
+}
+
+/** Auto-switch to user's primary assigned lobby after login. */
+function applyLobbyAssignment() {
+  const editableLobbies = getUserEditableLobbies();
+  // If current active lobby isn't editable by this user, switch to their first allowed one
+  if (!editableLobbies.includes(state.activeLobby)) {
+    switchLobby(editableLobbies[0]);
+  }
+  updateLobbyTabPermissions();
+}
+
+/** Visually lock/unlock lobby tabs based on current user's assignment. */
+function updateLobbyTabPermissions() {
+  const editableLobbies = getUserEditableLobbies();
+  const lobbyBtns = [
+    { el: btnLobby1, id: "lobby1" },
+    { el: btnLobby2, id: "lobby2" },
+    { el: btnLobby3, id: "lobby3" }
+  ];
+  lobbyBtns.forEach(({ el, id }) => {
+    if (!el) return;
+    const canEdit = editableLobbies.includes(id);
+    if (canEdit) {
+      el.classList.remove("lobby-tab-readonly");
+      el.title = `Switch to ${(LOBBY_CONFIGS[id] || {}).label || id.toUpperCase()}`;
+    } else {
+      el.classList.add("lobby-tab-readonly");
+      el.title = `${(LOBBY_CONFIGS[id] || {}).label || id.toUpperCase()} — View only`;
+    }
+  });
+}
+
 function canResetTournament() {
   if (typeof JSEAuth === "undefined" || typeof JSEAuth.hasPermission !== "function") {
     return true;
@@ -653,6 +719,7 @@ function unlockMainAppFromGate(shouldAutoCloudPull = false) {
     btnGateLogout.style.display = typeof JSEAuth !== "undefined" && JSEAuth.getActiveSession() ? "inline-flex" : "none";
   }
   updateRoleBasedControls();
+  applyLobbyAssignment();
   focusActiveScreenPrimaryInput();
   if (shouldAutoCloudPull && typeof fetchTournamentFromCloud === "function") {
     setTimeout(() => {
@@ -4793,6 +4860,8 @@ function flashAutoSaveIndicator() {
 function saveState(options = {}) {
   const { skipDriveDebounce = false } = options;
   if (state.isSharedView) return; // Do not overwrite user's local tournament while in shared read-only view
+  // Block saves to lobbies this user has no edit rights for
+  if (typeof canEditLobby === "function" && !canEditLobby(state.activeLobby)) return;
   try {
     const dataToSave = {
       activeLobby: state.activeLobby || "lobby1",

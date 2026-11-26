@@ -6235,6 +6235,26 @@ body {
   color: var(--primary-accent-text);
 }
 
+/* Read-only lobby tab: user can view but not edit that lobby */
+.lobby-tab-btn.lobby-tab-readonly {
+  opacity: 0.45;
+  cursor: pointer;
+  border-style: dashed;
+}
+.lobby-tab-btn.lobby-tab-readonly::after {
+  content: " 👁";
+  font-size: 0.65em;
+  opacity: 0.7;
+}
+.lobby-tab-btn.lobby-tab-readonly:hover {
+  opacity: 0.65;
+  border-color: var(--primary-accent);
+}
+.lobby-tab-btn.lobby-tab-readonly.active {
+  opacity: 0.75;
+}
+
+
 .lobby-actions-group {
   display: flex;
   align-items: center;
