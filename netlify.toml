@@ -16,6 +16,13 @@
   [headers.values]
     Cache-Control = "public, max-age=3600, must-revalidate"
 
+# Redirect all traffic from the Netlify subdomain to the custom domain
+[[redirects]]
+  from = "https://freefirecalc.netlify.app/*"
+  to = "https://tournament.jacksparrowesports.site/:splat"
+  status = 301
+  force = true
+
 [[redirects]]
   from = "/oauth2callback"
   to = "/index.html"
