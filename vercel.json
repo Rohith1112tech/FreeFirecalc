@@ -4,7 +4,6 @@
   "outputDirectory": "public",
   "installCommand": "npm install",
   "framework": null,
-  "functions": {},
   "rewrites": [
     { "source": "/oauth2callback", "destination": "/index.html" },
     { "source": "/((?!assets/.*).*)", "destination": "/index.html" }
