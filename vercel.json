@@ -2,9 +2,12 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "public",
+  "installCommand": "npm install",
+  "framework": null,
+  "functions": {},
   "rewrites": [
     { "source": "/oauth2callback", "destination": "/index.html" },
-    { "source": "/(.*)", "destination": "/$1" }
+    { "source": "/((?!assets/.*).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
