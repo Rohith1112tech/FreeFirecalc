@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/oauth2callback", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+      ]
+    }
+  ]
+}
