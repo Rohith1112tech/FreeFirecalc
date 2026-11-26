@@ -348,6 +348,69 @@
   }
 
   /**
+   * Fetch dynamic lobbies configuration from Supabase (`public.lobbies`).
+   */
+  async function fetchLobbiesConfig() {
+    const sb = getSupabaseClient();
+    if (!sb) return { success: false, lobbies: [] };
+    try {
+      const { data, error } = await sb
+        .from("lobbies")
+        .select("id, label, default_title, db_tag, sort_order")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (error || !Array.isArray(data)) {
+        return { success: false, lobbies: [], error: error ? error.message : "Failed to fetch lobbies." };
+      }
+
+      const lobbies = data.map((row) => ({
+        id: String(row.id),
+        label: String(row.label || row.id.toUpperCase()),
+        defaultTitle: String(row.default_title || `JACK SPARROW PAID SCRIMS - ${String(row.label || row.id).toUpperCase()}`),
+        dbTag: String(row.db_tag || row.id.toUpperCase()),
+        sortOrder: Number(row.sort_order) || 0
+      }));
+      return { success: true, lobbies };
+    } catch (err) {
+      return { success: false, lobbies: [], error: err && err.message };
+    }
+  }
+
+  /**
+   * Fetch editable lobby IDs for the currently signed-in user from `public.lobby_assignments`.
+   * Super Admin receives ["*"] (full access to every lobby, present and future).
+   */
+  async function fetchMyLobbyAssignments() {
+    const activeUser = inMemoryUser;
+    if (!activeUser) return { success: false, lobbies: [] };
+    if (activeUser.role === ROLES.SUPER_ADMIN) {
+      return { success: true, isAll: true, lobbies: ["*"] };
+    }
+
+    const sb = getSupabaseClient();
+    if (!sb || !activeUser.id) {
+      return { success: false, isAll: false, lobbies: [] };
+    }
+
+    try {
+      const { data, error } = await sb
+        .from("lobby_assignments")
+        .select("lobby_id")
+        .eq("user_id", activeUser.id);
+
+      if (error || !Array.isArray(data)) {
+        return { success: false, isAll: false, lobbies: [], error: error ? error.message : "Failed to fetch assignments." };
+      }
+
+      const ids = data.map((r) => String(r.lobby_id || "").trim()).filter(Boolean);
+      return { success: true, isAll: false, lobbies: ids };
+    } catch (err) {
+      return { success: false, isAll: false, lobbies: [], error: err && err.message };
+    }
+  }
+
+  /**
    * Reset a password input + eye toggle back to hidden/masked state.
    */
   function resetPasswordToggle(inputEl, toggleBtnEl) {
@@ -489,6 +552,8 @@
     getAuthToken,
     getSupabaseClient,
     adminManageUsers,
+    fetchLobbiesConfig,
+    fetchMyLobbyAssignments,
     bindPasswordToggle,
     resetPasswordToggle,
     bindEnterNavigation,

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Super Admin User Manager | Jack Sparrow Esports</title>
+  <title>Super Admin Control Center | Jack Sparrow Esports</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body class="admin-page-body">
   <div class="ambient-glow glow-top-left"></div>
@@ -19,7 +19,7 @@
     <header class="cyber-card admin-top-bar">
       <div class="admin-top-bar-left">
         <div class="badge-tag">SUPER ADMIN CONTROL CENTER</div>
-        <h1 class="admin-page-heading">USERNAMES, PASSWORDS &amp; ACCESS CONTROL</h1>
+        <h1 class="admin-page-heading">USERS, LOBBIES &amp; ACCESS ASSIGNMENTS</h1>
         <div class="admin-session-meta">
           <span class="active-dot"></span>
           <span id="admin-session-pill">Checking session...</span>
@@ -49,7 +49,7 @@
       <div class="card-body admin-state-body">
         <div class="admin-denied-icon" aria-hidden="true">🔒</div>
         <h2>ACCESS RESTRICTED — SUPER ADMIN ONLY</h2>
-        <p id="admin-denied-reason">Only the Super Admin account (Js.Suzie) can create, edit, or delete user accounts.</p>
+        <p id="admin-denied-reason">Only the Super Admin account (Js.Suzie) can manage user accounts and lobbies.</p>
         <button type="button" id="btn-denied-back" class="cyber-btn primary-start-btn admin-inline-btn">
           <span>&larr; RETURN TO SCRIMS CALCULATOR</span>
         </button>
@@ -63,7 +63,25 @@
         <span id="admin-status-text"></span>
       </div>
 
-      <div class="admin-workspace-grid">
+      <!-- Workspace Section Tabs -->
+      <div class="admin-section-tabs" role="tablist" aria-label="Super Admin Sections">
+        <button type="button" id="tab-admin-users" class="admin-section-tab-btn active" role="tab" aria-selected="true" aria-controls="admin-panel-users">
+          <span>👥 USERS &amp; ASSIGNMENTS</span>
+          <span class="admin-tab-count" id="tab-users-badge">0</span>
+        </button>
+        <button type="button" id="tab-admin-lobbies" class="admin-section-tab-btn" role="tab" aria-selected="false" aria-controls="admin-panel-lobbies">
+          <span>⚡ LOBBIES &amp; ACCESS</span>
+          <span class="admin-tab-count" id="tab-lobbies-badge">0</span>
+        </button>
+        <button type="button" id="btn-admin-refresh" class="lobby-back-setup-btn admin-refresh-global" title="Reload users, lobbies, and assignments from Supabase">
+          <span>🔄 SYNC ALL</span>
+        </button>
+      </div>
+
+      <!-- =================================================================
+           PANEL 1: USERS & LOBBY ASSIGNMENTS
+           ================================================================= -->
+      <div id="admin-panel-users" class="admin-workspace-grid" role="tabpanel" aria-labelledby="tab-admin-users">
         <!-- Create New User Account Card -->
         <section class="cyber-card admin-create-card" aria-labelledby="admin-create-heading">
           <div class="card-header">
@@ -101,10 +119,16 @@
               <div class="form-group">
                 <label for="admin-new-role">ACCOUNT ROLE <span class="required-star">*</span></label>
                 <select id="admin-new-role" class="cyber-select admin-role-select">
-                  <option value="TOURNAMENT_ADMIN">Admin (Scores, Teams, Posters, Sync — No Reset)</option>
-                  <option value="SCOREKEEPER">Scorekeeper (Match Entry &amp; Sync Only)</option>
-                  <option value="SUPER_ADMIN">Super Admin (Full Control + Reset + User Manager)</option>
+                  <option value="TOURNAMENT_ADMIN">Admin (Edit Assigned Lobbies — View Others)</option>
+                  <option value="SCOREKEEPER">Scorekeeper (Match Entry on Assigned Lobbies)</option>
+                  <option value="SUPER_ADMIN">Super Admin (Full Control + All Lobbies + Reset)</option>
                 </select>
+              </div>
+
+              <div class="form-group">
+                <label>ASSIGN EDITABLE LOBBIES</label>
+                <div id="admin-create-lobbies-group" class="admin-check-grid" aria-label="Assign editable lobbies for new user"></div>
+                <p id="admin-create-lobbies-hint" class="field-hint">Checked lobbies can be edited by this user. All other lobbies remain view-only.</p>
               </div>
 
               <div id="admin-create-error" class="admin-form-error" role="alert" aria-live="polite"></div>
@@ -115,7 +139,7 @@
                 </span>
               </button>
 
-              <p class="admin-kb-hint">⌨️ Keyboard Friendly: Press <b>Enter</b> to advance through fields (<b>Shift+Enter</b> to go back).</p>
+              <p class="admin-kb-hint">⌨️ Keyboard Friendly: Press <b>Enter</b> to advance, <b>Space</b> to toggle checks (<b>Shift+Enter</b> back).</p>
             </form>
           </div>
         </section>
@@ -129,14 +153,11 @@
             </div>
             <div class="admin-list-controls">
               <span class="roster-counter"><span id="admin-users-count">0</span> ACCOUNTS</span>
-              <button type="button" id="btn-admin-refresh" class="lobby-back-setup-btn" title="Reload account list from Supabase">
-                <span>🔄 REFRESH</span>
-              </button>
             </div>
           </div>
           <div class="card-body">
             <div class="admin-search-row">
-              <input type="search" id="admin-user-search" class="cyber-input admin-search-input" placeholder="Search by username or role... (Enter focuses first Edit)" aria-label="Search accounts">
+              <input type="search" id="admin-user-search" class="cyber-input admin-search-input" placeholder="Search by username, role, or lobby... (Enter focuses first Edit)" aria-label="Search accounts">
             </div>
 
             <div class="admin-table-wrap">
@@ -146,13 +167,101 @@
                     <th>#</th>
                     <th>USERNAME</th>
                     <th>ROLE</th>
+                    <th>ASSIGNED LOBBIES</th>
                     <th>LAST SIGN-IN</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody id="admin-users-tbody">
                   <tr>
-                    <td colspan="5" style="text-align:center; padding: 1.5rem; color: var(--text-muted);">Loading accounts...</td>
+                    <td colspan="6" style="text-align:center; padding: 1.5rem; color: var(--text-muted);">Loading accounts...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- =================================================================
+           PANEL 2: DYNAMIC LOBBIES & ADMIN ACCESS MANAGER
+           ================================================================= -->
+      <div id="admin-panel-lobbies" class="admin-workspace-grid" role="tabpanel" aria-labelledby="tab-admin-lobbies" style="display: none;">
+        <!-- Create New Lobby Card -->
+        <section class="cyber-card admin-create-card" aria-labelledby="admin-lobby-create-heading">
+          <div class="card-header">
+            <span class="card-icon">⚡</span>
+            <h2 id="admin-lobby-create-heading">ADD NEW LOBBY</h2>
+          </div>
+          <div class="card-body">
+            <form id="admin-lobby-create-form" novalidate>
+              <div class="form-group">
+                <label for="admin-new-lobby-label">LOBBY TAB NAME <span class="required-star">*</span></label>
+                <div class="cyber-input-wrap">
+                  <input type="text" id="admin-new-lobby-label" class="cyber-input" placeholder="e.g. LOBBY 4 or FINALS" autocomplete="off" minlength="1" maxlength="32" required>
+                </div>
+                <p class="field-hint">Appears as the button name in the top Lobby Switcher bar (max 32 chars).</p>
+              </div>
+
+              <div class="form-group">
+                <label for="admin-new-lobby-tag">DB TAG <span class="field-optional-tag">(Optional)</span></label>
+                <div class="cyber-input-wrap">
+                  <input type="text" id="admin-new-lobby-tag" class="cyber-input" placeholder="e.g. DB-04 (auto if blank)" autocomplete="off" maxlength="12">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="admin-new-lobby-title">DEFAULT SCRIMS TITLE <span class="field-optional-tag">(Optional)</span></label>
+                <div class="cyber-input-wrap">
+                  <input type="text" id="admin-new-lobby-title" class="cyber-input" placeholder="Auto-generated if left blank" autocomplete="off" maxlength="120">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>ASSIGN ADMINS TO THIS LOBBY</label>
+                <div id="admin-create-lobby-users-group" class="admin-check-grid" aria-label="Assign admins to new lobby"></div>
+                <p class="field-hint">Super Admins always have full edit access to every lobby automatically.</p>
+              </div>
+
+              <div id="admin-lobby-create-error" class="admin-form-error" role="alert" aria-live="polite"></div>
+
+              <button type="submit" id="btn-admin-create-lobby" class="cyber-btn primary-start-btn admin-submit-btn">
+                <span class="btn-content">
+                  <span id="btn-create-lobby-label">➕ ADD NEW LOBBY</span>
+                </span>
+              </button>
+
+              <p class="admin-kb-hint">⌨️ New lobby appears in real time for all logged-in users.</p>
+            </form>
+          </div>
+        </section>
+
+        <!-- Configured Lobbies List Card -->
+        <section class="cyber-card admin-list-card" aria-labelledby="admin-lobbies-list-heading">
+          <div class="card-header card-header-split">
+            <div class="header-title-group">
+              <span class="card-icon">🗄️</span>
+              <h2 id="admin-lobbies-list-heading">CONFIGURED LOBBIES</h2>
+            </div>
+            <div class="admin-list-controls">
+              <span class="roster-counter"><span id="admin-lobbies-count">0</span> LOBBIES</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="admin-table-wrap">
+              <table class="cyber-matrix-table admin-users-table" aria-label="Configured tournament lobbies">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>LOBBY NAME</th>
+                    <th>DB TAG &amp; DEFAULT TITLE</th>
+                    <th>ASSIGNED ADMINS</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-lobbies-tbody">
+                  <tr>
+                    <td colspan="5" style="text-align:center; padding: 1.5rem; color: var(--text-muted);">Loading lobbies...</td>
                   </tr>
                 </tbody>
               </table>
@@ -163,13 +272,13 @@
     </main>
   </div>
 
-  <!-- Modal: Edit Username / Reset Password / Change Role -->
+  <!-- Modal: Edit Username / Reset Password / Change Role / Assigned Lobbies -->
   <div id="admin-edit-modal-backdrop" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="admin-edit-modal-title">
     <div class="modal-card admin-modal-card">
       <div class="modal-header">
         <div class="modal-title-group">
           <span class="modal-crown">✏️</span>
-          <h3 id="admin-edit-modal-title">EDIT USER &amp; PASSWORD</h3>
+          <h3 id="admin-edit-modal-title">EDIT USER &amp; ACCESS</h3>
         </div>
         <button type="button" class="modal-close-btn" id="btn-close-edit-modal" aria-label="Close Edit Modal">✕</button>
       </div>
@@ -205,10 +314,16 @@
           <div class="form-group">
             <label for="edit-user-role">ROLE</label>
             <select id="edit-user-role" class="cyber-select admin-role-select">
-              <option value="TOURNAMENT_ADMIN">Admin (Scores, Teams, Posters, Sync)</option>
-              <option value="SCOREKEEPER">Scorekeeper (Match Entry Only)</option>
-              <option value="SUPER_ADMIN">Super Admin (Full Control)</option>
+              <option value="TOURNAMENT_ADMIN">Admin (Edit Assigned Lobbies — View Others)</option>
+              <option value="SCOREKEEPER">Scorekeeper (Match Entry on Assigned Lobbies)</option>
+              <option value="SUPER_ADMIN">Super Admin (Full Control + All Lobbies)</option>
             </select>
+          </div>
+
+          <div class="form-group">
+            <label>ASSIGNED EDITABLE LOBBIES</label>
+            <div id="edit-user-lobbies-group" class="admin-check-grid" aria-label="Assigned lobbies for user"></div>
+            <p id="edit-user-lobbies-hint" class="field-hint"></p>
           </div>
 
           <div id="admin-edit-error" class="admin-form-error" role="alert" aria-live="polite"></div>
@@ -253,8 +368,99 @@
     </div>
   </div>
 
+  <!-- Modal: Edit Lobby (Rename / Tag / Title / Order / Assigned Admins) -->
+  <div id="admin-lobby-edit-modal-backdrop" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="admin-lobby-edit-modal-title">
+    <div class="modal-card admin-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-crown">⚡</span>
+          <h3 id="admin-lobby-edit-modal-title">EDIT LOBBY &amp; ADMINS</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-lobby-edit-modal" aria-label="Close Lobby Edit Modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="admin-lobby-edit-form" novalidate>
+          <input type="hidden" id="edit-lobby-id" value="">
+
+          <div class="form-group">
+            <label for="edit-lobby-label">LOBBY TAB NAME <span class="required-star">*</span></label>
+            <div class="cyber-input-wrap">
+              <input type="text" id="edit-lobby-label" class="cyber-input" minlength="1" maxlength="32" required>
+            </div>
+          </div>
+
+          <div class="admin-two-col-row">
+            <div class="form-group">
+              <label for="edit-lobby-tag">DB TAG</label>
+              <div class="cyber-input-wrap">
+                <input type="text" id="edit-lobby-tag" class="cyber-input" maxlength="12">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="edit-lobby-order">ORDER</label>
+              <div class="cyber-input-wrap">
+                <input type="number" id="edit-lobby-order" class="cyber-input" min="1" max="999">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-lobby-title">DEFAULT SCRIMS TITLE</label>
+            <div class="cyber-input-wrap">
+              <input type="text" id="edit-lobby-title" class="cyber-input" maxlength="120">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>ASSIGNED ADMINS / SCOREKEEPERS</label>
+            <div id="edit-lobby-users-group" class="admin-check-grid" aria-label="Assigned admins for lobby"></div>
+            <p class="field-hint">Checked admins can enter scores and edit teams in this lobby.</p>
+          </div>
+
+          <div id="admin-lobby-edit-error" class="admin-form-error" role="alert" aria-live="polite"></div>
+
+          <div class="reset-dialog-actions" style="margin-top: 1rem;">
+            <button type="button" id="btn-cancel-edit-lobby" class="cyber-btn secondary-btn">
+              <span>CANCEL</span>
+            </button>
+            <button type="submit" id="btn-save-edit-lobby" class="cyber-btn primary-start-btn">
+              <span>💾 SAVE LOBBY</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Delete Lobby Confirmation -->
+  <div id="admin-lobby-delete-modal-backdrop" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="admin-lobby-delete-modal-title">
+    <div class="modal-card reset-dialog-card admin-modal-card">
+      <div class="modal-header reset-dialog-header">
+        <div class="modal-title-group">
+          <span class="warning-icon">⚠️</span>
+          <h3 id="admin-lobby-delete-modal-title">DELETE LOBBY?</h3>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-lobby-delete-modal" aria-label="Close Delete Lobby Modal">✕</button>
+      </div>
+      <div class="modal-body reset-dialog-body">
+        <p class="reset-warning-text">
+          This will permanently delete <b id="delete-target-lobby-name">--</b> (<code id="delete-target-lobby-id">--</code>), its cloud saved tournament scores in Supabase, and its admin assignments.
+        </p>
+        <div id="admin-lobby-delete-error" class="admin-form-error" role="alert" aria-live="polite"></div>
+        <div class="reset-dialog-actions">
+          <button type="button" id="btn-cancel-delete-lobby" class="cyber-btn secondary-btn">
+            <span>CANCEL</span>
+          </button>
+          <button type="button" id="btn-confirm-delete-lobby" class="cyber-btn danger-btn reset-execute-btn">
+            <span>🗑️ DELETE LOBBY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="assets/supabase.min.js"></script>
-  <script src="auth.js?v=14"></script>
-  <script src="admin.js?v=1"></script>
+  <script src="auth.js?v=15"></script>
+  <script src="admin.js?v=2"></script>
 </body>
 </html>

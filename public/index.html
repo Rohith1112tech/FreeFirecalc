@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body class="auth-gate-locked">
   <!-- Ambient Red Cyber Glow Effects -->
@@ -146,7 +146,7 @@
           <span class="lobby-label-title">ACTIVE LOBBY:</span>
           <span class="lobby-label-sub">SEPARATE CLOUD &amp; LOCAL DATABASE</span>
         </div>
-        <div class="lobby-tabs-group" role="tablist" aria-label="Lobby Switcher">
+        <div class="lobby-tabs-group" id="lobby-tabs-group" role="tablist" aria-label="Lobby Switcher">
           <button type="button" class="lobby-tab-btn active" id="btn-lobby-1" data-lobby="lobby1" role="tab" aria-selected="true" title="Switch to Lobby 1 (Database 1)">
             <span class="lobby-tab-dot"></span>
             <span class="lobby-tab-text">LOBBY 1</span>
@@ -198,6 +198,17 @@
         </div>
       </div>
     </section>
+
+    <!-- View-Only Mode Banner (shown when viewing an unassigned lobby) -->
+    <div id="lobby-readonly-banner" class="lobby-readonly-banner" role="status" aria-live="polite" style="display: none;">
+      <div class="lobby-readonly-banner-msg">
+        <span>🔒</span>
+        <span id="lobby-readonly-banner-text">VIEW-ONLY MODE — You are viewing this lobby in read-only mode.</span>
+      </div>
+      <button type="button" id="btn-goto-assigned-lobby" class="lobby-goto-assigned-btn" style="display: none;">
+        SWITCH TO MY LOBBY &rarr;
+      </button>
+    </div>
 
     <!-- MAIN SCREENS CONTAINER -->
     <main class="main-content">
@@ -880,7 +891,7 @@
     }
   </script>
   <script src="assets/supabase.min.js"></script>
-  <script src="auth.js?v=14"></script>
-  <script src="app.js?v=21"></script>
+  <script src="auth.js?v=15"></script>
+  <script src="app.js?v=22"></script>
 </body>
 </html>

@@ -66,18 +66,19 @@ const DEFAULT_TEAMS = [
   "TEAM MAFIA"
 ];
 
-// Multi-Lobby Configurations (3 Independent Lobbies with Isolated Databases)
+// Dynamic Multi-Lobby Configurations (Seeded with 3 defaults, synced live from Supabase)
 const LOBBY_CONFIGS = {
-  lobby1: { id: "lobby1", label: "LOBBY 1", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 01", dbTag: "DB-01" },
-  lobby2: { id: "lobby2", label: "LOBBY 2", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 02", dbTag: "DB-02" },
-  lobby3: { id: "lobby3", label: "LOBBY 3", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 03", dbTag: "DB-03" }
+  lobby1: { id: "lobby1", label: "LOBBY 1", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 01", dbTag: "DB-01", sortOrder: 1 },
+  lobby2: { id: "lobby2", label: "LOBBY 2", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 02", dbTag: "DB-02", sortOrder: 2 },
+  lobby3: { id: "lobby3", label: "LOBBY 3", defaultTitle: "JACK SPARROW PAID SCRIMS - LOBBY 03", dbTag: "DB-03", sortOrder: 3 }
 };
+let dynamicLobbyOrder = ["lobby1", "lobby2", "lobby3"];
 
 function getActiveLobbyId() {
   try {
-    return localStorage.getItem("ff_active_lobby_id") || "lobby1";
+    return localStorage.getItem("ff_active_lobby_id") || dynamicLobbyOrder[0] || "lobby1";
   } catch (_) {
-    return "lobby1";
+    return dynamicLobbyOrder[0] || "lobby1";
   }
 }
 
@@ -140,7 +141,11 @@ const btnCleanParseSlots = document.getElementById("btn-clean-parse-slots");
 const btnStartTournament = document.getElementById("btn-start-tournament");
 const setupErrorMsg = document.getElementById("setup-error-msg");
 
-// DOM Elements - 3-Lobby Multi-Database Controller
+// DOM Elements - Multi-Lobby Dynamic Controller
+const lobbyTabsGroup = document.getElementById("lobby-tabs-group");
+const lobbyReadonlyBanner = document.getElementById("lobby-readonly-banner");
+const lobbyReadonlyBannerText = document.getElementById("lobby-readonly-banner-text");
+const btnGotoAssignedLobby = document.getElementById("btn-goto-assigned-lobby");
 const btnLobby1 = document.getElementById("btn-lobby-1");
 const btnLobby2 = document.getElementById("btn-lobby-2");
 const btnLobby3 = document.getElementById("btn-lobby-3");
@@ -204,33 +209,115 @@ try {
 } catch (_) {}
 
 /**
+ * Replace local LOBBY_CONFIGS with dynamic lobbies fetched from Supabase
+ */
+function applyLobbiesFromSupabase(lobbiesList) {
+  if (!Array.isArray(lobbiesList) || lobbiesList.length === 0) return;
+
+  Object.keys(LOBBY_CONFIGS).forEach((k) => {
+    delete LOBBY_CONFIGS[k];
+  });
+  dynamicLobbyOrder = [];
+
+  lobbiesList.forEach((item) => {
+    if (!item || !item.id) return;
+    LOBBY_CONFIGS[item.id] = {
+      id: item.id,
+      label: item.label || item.id.toUpperCase(),
+      defaultTitle: item.defaultTitle || `JACK SPARROW PAID SCRIMS - ${(item.label || item.id).toUpperCase()}`,
+      dbTag: item.dbTag || item.id.toUpperCase(),
+      sortOrder: Number(item.sortOrder) || 0
+    };
+    dynamicLobbyOrder.push(item.id);
+  });
+
+  renderDynamicLobbyTabs();
+}
+
+/**
+ * Render dynamic lobby switcher buttons using safe DOM construction
+ */
+function renderDynamicLobbyTabs() {
+  if (!lobbyTabsGroup || typeof document.createElement !== "function") {
+    updateLobbyUI();
+    updateLobbyTabPermissions();
+    return;
+  }
+
+  lobbyTabsGroup.innerHTML = "";
+
+  dynamicLobbyOrder.forEach((lobbyId) => {
+    const cfg = LOBBY_CONFIGS[lobbyId] || { id: lobbyId, label: lobbyId.toUpperCase(), dbTag: lobbyId.toUpperCase() };
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "lobby-tab-btn";
+    if (lobbyId === "lobby1") btn.id = "btn-lobby-1";
+    else if (lobbyId === "lobby2") btn.id = "btn-lobby-2";
+    else if (lobbyId === "lobby3") btn.id = "btn-lobby-3";
+    else btn.id = `btn-lobby-${lobbyId}`;
+    btn.dataset.lobby = lobbyId;
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-selected", state.activeLobby === lobbyId ? "true" : "false");
+
+    const dot = document.createElement("span");
+    dot.className = "lobby-tab-dot";
+
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "lobby-tab-text";
+    labelSpan.textContent = cfg.label;
+
+    const tagSpan = document.createElement("span");
+    tagSpan.className = "lobby-tab-db-tag";
+    tagSpan.textContent = cfg.dbTag;
+
+    btn.appendChild(dot);
+    btn.appendChild(labelSpan);
+    btn.appendChild(tagSpan);
+
+    btn.addEventListener("click", () => switchLobby(lobbyId));
+    lobbyTabsGroup.appendChild(btn);
+  });
+
+  updateLobbyUI();
+  updateLobbyTabPermissions();
+}
+
+/**
  * Updates UI styling & badges for active lobby
  */
 function updateLobbyUI() {
-  const currentLobby = (typeof state !== "undefined" && state.activeLobby) || "lobby1";
-  const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: "LOBBY 1" };
+  const currentLobby = (typeof state !== "undefined" && state.activeLobby) || dynamicLobbyOrder[0] || "lobby1";
+  const lobbyInfo = LOBBY_CONFIGS[currentLobby] || { label: currentLobby.toUpperCase() };
 
-  if (btnLobby1) {
-    const isAct = currentLobby === "lobby1";
-    btnLobby1.classList.toggle("active", isAct);
-    btnLobby1.setAttribute("aria-selected", isAct ? "true" : "false");
-  }
-  if (btnLobby2) {
-    const isAct = currentLobby === "lobby2";
-    btnLobby2.classList.toggle("active", isAct);
-    btnLobby2.setAttribute("aria-selected", isAct ? "true" : "false");
-  }
-  if (btnLobby3) {
-    const isAct = currentLobby === "lobby3";
-    btnLobby3.classList.toggle("active", isAct);
-    btnLobby3.setAttribute("aria-selected", isAct ? "true" : "false");
+  const dynamicBtns = lobbyTabsGroup && typeof lobbyTabsGroup.querySelectorAll === "function"
+    ? Array.from(lobbyTabsGroup.querySelectorAll(".lobby-tab-btn"))
+    : [];
+
+  if (dynamicBtns.length > 0) {
+    dynamicBtns.forEach((btn) => {
+      const lobbyId = btn.dataset && btn.dataset.lobby;
+      const isAct = currentLobby === lobbyId;
+      btn.classList.toggle("active", isAct);
+      btn.setAttribute("aria-selected", isAct ? "true" : "false");
+    });
+  } else {
+    [
+      { el: btnLobby1, id: "lobby1" },
+      { el: btnLobby2, id: "lobby2" },
+      { el: btnLobby3, id: "lobby3" }
+    ].forEach(({ el, id }) => {
+      if (!el) return;
+      const isAct = currentLobby === id;
+      el.classList.toggle("active", isAct);
+      el.setAttribute("aria-selected", isAct ? "true" : "false");
+    });
   }
 
   if (lobbyActiveBadgeText) {
     lobbyActiveBadgeText.textContent = `${lobbyInfo.label} ACTIVE`;
   }
   if (tourneyLobbyPill) {
-    tourneyLobbyPill.innerHTML = `<span class="active-dot"></span> ${lobbyInfo.label}`;
+    tourneyLobbyPill.innerHTML = `<span class="active-dot"></span> ${escapeHtml(lobbyInfo.label)}`;
   }
 }
 
@@ -241,14 +328,7 @@ function updateLobbyUI() {
 function switchLobby(newLobbyId) {
   if (!newLobbyId || newLobbyId === state.activeLobby) return;
 
-  // If user has no edit rights for this lobby, allow VIEW (read-only load) but show a notice
   const editable = canEditLobby(newLobbyId);
-  if (!editable) {
-    // Still load it so they can see the data, but mark UI as read-only
-    if (typeof showMatchAlert === "function") {
-      showMatchAlert(`👁 Viewing ${(LOBBY_CONFIGS[newLobbyId] || {}).label || newLobbyId.toUpperCase()} — Read Only`, "info");
-    }
-  }
 
   // Clear any pending debounced Drive auto-sync timer
   if (typeof debouncedDriveAutoSyncTimer !== "undefined" && debouncedDriveAutoSyncTimer) {
@@ -260,10 +340,10 @@ function switchLobby(newLobbyId) {
     hideMatchAlerts();
   }
 
-  // 1. Save current lobby state first to preserve everything entered
+  // 1. Save current lobby state first (blocked silently by saveState if departing lobby was read-only)
   saveState({ skipDriveDebounce: true });
   // Queue silent background drive sync for the departing lobby
-  if (typeof autoSyncTournamentToDrive === "function") {
+  if (typeof autoSyncTournamentToDrive === "function" && canEditLobby(state.activeLobby)) {
     autoSyncTournamentToDrive({ silent: true }).catch(() => {});
   }
 
@@ -281,7 +361,6 @@ function switchLobby(newLobbyId) {
   if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
     showTournamentScreen();
   } else {
-    // Show Admin Setup Screen for target lobby
     showSetupScreen();
     if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
     if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
@@ -289,22 +368,33 @@ function switchLobby(newLobbyId) {
     updateFilledCount();
   }
 
-  // 5. Update Lobby Switcher UI indicators
+  // 5. Update Lobby Switcher UI & enforce read-only lock if unassigned
   updateLobbyUI();
+  updateLobbyTabPermissions();
+  enforceLobbyReadOnlyState();
 
   // 6. Visual user feedback
   const lobbyInfo = LOBBY_CONFIGS[newLobbyId] || { label: newLobbyId.toUpperCase() };
-  if (typeof showMatchAlert === "function" && state.activeScreen === "tournament") {
+  if (!editable) {
+    if (typeof showMatchAlert === "function" && state.activeScreen === "tournament") {
+      showMatchAlert(`👁 Viewing ${lobbyInfo.label} — View Only`, "info");
+    } else {
+      showError(`👁 Viewing ${lobbyInfo.label} (View Only Mode)`);
+      setTimeout(() => clearError(), 3500);
+    }
+  } else if (typeof showMatchAlert === "function" && state.activeScreen === "tournament") {
     showMatchAlert(`⚡ Switched to ${lobbyInfo.label} Database`, "info");
   } else {
     showError(`⚡ Switched to ${lobbyInfo.label} (${state.tournamentTitle})`);
     setTimeout(() => clearError(), 3000);
   }
 
-  // 7. Auto-save newly activated lobby so storage entry is confirmed
-  saveState();
+  // 7. Auto-save newly activated lobby only if editable
+  if (editable) {
+    saveState();
+  }
 
-  // 8. Try to background pull newest cloud backup for this lobby (Laptop <-> Mobile Sync)
+  // 8. Pull newest cloud backup from Supabase/Drive for this lobby
   fetchTournamentFromCloud({ lobbyId: newLobbyId, silent: true }).catch(() => {});
 }
 
@@ -586,9 +676,9 @@ function showLoginStage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOBBY ASSIGNMENT: which lobbies each user may EDIT
-// Super Admin (Js.Suzie) can edit all. Others are locked to one lobby.
-// All users can VIEW all lobbies (read-only tabs still visible but grayed).
+// DYNAMIC LOBBY ASSIGNMENT & REALTIME LIVE SYNC
+// Super Admin (Js.Suzie) manages all lobbies (current and dynamically added).
+// Assigned admins edit only their assigned lobby(ies) and view others live.
 // ─────────────────────────────────────────────────────────────────────────────
 const LOBBY_ASSIGNMENTS = {
   "Js.Suzie":   ["lobby1", "lobby2", "lobby3"],
@@ -596,14 +686,24 @@ const LOBBY_ASSIGNMENTS = {
   "Js.Pokemon": ["lobby2"],
   "Js.Alien":   ["lobby3"]
 };
+let dynamicEditableLobbies = null; // null = fallback/unloaded, ["*"] = all lobbies, or string[] of IDs
+let supabaseRealtimeChannel = null;
+const lastSupabaseSyncSentAt = {};
 
-/** Returns the lobbies the current user may edit, or all if unknown. */
+/** Returns the list of lobby IDs the current user may EDIT. */
 function getUserEditableLobbies() {
   const session = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
     ? JSEAuth.getActiveSession() : null;
-  if (!session || !session.username) return ["lobby1", "lobby2", "lobby3"];
-  const assigned = LOBBY_ASSIGNMENTS[session.username];
-  return Array.isArray(assigned) && assigned.length ? assigned : ["lobby1", "lobby2", "lobby3"];
+  if (!session || !session.username) return dynamicLobbyOrder.slice();
+  if (session.role === "SUPER_ADMIN") return dynamicLobbyOrder.slice();
+
+  if (Array.isArray(dynamicEditableLobbies)) {
+    if (dynamicEditableLobbies.includes("*")) return dynamicLobbyOrder.slice();
+    return dynamicEditableLobbies.filter((id) => Boolean(LOBBY_CONFIGS[id]));
+  }
+
+  const fallback = LOBBY_ASSIGNMENTS[session.username];
+  return Array.isArray(fallback) ? fallback.filter((id) => Boolean(LOBBY_CONFIGS[id])) : [];
 }
 
 /** Returns true if the current user can EDIT the given lobby. */
@@ -611,19 +711,298 @@ function canEditLobby(lobbyId) {
   return getUserEditableLobbies().includes(lobbyId);
 }
 
-/** Auto-switch to user's primary assigned lobby after login. */
-function applyLobbyAssignment() {
+/** Update UI read-only state across Setup and Match Input when viewing an unassigned lobby. */
+function enforceLobbyReadOnlyState() {
+  if (typeof document === "undefined") return;
+  const activeId = state.activeLobby || dynamicLobbyOrder[0] || "lobby1";
+  const editable = canEditLobby(activeId);
   const editableLobbies = getUserEditableLobbies();
-  // If current active lobby isn't editable by this user, switch to their first allowed one
-  if (!editableLobbies.includes(state.activeLobby)) {
+  const lobbyInfo = LOBBY_CONFIGS[activeId] || { label: activeId.toUpperCase() };
+
+  const appContainer = typeof document.querySelector === "function"
+    ? document.querySelector(".app-container")
+    : null;
+  if (appContainer && appContainer.classList) {
+    appContainer.classList.toggle("lobby-readonly-active", !editable);
+  }
+
+  if (lobbyReadonlyBanner && lobbyReadonlyBannerText) {
+    if (!editable) {
+      if (editableLobbies.length > 0) {
+        const assignedNames = editableLobbies
+          .map((id) => (LOBBY_CONFIGS[id] && LOBBY_CONFIGS[id].label) || id.toUpperCase())
+          .join(", ");
+        lobbyReadonlyBannerText.textContent = `VIEW-ONLY MODE — You are viewing ${lobbyInfo.label} live. Your account can edit: ${assignedNames}.`;
+        if (btnGotoAssignedLobby) {
+          const targetId = editableLobbies[0];
+          const targetLabel = (LOBBY_CONFIGS[targetId] && LOBBY_CONFIGS[targetId].label) || targetId.toUpperCase();
+          btnGotoAssignedLobby.textContent = `SWITCH TO ${targetLabel} →`;
+          btnGotoAssignedLobby.dataset.targetLobby = targetId;
+          btnGotoAssignedLobby.style.display = "inline-flex";
+        }
+      } else {
+        lobbyReadonlyBannerText.textContent = `VIEW-ONLY MODE — Viewing ${lobbyInfo.label}. No editable lobby is assigned to your account yet (ask Super Admin).`;
+        if (btnGotoAssignedLobby) btnGotoAssignedLobby.style.display = "none";
+      }
+      lobbyReadonlyBanner.style.display = "flex";
+    } else {
+      lobbyReadonlyBanner.style.display = "none";
+      if (btnGotoAssignedLobby) btnGotoAssignedLobby.style.display = "none";
+    }
+  }
+
+  // Toggle setup & match input mutating elements cleanly without blocking view navigation
+  const mutatingSetupIds = [
+    "tournament-name",
+    "total-matches",
+    "messy-slot-textarea",
+    "btn-paste-sample-messy",
+    "btn-clear-all-setup",
+    "btn-clean-parse-slots",
+    "btn-start-tournament",
+    "btn-quick-fill",
+    "btn-clear-teams",
+    "btn-quick-fill-setup",
+    "btn-open-paste-modal"
+  ];
+  mutatingSetupIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !editable;
+  });
+
+  if (setupScreen && typeof setupScreen.querySelectorAll === "function") {
+    setupScreen.querySelectorAll(".chip-btn, .team-name-input, .player-name-input").forEach((el) => {
+      el.disabled = !editable;
+    });
+  }
+
+  if (matchTeamsGridContainer && typeof matchTeamsGridContainer.querySelectorAll === "function") {
+    matchTeamsGridContainer.querySelectorAll("select, input").forEach((el) => {
+      el.disabled = !editable;
+    });
+  }
+
+  const mutatingMatchIds = [
+    "btn-save-match-data",
+    "auto-match-paste-input",
+    "btn-parse-auto-match",
+    "btn-auto-sample-table",
+    "btn-clear-auto-match",
+    "btn-quick-fill-scores",
+    "btn-reset-match-inputs"
+  ];
+  mutatingMatchIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !editable;
+  });
+}
+
+/** Stop Supabase Realtime channel cleanly (e.g. on logout). */
+function stopSupabaseRealtimeSync() {
+  const sb = typeof JSEAuth !== "undefined" && typeof JSEAuth.getSupabaseClient === "function"
+    ? JSEAuth.getSupabaseClient()
+    : null;
+  if (supabaseRealtimeChannel && sb && typeof sb.removeChannel === "function") {
+    try {
+      sb.removeChannel(supabaseRealtimeChannel);
+    } catch (_) {}
+  }
+  supabaseRealtimeChannel = null;
+}
+
+/** Subscribe to real-time updates for lobbies, assignments, and live lobby states. */
+function startSupabaseRealtimeSync() {
+  stopSupabaseRealtimeSync();
+  const sb = typeof JSEAuth !== "undefined" && typeof JSEAuth.getSupabaseClient === "function"
+    ? JSEAuth.getSupabaseClient()
+    : null;
+  const activeUser = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+    ? JSEAuth.getActiveSession()
+    : null;
+
+  if (!sb || !activeUser || typeof sb.channel !== "function") return;
+
+  const channel = sb.channel(`jse-live-sync-${activeUser.id || "session"}`);
+
+  // 1. Live Lobby Structure Changes (Add / Rename / Reorder / Delete)
+  channel.on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "lobbies" },
+    async () => {
+      if (typeof JSEAuth.fetchLobbiesConfig !== "function") return;
+      const lobbyRes = await JSEAuth.fetchLobbiesConfig();
+      if (lobbyRes && lobbyRes.success && lobbyRes.lobbies.length > 0) {
+        applyLobbiesFromSupabase(lobbyRes.lobbies);
+        const editable = getUserEditableLobbies();
+        if (!LOBBY_CONFIGS[state.activeLobby]) {
+          const fallbackTarget = editable[0] || dynamicLobbyOrder[0];
+          if (fallbackTarget) switchLobby(fallbackTarget);
+        } else {
+          updateLobbyUI();
+          updateLobbyTabPermissions();
+          enforceLobbyReadOnlyState();
+        }
+      }
+    }
+  );
+
+  // 2. Live Assignment Changes for current non-super-admin user
+  if (activeUser.role !== "SUPER_ADMIN" && activeUser.id) {
+    channel.on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "lobby_assignments", filter: `user_id=eq.${activeUser.id}` },
+      async () => {
+        if (typeof JSEAuth.fetchMyLobbyAssignments !== "function") return;
+        const assignRes = await JSEAuth.fetchMyLobbyAssignments();
+        if (assignRes && assignRes.success) {
+          dynamicEditableLobbies = assignRes.lobbies;
+          updateLobbyTabPermissions();
+          enforceLobbyReadOnlyState();
+          const editable = getUserEditableLobbies();
+          if (editable.length > 0 && !editable.includes(state.activeLobby)) {
+            switchLobby(editable[0]);
+          }
+          if (typeof showMatchAlert === "function" && state.activeScreen === "tournament") {
+            showMatchAlert("⚡ Your lobby edit permissions were updated by Super Admin.", "info");
+          }
+        }
+      }
+    );
+  }
+
+  // 3. Live Scores & Standings Updates across all lobbies
+  channel.on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "lobby_states" },
+    (payload) => {
+      const evType = payload && payload.eventType;
+      const row = evType === "DELETE" ? payload.old : payload.new;
+      const targetLobby = row && row.lobby_id;
+      if (!targetLobby) return;
+
+      if (evType === "DELETE") {
+        try {
+          localStorage.removeItem(getLobbyStorageKey(targetLobby));
+        } catch (_) {}
+        if (targetLobby === state.activeLobby) {
+          const lobbyInfo = LOBBY_CONFIGS[targetLobby] || { label: targetLobby.toUpperCase(), defaultTitle: `JACK SPARROW PAID SCRIMS - ${targetLobby.toUpperCase()}` };
+          state.tournamentTitle = lobbyInfo.defaultTitle;
+          state.totalMatches = 3;
+          state.teams = Array(12).fill("");
+          state.teamRosters = {};
+          state.matches = [];
+          initMatchesState();
+          showSetupScreen();
+          if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
+          renderTeamInputs();
+          updateFilledCount();
+          enforceLobbyReadOnlyState();
+        }
+        return;
+      }
+
+      const incomingState = row && row.state_json;
+      if (!incomingState || typeof incomingState !== "object" || !incomingState.tournamentTitle) return;
+
+      // Ignore own echo
+      if (incomingState.savedAt && lastSupabaseSyncSentAt[targetLobby] === incomingState.savedAt) {
+        return;
+      }
+
+      const localKey = getLobbyStorageKey(targetLobby);
+      let localSavedAt = 0;
+      try {
+        const rawLocal = localStorage.getItem(localKey);
+        if (rawLocal) {
+          const parsedLocal = JSON.parse(rawLocal);
+          if (parsedLocal.savedAt) localSavedAt = new Date(parsedLocal.savedAt).getTime();
+        }
+      } catch (_) {}
+
+      const incomingSavedAt = incomingState.savedAt ? new Date(incomingState.savedAt).getTime() : Date.now();
+      if (incomingSavedAt > localSavedAt || !canEditLobby(targetLobby)) {
+        try {
+          localStorage.setItem(localKey, JSON.stringify(incomingState));
+        } catch (_) {}
+        if (targetLobby === state.activeLobby && typeof applyCloudPayloadToActiveState === "function") {
+          applyCloudPayloadToActiveState(targetLobby, "Live Sync");
+        }
+      }
+    }
+  );
+
+  channel.subscribe();
+  supabaseRealtimeChannel = channel;
+}
+
+/** Load live lobbies + user assignments from Supabase and activate primary lobby. */
+async function applyLobbyAssignment() {
+  const activeUser = typeof JSEAuth !== "undefined" && typeof JSEAuth.getActiveSession === "function"
+    ? JSEAuth.getActiveSession()
+    : null;
+
+  if (activeUser && typeof JSEAuth.fetchLobbiesConfig === "function") {
+    try {
+      const [lobbyRes, assignRes] = await Promise.all([
+        JSEAuth.fetchLobbiesConfig(),
+        typeof JSEAuth.fetchMyLobbyAssignments === "function"
+          ? JSEAuth.fetchMyLobbyAssignments()
+          : Promise.resolve({ success: false, lobbies: [] })
+      ]);
+
+      if (lobbyRes && lobbyRes.success && Array.isArray(lobbyRes.lobbies) && lobbyRes.lobbies.length > 0) {
+        applyLobbiesFromSupabase(lobbyRes.lobbies);
+      } else {
+        renderDynamicLobbyTabs();
+      }
+
+      if (assignRes && assignRes.success) {
+        dynamicEditableLobbies = assignRes.lobbies;
+      }
+    } catch (_) {
+      renderDynamicLobbyTabs();
+    }
+  } else {
+    renderDynamicLobbyTabs();
+  }
+
+  const editableLobbies = getUserEditableLobbies();
+  if (!LOBBY_CONFIGS[state.activeLobby]) {
+    const target = editableLobbies[0] || dynamicLobbyOrder[0];
+    if (target) switchLobby(target);
+  } else if (editableLobbies.length > 0 && !editableLobbies.includes(state.activeLobby)) {
     switchLobby(editableLobbies[0]);
   }
+
   updateLobbyTabPermissions();
+  enforceLobbyReadOnlyState();
+  startSupabaseRealtimeSync();
 }
 
 /** Visually lock/unlock lobby tabs based on current user's assignment. */
 function updateLobbyTabPermissions() {
   const editableLobbies = getUserEditableLobbies();
+  const dynamicBtns = lobbyTabsGroup && typeof lobbyTabsGroup.querySelectorAll === "function"
+    ? Array.from(lobbyTabsGroup.querySelectorAll(".lobby-tab-btn"))
+    : [];
+
+  if (dynamicBtns.length > 0) {
+    dynamicBtns.forEach((el) => {
+      const id = el.dataset && el.dataset.lobby;
+      if (!id) return;
+      const label = (LOBBY_CONFIGS[id] && LOBBY_CONFIGS[id].label) || id.toUpperCase();
+      const canEdit = editableLobbies.includes(id);
+      if (canEdit) {
+        el.classList.remove("lobby-tab-readonly");
+        el.title = `Switch to ${label} (Editable)`;
+      } else {
+        el.classList.add("lobby-tab-readonly");
+        el.title = `${label} — View only`;
+      }
+    });
+    return;
+  }
+
   const lobbyBtns = [
     { el: btnLobby1, id: "lobby1" },
     { el: btnLobby2, id: "lobby2" },
@@ -706,7 +1085,7 @@ function focusActiveScreenPrimaryInput() {
   }, 40);
 }
 
-function unlockMainAppFromGate(shouldAutoCloudPull = false) {
+async function unlockMainAppFromGate(shouldAutoCloudPull = false) {
   isGateUnlocked = true;
   clearTimeout(welcomeTransitionTimer);
   if (document.body && document.body.classList) {
@@ -719,12 +1098,10 @@ function unlockMainAppFromGate(shouldAutoCloudPull = false) {
     btnGateLogout.style.display = typeof JSEAuth !== "undefined" && JSEAuth.getActiveSession() ? "inline-flex" : "none";
   }
   updateRoleBasedControls();
-  applyLobbyAssignment();
+  await applyLobbyAssignment();
   focusActiveScreenPrimaryInput();
   if (shouldAutoCloudPull && typeof fetchTournamentFromCloud === "function") {
-    setTimeout(() => {
-      fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
-    }, 300);
+    fetchTournamentFromCloud({ lobbyId: state.activeLobby, silent: true }).catch(() => {});
   }
 }
 
@@ -782,6 +1159,8 @@ async function handleGateLoginSubmit(e) {
 }
 
 async function handleGateLogout() {
+  stopSupabaseRealtimeSync();
+  dynamicEditableLobbies = null;
   if (typeof JSEAuth !== "undefined" && typeof JSEAuth.logout === "function") {
     await JSEAuth.logout();
   }
@@ -791,6 +1170,8 @@ async function handleGateLogout() {
   if (btnGateLogout) {
     btnGateLogout.style.display = "none";
   }
+  updateLobbyTabPermissions();
+  enforceLobbyReadOnlyState();
   if (gateLoginUsername) gateLoginUsername.value = "";
   if (gateLoginPassword) gateLoginPassword.value = "";
   if (typeof JSEAuth !== "undefined" && typeof JSEAuth.resetPasswordToggle === "function") {
@@ -996,6 +1377,9 @@ function renderTeamInputs() {
     slotCard.appendChild(playersSec);
 
     teamsInputContainer.appendChild(slotCard);
+  }
+  if (typeof enforceLobbyReadOnlyState === "function") {
+    enforceLobbyReadOnlyState();
   }
 }
 
@@ -1394,7 +1778,7 @@ function bindEvents() {
     themeBtn.addEventListener("click", toggleUiTheme);
   }
 
-  // 3-Lobby Database Switcher Tabs
+  // Multi-Lobby Dynamic Switcher Tabs (fallback binding when tabs not rebuilt dynamically)
   if (btnLobby1) {
     btnLobby1.addEventListener("click", () => switchLobby("lobby1"));
   }
@@ -1403,6 +1787,12 @@ function bindEvents() {
   }
   if (btnLobby3) {
     btnLobby3.addEventListener("click", () => switchLobby("lobby3"));
+  }
+  if (btnGotoAssignedLobby) {
+    btnGotoAssignedLobby.addEventListener("click", () => {
+      const target = btnGotoAssignedLobby.dataset && btnGotoAssignedLobby.dataset.targetLobby;
+      if (target) switchLobby(target);
+    });
   }
 
   // Cross-device manual cloud sync button
@@ -1870,6 +2260,10 @@ function bindEvents() {
  * Handle Start Tournament Action & Validation
  */
 function handleStartTournament() {
+  if (!canEditLobby(state.activeLobby)) {
+    showError("View-only lobby: Switch to your assigned lobby to start or edit teams.");
+    return;
+  }
   clearError();
 
   const matches = parseInt(totalMatchesInput.value, 10);
@@ -1940,6 +2334,7 @@ function showSetupScreen() {
   if (btnBackSetup) btnBackSetup.style.display = "none";
   if (btnResetTournament) btnResetTournament.style.display = "none";
   if (typeof updateRoleBasedControls === "function") updateRoleBasedControls();
+  if (typeof enforceLobbyReadOnlyState === "function") enforceLobbyReadOnlyState();
   focusActiveScreenPrimaryInput();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1969,6 +2364,7 @@ function showTournamentScreen() {
     renderSlotListRows();
   }
   switchSubView(state.activeSubView || "view-match-input");
+  if (typeof enforceLobbyReadOnlyState === "function") enforceLobbyReadOnlyState();
   focusActiveScreenPrimaryInput();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -2323,6 +2719,10 @@ function parseMatchResultsTable(text, targetMatchNum = null) {
  * Handle Parse and Save Auto Match Data
  */
 function handleParseAndSaveAutoMatch() {
+  if (!canEditLobby(state.activeLobby)) {
+    showAutoMatchFeedback("🔒 View-only lobby: switch to your assigned lobby to import match data.", "error");
+    return;
+  }
   if (!autoMatchPasteInput) return;
   const rawText = autoMatchPasteInput.value.trim();
 
@@ -2529,6 +2929,7 @@ function updateActiveMatchBanner() {
  * whenever any placement, kill, penalty, or player score is modified.
  */
 function triggerLiveMatchAutoSave() {
+  if (!canEditLobby(state.activeLobby)) return;
   const currentMatch = state.matches[state.selectedMatchIndex];
   if (!currentMatch) return;
 
@@ -2851,6 +3252,9 @@ function renderMatchTeamForms() {
   });
 
   checkPlacementConflicts();
+  if (typeof enforceLobbyReadOnlyState === "function") {
+    enforceLobbyReadOnlyState();
+  }
 }
 
 /**
@@ -2933,6 +3337,10 @@ function checkPlacementConflicts() {
  * Automatically updates leaderboard with latest calculated cumulative data
  */
 function handleSaveMatchData() {
+  if (!canEditLobby(state.activeLobby)) {
+    showMatchAlert("🔒 View-only lobby: switch to your assigned lobby to save or edit scores.", "error");
+    return;
+  }
   hideMatchAlerts();
   const currentMatch = state.matches[state.selectedMatchIndex];
   if (!currentMatch) return;
@@ -3016,6 +3424,10 @@ function handleSaveMatchData() {
  * Quick Auto-Assign Unique Ranks Helper (1 to 12)
  */
 function handleAutoAssignRanks() {
+  if (!canEditLobby(state.activeLobby)) {
+    showMatchAlert("🔒 View-only lobby: switch to your assigned lobby to modify scores.", "error");
+    return;
+  }
   const currentMatch = state.matches[state.selectedMatchIndex];
   if (!currentMatch) return;
 
@@ -3040,6 +3452,10 @@ function handleAutoAssignRanks() {
  * Clear Current Match Inputs Helper
  */
 function handleResetCurrentMatch() {
+  if (!canEditLobby(state.activeLobby)) {
+    showMatchAlert("🔒 View-only lobby: switch to your assigned lobby to modify match inputs.", "error");
+    return;
+  }
   if (confirm("Reset inputs for this match?")) {
     const currentMatch = state.matches[state.selectedMatchIndex];
     if (currentMatch) {
@@ -4927,7 +5343,10 @@ function loadSavedState(targetLobbyId) {
       else state.teams = Array(12).fill("");
       if (parsed.teamRosters && typeof parsed.teamRosters === "object") state.teamRosters = parsed.teamRosters;
       else state.teamRosters = {};
-      state.activeScreen = parsed.activeScreen || "setup";
+      state.activeScreen = parsed.activeScreen ||
+        ((parsed.autoSavedToDrive && Array.isArray(parsed.matches) && parsed.matches.some((m) => m && m.isSaved))
+          ? "tournament"
+          : "setup");
       state.activeSubView = parsed.activeSubView || "view-match-input";
       state.selectedMatchIndex = parsed.selectedMatchIndex !== undefined ? parsed.selectedMatchIndex : 0;
       state.positionDisplayMode = parsed.positionDisplayMode || "points";
@@ -6059,6 +6478,49 @@ async function dispatchCloudProxyRequest(payload) {
 }
 
 /**
+ * Apply freshly received cloud/realtime state to the active UI safely
+ */
+function applyCloudPayloadToActiveState(targetLobby, sourceLabel = "Supabase") {
+  if (targetLobby !== state.activeLobby) return;
+  const lobbyInfo = LOBBY_CONFIGS[targetLobby] || { label: targetLobby.toUpperCase() };
+
+  loadSavedState(targetLobby);
+  initMatchesState();
+
+  if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
+    setupScreen.classList.remove("active");
+    tournamentScreen.classList.add("active");
+    if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
+    if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
+    renderMatchSelectors();
+    renderMatchTeamForms();
+    updateProgressBadge();
+    renderLeaderboardRows();
+    renderMatrixTable();
+    if (typeof slotListOverlayRowsEl !== "undefined" && slotListOverlayRowsEl) {
+      renderSlotListRows();
+    }
+    updateActiveMatchBanner();
+  } else {
+    tournamentScreen.classList.remove("active");
+    setupScreen.classList.add("active");
+    if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
+    if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
+    renderTeamInputs();
+    updateFilledCount();
+  }
+
+  updateLobbyUI();
+  updateLobbyTabPermissions();
+  enforceLobbyReadOnlyState();
+
+  if (autosaveStatusPill && autosaveText) {
+    autosaveStatusPill.classList.add("drive-synced");
+    autosaveText.textContent = `☁️ ${sourceLabel.toUpperCase()} (${lobbyInfo.label})`;
+  }
+}
+
+/**
  * Fetches and synchronizes tournament state from Google Drive via Secure Cloud Proxy
  * Essential for syncing between Laptop and Mobile!
  */
@@ -6163,34 +6625,7 @@ async function fetchTournamentFromCloud({ lobbyId = state.activeLobby, force = f
       localStorage.setItem(localKey, JSON.stringify(cloudData));
 
       if (targetLobby === state.activeLobby) {
-        loadSavedState(targetLobby);
-        initMatchesState();
-
-        if (state.activeScreen === "tournament" && Array.isArray(state.teams) && state.teams.length > 0) {
-          setupScreen.classList.remove("active");
-          tournamentScreen.classList.add("active");
-          if (activeTournamentTitleEl) activeTournamentTitleEl.textContent = state.tournamentTitle.toUpperCase();
-          if (displayTotalMatchesEl) displayTotalMatchesEl.textContent = state.totalMatches;
-          renderMatchSelectors();
-          renderMatchTeamForms();
-          updateProgressBadge();
-          renderLeaderboardRows();
-          renderMatrixTable();
-          updateActiveMatchBanner();
-        } else {
-          tournamentScreen.classList.remove("active");
-          setupScreen.classList.add("active");
-          if (tournamentNameInput) tournamentNameInput.value = state.tournamentTitle;
-          if (totalMatchesInput) totalMatchesInput.value = state.totalMatches;
-          renderTeamInputs();
-          updateFilledCount();
-        }
-        updateLobbyUI();
-      }
-
-      if (autosaveStatusPill && autosaveText) {
-        autosaveStatusPill.classList.add("drive-synced");
-        autosaveText.textContent = `☁️ SYNCED FROM ${cloudSourceLabel.toUpperCase()} (${lobbyInfo.label})`;
+        applyCloudPayloadToActiveState(targetLobby, `SYNCED FROM ${cloudSourceLabel.toUpperCase()}`);
       }
 
       const msg = `✅ ${lobbyInfo.label} synced from ${cloudSourceLabel}!`;
@@ -6539,7 +6974,10 @@ async function handleSaveOAuthCreds() {
  */
 async function syncMatchScoresToGoogleSheets(matchNumber, teamData, options = {}) {
   const { silent = false, lobbyId = (typeof state !== "undefined" && state.activeLobby) || "lobby1" } = options;
-  const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: "LOBBY 1" };
+  if (typeof canEditLobby === "function" && !canEditLobby(lobbyId)) {
+    return { success: false, reason: "readonly_lobby" };
+  }
+  const lobbyInfo = LOBBY_CONFIGS[lobbyId] || { label: lobbyId.toUpperCase() };
 
   const teamsDataPayload = teamData.map((t, idx) => {
     const p = t.placement !== "" && t.placement !== undefined ? parseInt(t.placement, 10) : "";
@@ -6867,8 +7305,11 @@ let debouncedDriveAutoSyncTimer = null;
  * Seamlessly saves tournament state directly to Google Drive in the background.
  */
 async function autoSyncTournamentToDrive({ silent = true } = {}) {
-  // Prevent sync in shared read-only view or while entry login gate is locked
+  // Prevent sync in shared read-only view, unassigned lobby, or while entry login gate is locked
   if (state.isSharedView) return { success: false, reason: "shared_view" };
+  if (typeof canEditLobby === "function" && !canEditLobby(state.activeLobby)) {
+    return { success: false, reason: "readonly_lobby" };
+  }
   if (typeof document !== "undefined" && document.body && document.body.classList && document.body.classList.contains("auth-gate-locked")) {
     return { success: false, reason: "gate_locked" };
   }
@@ -6918,7 +7359,11 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
       teams: state.teams,
       teamRosters: state.teamRosters || {},
       matches: state.matches,
+      activeScreen: state.activeScreen || "setup",
+      activeSubView: state.activeSubView || "view-match-input",
+      selectedMatchIndex: state.selectedMatchIndex || 0,
       selectedPosterTheme: state.selectedPosterTheme || "red",
+      selectedSlotListTheme: state.selectedSlotListTheme || "crimson",
       exportFormat: state.exportFormat,
       positionDisplayMode: state.positionDisplayMode,
       savedAt: new Date().toISOString(),
@@ -6928,6 +7373,7 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
     // 0. Primary Authenticated Cloud Route: Supabase Postgres (`lobby_states`)
     if (sbSyncClient && sbSyncUser) {
       try {
+        lastSupabaseSyncSentAt[lobbyId] = backupData.savedAt;
         const { error: sbUpsertErr } = await sbSyncClient.from("lobby_states").upsert({
           lobby_id: lobbyId,
           tournament_title: state.tournamentTitle || lobbyInfo.label,
@@ -6946,7 +7392,8 @@ async function autoSyncTournamentToDrive({ silent = true } = {}) {
             autosaveText.textContent = "☁️ SAVED TO SUPABASE & BROWSER";
             autosaveStatusPill.title = `Synced ${lobbyInfo.label} to Supabase ff-scrims at ${timeStr} by ${sbSyncUser.username}`;
           }
-          if (!webhookUrl && !browserToken) {
+          const isLegacyDriveLobby = ["lobby1", "lobby2", "lobby3"].includes(lobbyId);
+          if ((!webhookUrl && !browserToken) || !isLegacyDriveLobby) {
             return { success: true, method: "supabase" };
           }
         } else {
@@ -7150,6 +7597,10 @@ if (typeof module !== "undefined" && module.exports) {
     LOBBY_CONFIGS,
     getActiveLobbyId,
     getLobbyStorageKey,
+    applyLobbiesFromSupabase,
+    renderDynamicLobbyTabs,
+    getUserEditableLobbies,
+    canEditLobby,
     updateLobbyUI,
     switchLobby,
     saveState,
